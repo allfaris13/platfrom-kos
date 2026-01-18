@@ -3,6 +3,7 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -20,7 +21,11 @@ import {
   Calendar,
   Utensils,
   Monitor,
-  Briefcase
+  Briefcase,
+  Heart,
+  Share2,
+  Shield,
+  Clock
 } from 'lucide-react';
 
 interface RoomDetailProps {
@@ -92,169 +97,269 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-stone-100 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-stone-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Top Header - Back Button & Title */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={onBack} className="rounded-full h-10 w-10 p-0">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">{room.name}</h1>
-            <div className="flex items-center gap-1 text-slate-500 text-sm">
-              <MapPin className="w-4 h-4" />
-              <span>{room.location}</span>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex items-center justify-between mb-8"
+        >
+          <div className="flex items-center gap-4">
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="ghost" onClick={onBack} className="rounded-full h-10 w-10 p-0 hover:bg-slate-100 dark:hover:bg-slate-700">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </motion.div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{room.name}</h1>
+              <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 text-sm mt-1">
+                <MapPin className="w-4 h-4" />
+                <span className="font-medium">{room.location}</span>
+              </div>
             </div>
           </div>
-        </div>
+          <div className="flex items-center gap-3">
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+              <Heart className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+            </motion.button>
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+              <Share2 className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+            </motion.button>
+          </div>
+        </motion.div>
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Left Column: Image Gallery & Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <motion.div 
+            className="lg:col-span-2 space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
             
             {/* Main Image Gallery */}
             <div className="space-y-4">
-              <Card className="overflow-hidden">
-                <div className="relative h-[450px] bg-slate-900">
-                  <ImageWithFallback
-                    src={room.images[currentImageIndex]}
-                    alt={room.name}
-                    className="w-full h-full object-cover"
-                  />
-                  
-                  {/* Navigation Arrows */}
-                  {room.images.length > 1 && (
-                    <>
-                      <button
-                        onClick={prevImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
-                      >
-                        <ChevronLeft className="w-6 h-6 text-slate-900" />
-                      </button>
-                      <button
-                        onClick={nextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
-                      >
-                        <ChevronRight className="w-6 h-6 text-slate-900" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </Card>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Card className="overflow-hidden border-0 shadow-xl">
+                  <div className="relative h-[500px] bg-gradient-to-br from-slate-200 to-slate-300 group">
+                    <motion.div
+                      key={currentImageIndex}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="absolute inset-0"
+                    >
+                      <ImageWithFallback
+                        src={room.images[currentImageIndex]}
+                        alt={room.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </motion.div>
+                    
+                    {/* Navigation Arrows */}
+                    {room.images.length > 1 && (
+                      <>
+                        <motion.button
+                          onClick={prevImage}
+                          whileHover={{ scale: 1.1, backgroundColor: '#ffffff' }}
+                          whileTap={{ scale: 0.95 }}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
+                        >
+                          <ChevronLeft className="w-6 h-6 text-slate-900" />
+                        </motion.button>
+                        <motion.button
+                          onClick={nextImage}
+                          whileHover={{ scale: 1.1, backgroundColor: '#ffffff' }}
+                          whileTap={{ scale: 0.95 }}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
+                        >
+                          <ChevronRight className="w-6 h-6 text-slate-900" />
+                        </motion.button>
+                      </>
+                    )}
+                    
+                    {/* Image Counter */}
+                    <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium">
+                      {currentImageIndex + 1} / {room.images.length}
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
 
               {/* Thumbnail Gallery */}
               <div className="grid grid-cols-3 gap-3">
                 {room.images.map((img: string, idx: number) => (
-                  <div 
+                  <motion.div 
                     key={idx}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setCurrentImageIndex(idx)}
-                    className={`h-20 rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${
-                      idx === currentImageIndex ? 'border-amber-500' : 'border-slate-200'
+                    className={`h-24 rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${
+                      idx === currentImageIndex ? 'border-stone-900 shadow-lg' : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <img src={img} alt="thumbnail" className="w-full h-full object-cover" />
-                  </div>
+                    <img src={img} alt="thumbnail" className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
+                  </motion.div>
                 ))}
               </div>
             </div>
 
             {/* Room Info Card */}
-            <Card className="p-6">
-              <div className="mb-4">
-                <Badge className="bg-stone-900 text-white">{room.type}</Badge>
-              </div>
-              
-              <div className="mb-6 pb-6 border-b border-slate-200">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-                    <span className="font-bold">{room.rating}</span>
-                    <span className="text-slate-600">({room.reviews} reviews)</span>
-                  </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+            >
+              <Card className="p-6 border-0 shadow-lg bg-white dark:bg-slate-800">
+                <div className="mb-4">
+                  <Badge className="bg-gradient-to-r from-stone-700 to-stone-900 text-white border-0 font-semibold px-4 py-1.5">
+                    {room.type}
+                  </Badge>
                 </div>
 
-                <div className="flex gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Bed className="w-5 h-5 text-slate-600" />
-                    <span>{room.bedrooms} Bed</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Bath className="w-5 h-5 text-slate-600" />
-                    <span>{room.bathrooms} Bath</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Ruler className="w-5 h-5 text-slate-600" />
-                    <span>{room.size}</span>
-                  </div>
-                </div>
-              </div>
-
-              <h3 className="font-bold text-lg mb-3">Facilities</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {room.facilities.map((facility: any, idx: number) => {
-                  const Icon = facilityIcons[facility.name] || facility.icon;
-                  return (
-                    <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
-                      {Icon && <Icon className="w-4 h-4 text-slate-600" />}
-                      <span className="text-sm text-slate-700">{facility.name}</span>
+                <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg">
+                      <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                      <span className="font-bold text-amber-900 dark:text-amber-400">{room.rating}</span>
+                      <span className="text-amber-700 dark:text-amber-500">({room.reviews} reviews)</span>
                     </div>
-                  );
-                })}
-              </div>
-            </Card>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                      <Bed className="w-5 h-5 text-stone-900 dark:text-stone-100" />
+                      <div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Bedrooms</p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">{room.bedrooms}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                      <Bath className="w-5 h-5 text-stone-900 dark:text-stone-100" />
+                      <div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Bathrooms</p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">{room.bathrooms}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                      <Ruler className="w-5 h-5 text-stone-900 dark:text-stone-100" />
+                      <div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Size</p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">{room.size}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="font-bold text-lg mb-4 text-slate-900 dark:text-slate-100">Amenities & Facilities</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {room.facilities.map((facility: any, idx: number) => {
+                    const Icon = facilityIcons[facility.name] || facility.icon;
+                    return (
+                      <motion.div
+                        key={idx}
+                        whileHover={{ x: 5 }}
+                        className="flex items-center gap-3 p-3 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 rounded-lg hover:shadow-md transition-all"
+                      >
+                        {Icon && <Icon className="w-5 h-5 text-stone-900 dark:text-stone-100 flex-shrink-0" />}
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{facility.name}</span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </Card>
+            </motion.div>
 
             {/* Description */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">About This Room</h2>
-              <p className="text-slate-600 leading-relaxed">{room.description}</p>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              viewport={{ once: true }}
+            >
+              <Card className="p-6 border-0 shadow-lg bg-white dark:bg-slate-800">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">About This Room</h2>
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg">{room.description}</p>
+              </Card>
+            </motion.div>
 
             {/* Features */}
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Features & Amenities</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {room.features.map((feature: string, idx: number) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-600">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <Card className="p-6 border-0 shadow-lg bg-white dark:bg-slate-800">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">Features & Amenities</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {room.features.map((feature: string, idx: number) => (
+                    <motion.div
+                      key={idx}
+                      whileHover={{ x: 5 }}
+                      className="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    >
+                      <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">{feature}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+          </motion.div>
 
           {/* Right Column: Booking Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="p-6 sticky top-8 shadow-xl">
-              <div className="mb-6">
-                <div className="text-4xl font-bold text-slate-900 mb-2">
+          <motion.div 
+            className="lg:col-span-1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="p-8 sticky top-8 shadow-2xl border-0 bg-white">
+              {/* Price Section */}
+              <motion.div className="mb-8">
+                <div className="text-5xl font-bold text-stone-900 mb-2">
                   ${room.price}
-                  <span className="text-lg text-slate-600">/month</span>
+                  <span className="text-xl text-slate-600 ml-2 font-normal">/month</span>
                 </div>
-              </div>
+                <p className="text-sm text-slate-600 mt-2">Includes basic utilities and maintenance</p>
+              </motion.div>
 
-              {/* Calendar */}
-              <div className="mb-6">
+              {/* Availability Calendar */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="mb-8"
+              >
                 <div className="flex items-center gap-2 mb-4">
-                  <Calendar className="w-5 h-5 text-amber-500" />
-                  <h3 className="font-bold text-slate-900">Check Availability</h3>
+                  <Clock className="w-5 h-5 text-stone-900" />
+                  <h3 className="font-bold text-slate-900">Availability</h3>
                 </div>
                 
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-xl p-4">
                   <div className="flex justify-between items-center mb-4">
-                    <button className="p-1 hover:bg-slate-200 rounded-lg">
+                    <button className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors">
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="font-bold text-sm">January 2026</span>
-                    <button className="p-1 hover:bg-slate-200 rounded-lg">
+                    <span className="font-bold text-sm text-slate-900">January 2026</span>
+                    <button className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors">
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                   
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2 text-slate-500">
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2 text-slate-600 font-semibold">
                     <span>Su</span>
                     <span>Mo</span>
                     <span>Tu</span>
@@ -266,48 +371,63 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                   
                   <div className="grid grid-cols-7 gap-1">
                     {[...Array(31)].map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={`py-2 text-xs rounded cursor-pointer transition-colors ${
-                          i === 15 ? 'bg-amber-500 text-white font-bold' : 'hover:bg-slate-200'
+                      <motion.div 
+                        key={i}
+                        whileHover={{ scale: 1.1 }}
+                        className={`py-2 text-xs rounded cursor-pointer transition-all font-medium ${
+                          i === 15 ? 'bg-gradient-to-br from-stone-700 to-stone-900 text-white shadow-md' : 'hover:bg-white'
                         }`}
                       >
                         {i + 1}
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
-              <Button 
-                onClick={() => onBookNow(roomId)}
-                className="w-full bg-amber-500 hover:bg-amber-600 h-12 text-lg font-bold rounded-xl mb-6"
+              {/* CTA Button */}
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                Book Now
-              </Button>
+                <Button 
+                  onClick={() => onBookNow(roomId)}
+                  className="w-full bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-stone-800 text-white h-13 text-lg font-bold rounded-xl mb-6 shadow-lg hover:shadow-xl transition-all"
+                >
+                  Book Now
+                </Button>
+              </motion.div>
 
-              <div className="space-y-3 border-t border-slate-200 pt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">Monthly rent</span>
-                  <span className="font-medium">${room.price}</span>
+              {/* Cost Breakdown */}
+              <div className="space-y-4 border-t border-slate-200 pt-6 mb-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-700 font-medium">Monthly rent</span>
+                  <span className="font-bold text-slate-900">${room.price}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">Security deposit</span>
-                  <span className="font-medium">${room.price}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-700 font-medium">Security deposit</span>
+                  <span className="font-bold text-slate-900">${room.price}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm pt-3 border-t border-slate-200 font-bold">
-                  <span>Total due</span>
-                  <span className="text-lg">${room.price * 2}</span>
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-lg">
+                  <span className="font-bold text-slate-900">Total due</span>
+                  <span className="font-bold text-stone-900">${room.price * 2}</span>
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-xs text-green-700 text-center">
-                  ✓ Secure booking • Free cancellation within 24 hours
-                </p>
+              {/* Security Badge */}
+              <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+                <div className="flex items-start gap-3">
+                  <Shield className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-emerald-900 mb-1">Secure Booking</p>
+                    <p className="text-xs text-emerald-800 leading-relaxed">
+                      Free cancellation within 24 hours • Verified property • Protected payment
+                    </p>
+                  </div>
+                </div>
               </div>
             </Card>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

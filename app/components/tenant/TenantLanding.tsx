@@ -145,56 +145,59 @@ export function Homepage({ onRoomClick }: HomepageProps) {
   };
 
   return (
-    <div>
+    <div className="bg-gradient-to-br from-slate-50 via-white to-stone-50">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-stone-800 via-stone-700 to-stone-600 text-white py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1721009714214-e688d8c07506?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwcm9vbSUyMGludGVyaW9yfGVufDF8fHx8MTc2ODU3NzIzM3ww&ixlib=rb-4.1.0&q=80&w=1080')] bg-cover bg-center opacity-20" />
+      <section className="relative bg-gradient-to-br from-slate-900 via-stone-800 to-slate-900 text-white py-28 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1721009714214-e688d8c07506?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwcm9vbSUyMGludGVyaW9yfGVufDF8fHx8MTc2ODU3NzIzM3ww&ixlib=rb-4.1.0&q=80&w=1080')] bg-cover bg-center opacity-15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="text-center mb-16"
           >
-            <h1 className="text-5xl md:text-6xl font-bold mb-4">
+            <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-stone-100 to-stone-200 bg-clip-text text-transparent">
               Find Your Perfect Space
             </h1>
-            <p className="text-xl text-stone-200">
-              Premium boarding houses tailored to your lifestyle
+            <p className="text-xl md:text-2xl text-stone-300 max-w-2xl mx-auto leading-relaxed">
+              Premium boarding houses and apartments tailored to your lifestyle
             </p>
           </motion.div>
 
-          {/* Search Bar */}
+          {/* Enhanced Search Bar */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+            className="max-w-5xl mx-auto"
           >
-            <Card className="bg-white/95 backdrop-blur-xl p-6 shadow-2xl">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="bg-white/10 backdrop-blur-2xl border border-white/20 p-8 shadow-2xl hover:shadow-3xl transition-all duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="md:col-span-2">
-                  <label className="text-sm text-slate-600 mb-2 block">Location</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <label className="text-sm font-semibold text-stone-200 mb-3 block uppercase tracking-wide">Location</label>
+                  <div className="relative group">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 group-focus-within:text-stone-200 transition-colors" />
                     <Input
                       placeholder="Where do you want to stay?"
                       value={searchLocation}
                       onChange={(e) => setSearchLocation(e.target.value)}
-                      className="pl-10 border-slate-300"
+                      className="pl-12 bg-white/90 backdrop-blur-sm border-white/30 focus:border-white/50 text-slate-900 placeholder:text-slate-500 transition-all font-medium"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600 mb-2 block">Price Range</label>
-                  <select className="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  <label className="text-sm font-semibold text-stone-200 mb-3 block uppercase tracking-wide">Price</label>
+                  <select className="w-full px-4 py-2.5 bg-white/90 backdrop-blur-sm border border-white/30 hover:border-white/50 focus:border-white/50 rounded-lg text-slate-900 font-medium transition-all cursor-pointer">
                     <option>$0 - $1000</option>
                     <option>$1000 - $2000</option>
                     <option>$2000+</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600 mb-2 block">Room Type</label>
-                  <select className="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  <label className="text-sm font-semibold text-stone-200 mb-3 block uppercase tracking-wide">Type</label>
+                  <select className="w-full px-4 py-2.5 bg-white/90 backdrop-blur-sm border border-white/30 hover:border-white/50 focus:border-white/50 rounded-lg text-slate-900 font-medium transition-all cursor-pointer">
                     <option>All Types</option>
                     <option>Standard</option>
                     <option>Deluxe</option>
@@ -203,93 +206,117 @@ export function Homepage({ onRoomClick }: HomepageProps) {
                   </select>
                 </div>
               </div>
-              <Button className="w-full md:w-auto mt-4 bg-stone-900 hover:bg-stone-800">
-                <Search className="w-4 h-4 mr-2" />
-                Search Rooms
-              </Button>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button className="w-full md:w-auto mt-6 bg-gradient-to-r from-stone-700 to-stone-800 hover:from-stone-600 hover:to-stone-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all px-8 py-2.5">
+                  <Search className="w-5 h-5 mr-2" />
+                  Search Rooms
+                </Button>
+              </motion.div>
             </Card>
           </motion.div>
         </div>
       </section>
 
       {/* Featured Rooms Carousel */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
         >
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Featured Rooms</h2>
-            <p className="text-lg text-slate-600">Handpicked premium accommodations just for you</p>
+          <div className="text-center mb-16">
+            <motion.h2 
+              className="text-5xl font-bold text-slate-900 mb-4"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              Featured Rooms
+            </motion.h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">Handpicked premium accommodations tailored to your comfort and lifestyle</p>
           </div>
 
           <div className="relative">
             <Slider {...sliderSettings}>
-              {featuredRooms.map((room) => (
-                <div key={room.id} className="px-3">
-                  <Card className="bg-white shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer">
-                    <div className="relative h-64 overflow-hidden">
+              {featuredRooms.map((room, index) => (
+                <motion.div 
+                  key={room.id} 
+                  className="px-3"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <Card className="bg-white shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer border-0 h-full flex flex-col">
+                    <div className="relative h-72 overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300">
                       <ImageWithFallback
                         src={room.image}
                         alt={room.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                       <div className="absolute top-4 right-4">
-                        <Badge className="bg-stone-900 text-white border-0">
+                        <Badge className="bg-gradient-to-r from-stone-700 to-stone-900 text-white border-0 shadow-lg font-semibold">
                           {room.type}
                         </Badge>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5">
                         <div className="flex items-center gap-2 text-white">
-                          <MapPin className="w-4 h-4" />
-                          <span className="text-sm">{room.location}</span>
+                          <MapPin className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-sm font-medium">{room.location}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-xl font-bold text-slate-900">{room.name}</h3>
-                        <div className="flex items-center gap-1">
+                    <div className="p-6 flex-1 flex flex-col">
+                      <div className="flex items-start justify-between mb-4">
+                        <h3 className="text-xl font-bold text-slate-900 flex-1 pr-2">{room.name}</h3>
+                        <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1.5 rounded-lg whitespace-nowrap">
                           <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                          <span className="text-sm font-medium">{room.rating}</span>
-                          <span className="text-xs text-slate-500">({room.reviews})</span>
+                          <span className="text-sm font-semibold text-amber-900">{room.rating}</span>
+                          <span className="text-xs text-amber-700">({room.reviews})</span>
                         </div>
                       </div>
 
-                      <div className="flex gap-2 mb-4 flex-wrap">
+                      <div className="flex gap-2 mb-6 flex-wrap">
                         {room.facilities.map((facility) => {
                           const Icon = facilityIcons[facility];
                           return (
                             <div
                               key={facility}
-                              className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-xs text-slate-600"
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs text-slate-700 font-medium transition-colors"
                             >
-                              {Icon && <Icon className="w-3 h-3" />}
+                              {Icon && <Icon className="w-3.5 h-3.5 text-slate-600" />}
                               <span>{facility}</span>
                             </div>
                           );
                         })}
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-3xl font-bold text-stone-900">
-                            ${room.price}
-                          </span>
-                          <span className="text-slate-500 text-sm">/month</span>
+                      <div className="border-t border-slate-200 pt-5 mt-auto">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <span className="text-3xl font-bold text-stone-900">
+                              ${room.price}
+                            </span>
+                            <span className="text-slate-500 text-sm ml-1">/month</span>
+                          </div>
+                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                              onClick={() => onRoomClick(room.id)}
+                              className="flex-1 bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-stone-800 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                            >
+                              View Details
+                            </Button>
+                          </motion.div>
                         </div>
-                        <Button
-                          onClick={() => onRoomClick(room.id)}
-                          className="bg-stone-900 hover:bg-stone-800"
-                        >
-                          View Details
-                        </Button>
                       </div>
                     </div>
                   </Card>
-                </div>
+                </motion.div>
               ))}
             </Slider>
           </div>
@@ -297,41 +324,66 @@ export function Homepage({ onRoomClick }: HomepageProps) {
       </section>
 
       {/* Why Choose Us */}
-      <section className="bg-slate-50 py-16">
+      <section className="bg-gradient-to-br from-slate-50 via-white to-stone-50 py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            viewport={{ once: true }}
           >
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-slate-900 mb-4">Why Choose LuxeStay?</h2>
-              <p className="text-lg text-slate-600">Premium features for premium living</p>
+            <div className="text-center mb-16">
+              <motion.h2 
+                className="text-5xl font-bold text-slate-900 mb-4"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.6 }}
+              >
+                Why Choose LuxeStay?
+              </motion.h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">Experience premium features and exceptional service in every aspect</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 {
                   title: 'Verified Listings',
-                  description: 'All properties are verified and inspected for quality',
-                  icon: '✓'
+                  description: 'All properties are thoroughly verified and regularly inspected for quality assurance',
+                  icon: '✓',
+                  color: 'from-emerald-100 to-teal-100 border-emerald-300'
                 },
                 {
                   title: 'Flexible Booking',
-                  description: 'Monthly rentals with flexible terms and conditions',
-                  icon: '📅'
+                  description: 'Monthly rentals with flexible terms and transparent conditions tailored to you',
+                  icon: '📅',
+                  color: 'from-blue-100 to-indigo-100 border-blue-300'
                 },
                 {
                   title: '24/7 Support',
-                  description: 'Round-the-clock customer support for all your needs',
-                  icon: '💬'
+                  description: 'Round-the-clock customer support for all your inquiries and concerns',
+                  icon: '💬',
+                  color: 'from-purple-100 to-pink-100 border-purple-300'
                 },
               ].map((feature, index) => (
-                <Card key={index} className="bg-white p-8 text-center hover:shadow-lg transition-shadow">
-                  <div className="text-5xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">{feature.title}</h3>
-                  <p className="text-slate-600">{feature.description}</p>
-                </Card>
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -5 }}
+                >
+                  <Card className={`bg-gradient-to-br ${feature.color} border p-8 text-center hover:shadow-xl transition-all duration-300 h-full`}>
+                    <motion.div 
+                      className="text-6xl mb-4 inline-block"
+                      whileHover={{ scale: 1.2, rotate: 5 }}
+                    >
+                      {feature.icon}
+                    </motion.div>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-3">{feature.title}</h3>
+                    <p className="text-slate-700 leading-relaxed">{feature.description}</p>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           </motion.div>

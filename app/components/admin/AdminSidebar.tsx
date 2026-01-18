@@ -1,5 +1,8 @@
+'use client';
+
 import { LayoutDashboard, ImageIcon, Home, Users, CreditCard, Menu, X, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
+import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 
 interface AdminSidebarProps {
   currentPage: string;
@@ -96,7 +99,12 @@ export function AdminSidebar({ currentPage, onNavigate }: AdminSidebarProps) {
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-slate-800/50">
+        <div className="p-4 border-t border-slate-800/50 space-y-3">
+          {/* Theme Toggle Button */}
+          <div className="flex justify-center">
+            <ThemeToggleButton />
+          </div>
+          
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 border border-slate-700/50">
             <div className="size-11 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-sm font-bold text-white">AD</span>

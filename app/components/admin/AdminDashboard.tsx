@@ -1,28 +1,46 @@
+'use client';
+
 import { Home, Users, CreditCard, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { rooms, tenants, payments, Room, Tenant, Payment } from '@/app/data/mockData';
+import { useApp } from '@/app/context';
 
 export function AdminDashboard() {
-  const availableRooms = rooms.filter(r => r.status === 'Tersedia').length;
-  const occupiedRooms = rooms.filter(r => r.status === 'Penuh').length;
-  const activeTenants = tenants.filter(t => t.status === 'Active').length;
+  // Gunakan global state untuk real-time data
+  const { getAllBookings, getTotalRevenue, getActiveBookings, getOccupiedRooms, getAllRooms } = useApp();
+  
+  const allBookings = getAllBookings();
+  const globalRevenue = getTotalRevenue();
+  const globalActiveBookings = getActiveBookings();
+  const globalOccupiedRooms = getOccupiedRooms();
+  const globalRooms = getAllRooms();
+  const globalAvailableRooms = globalRooms.filter(r => r.status === 'Available').length;
+
+  // Fallback ke mock data jika global state kosong (untuk backward compatibility)
+  const displayBookings = allBookings.length > 0 ? allBookings : [];
+  const displayRevenue = globalRevenue || 0;
+  const displayActiveBookings = globalActiveBookings || tenants.filter(t => t.status === 'Active').length;
+  const displayOccupiedRooms = globalOccupiedRooms || rooms.filter(r => r.status === 'Penuh').length;
+  const displayAvailableRooms = globalAvailableRooms || rooms.filter(r => r.status === 'Tersedia').length;
+
+  const availableRooms = displayAvailableRooms;
+  const occupiedRooms = displayOccupiedRooms;
+  const activeTenants = displayActiveBookings;
   const pendingPayments = payments.filter(p => p.status === 'Pending').length;
-  const totalRevenue = payments
-    .filter(p => p.status === 'Confirmed')
-    .reduce((sum: number, p: Payment) => sum + p.amount, 0);
+  const totalRevenue = displayRevenue;
 
   const stats = [
     {
       title: 'Total Rooms',
-      value: rooms.length,
+      value: globalRooms.length || rooms.length,
       subtitle: `${availableRooms} Available`,
       icon: Home,
       color: 'blue'
     },
     {
-      title: 'Active Tenants',
+      title: 'Active Bookings',
       value: activeTenants,
-      subtitle: `${tenants.length} Total`,
+      subtitle: `${displayBookings.length} Total`,
       icon: Users,
       color: 'green'
     },
@@ -35,8 +53,8 @@ export function AdminDashboard() {
     },
     {
       title: 'Total Revenue',
-      value: `Rp ${(totalRevenue / 1000000).toFixed(1)}M`,
-      subtitle: 'This month',
+      value: `$${totalRevenue.toLocaleString()}`,
+      subtitle: 'All time',
       icon: TrendingUp,
       color: 'purple'
     }

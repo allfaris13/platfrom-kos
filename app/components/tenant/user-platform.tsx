@@ -1,40 +1,97 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Homepage } from './homepage';
 import { RoomDetail } from './RoomDetail';
 import { BookingFlow } from './booking-flow';
 import { BookingHistory } from './booking-history';
-import { Home, Search, Calendar, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, CheckCircle2, DollarSign, XCircle } from 'lucide-react';
+import { ContactUs } from './contact-us';
+import { motion } from 'framer-motion';
+import { Home, Search, Calendar, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, CheckCircle2, DollarSign, XCircle, Bell, Settings, MessageCircle, ArrowLeft, Heart, Star } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Card } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
+import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 
 interface UserPlatformProps {
   onLogout?: () => void;
 }
 
 export function UserPlatform({ onLogout }: UserPlatformProps) {
-  const [activeView, setActiveView] = useState('home');
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  
-  // Editable user data
-  const [userData, setUserData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Main Street, New York, NY 10001',
-    joinDate: 'January 2026',
-    status: 'Active',
-    totalBookings: 3,
-    totalSpent: 3600,
-    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NzIyNDZ8MHwxfHNlYXJjaHwxfHx1c2VyJTIwYXZhdGFyfGVufDB8fHx8fDE3MDAwMDAwMDB8&ixlib=rb-4.0.3&q=80&w=400',
+  // Load initial state from localStorage
+  const getInitialActiveView = (): string => {
+    if (typeof window === 'undefined') return 'home';
+    const stored = localStorage.getItem('user_platform_active_view');
+    return stored || 'home';
+  };
+
+  const getInitialSelectedRoomId = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem('user_platform_selected_room_id');
+    return stored || null;
+  };
+
+  const getInitialMobileMenuOpen = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem('user_platform_mobile_menu_open');
+    return stored === 'true';
+  };
+
+  const getInitialIsEditingProfile = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem('user_platform_is_editing_profile');
+    return stored === 'true';
+  };
+
+  const [activeView, setActiveView] = useState(getInitialActiveView);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(getInitialSelectedRoomId);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(getInitialMobileMenuOpen);
+  const [isEditingProfile, setIsEditingProfile] = useState(getInitialIsEditingProfile);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('user_platform_active_view', activeView);
+  }, [activeView]);
+
+  useEffect(() => {
+    if (selectedRoomId) {
+      localStorage.setItem('user_platform_selected_room_id', selectedRoomId);
+    } else {
+      localStorage.removeItem('user_platform_selected_room_id');
+    }
+  }, [selectedRoomId]);
+
+  useEffect(() => {
+    localStorage.setItem('user_platform_mobile_menu_open', mobileMenuOpen.toString());
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('user_platform_is_editing_profile', isEditingProfile.toString());
+  }, [isEditingProfile]);
+  
+  // Editable user data
+  const [userData, setUserData] = useState({
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    phone: '+1 (555) 123-4567',
+    address: '123 Main Street, New York, NY 10001',
+    joinDate: 'January 2026',
+    status: 'Active',
+    totalBookings: 3,
+    totalSpent: 3600,
+    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NzIyNDZ8MHwxfHNlYXJjaHwxfHx1c2VyJTIwYXZhdGFyfGVufDB8fHx8fDE3MDAwMDAwMDB|&ixlib=rb-4.0.3&q=80&w=400',
   });
 
-  const [editData, setEditData] = useState(userData);
+  const [editData, setEditData] = useState(userData);  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
+  const toggleWishlist = (roomId: string) => {
+    setWishlist(prev => 
+      prev.includes(roomId)
+        ? prev.filter(id => id !== roomId)
+        : [...prev, roomId]
+    );
+  };
   const navigateToRoomDetail = (roomId: string) => {
     setSelectedRoomId(roomId);
     setActiveView('room-detail');
@@ -57,15 +114,14 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
 
   const menuItems = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'search', label: 'Search', icon: Search },
-    { id: 'history', label: 'My Bookings', icon: History },
-    { id: 'profile', label: 'Profile', icon: User },
-  ];
-
+    { id: 'search', label: 'Search', icon: Search },
+    { id: 'wishlist', label: 'Wishlist', icon: Heart },
+    { id: 'history', label: 'My Bookings', icon: History },
+    { id: 'profile', label: 'Profile', icon: User },  ];
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-stone-50 font-['Poppins']">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-stone-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-['Poppins']">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-slate-200/60 shadow-md hover:shadow-lg transition-shadow">
+      <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-md hover:shadow-lg transition-shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -74,8 +130,8 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 <Home className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">LuxeStay</h1>
-                <p className="text-xs text-slate-500">Premium Living</p>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">LuxeStay</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Premium Living</p>
               </div>
             </div>
 
@@ -90,7 +146,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                       activeView === item.id
                         ? 'bg-gradient-to-r from-stone-700 to-stone-900 text-white shadow-lg'
-                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -98,22 +154,39 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                   </button>
                 );
               })}
+              
+              {/* Contact Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveView('contact')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900 transition-all duration-200 ml-2"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Contact Us</span>
+              </motion.button>
+
+              {/* Theme Toggle Button */}
+              <ThemeToggleButton />
             </nav>
 
             {/* Mobile Menu Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="md:hidden border-slate-200 hover:bg-slate-100"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
+            <div className="md:hidden flex items-center gap-2">
+              <ThemeToggleButton />
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Mobile Navigation */}
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-slate-200 bg-slate-50">
+            <div className="md:hidden py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
               <nav className="space-y-2">
                 {menuItems.map((item) => {
                   const Icon = item.icon;
@@ -127,7 +200,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                         activeView === item.id
                           ? 'bg-gradient-to-r from-stone-700 to-stone-900 text-white'
-                          : 'text-slate-700 hover:bg-slate-100'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -136,15 +209,94 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                   );
                 })}
                 
+                {/* Contact Button - Mobile */}
+                <button
+                  onClick={() => {
+                    setActiveView('contact');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900 transition-all"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Contact Us</span>
+                </button>
               </nav>
             </div>
-          )}        </div>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
       <main>
-        {activeView === 'home' && <Homepage onRoomClick={navigateToRoomDetail} />}
-        {activeView === 'search' && <Homepage onRoomClick={navigateToRoomDetail} />}        {activeView === 'room-detail' && selectedRoomId && (
+        {activeView === 'home' && <Homepage onRoomClick={navigateToRoomDetail} wishlist={wishlist} onToggleWishlist={toggleWishlist} />}
+        {activeView === 'search' && <Homepage onRoomClick={navigateToRoomDetail} wishlist={wishlist} onToggleWishlist={toggleWishlist} />}
+        {activeView === 'contact' && <ContactUs />}
+        {activeView === 'wishlist' && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            {/* Wishlist Header */}
+            <div className="mb-12">
+              <h1 className="text-4xl font-bold text-slate-900 mb-4">My Wishlist</h1>
+              <p className="text-slate-600 text-lg">Room yang Anda sukai ({wishlist.length} items)</p>
+            </div>
+
+            {wishlist.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center py-16"
+              >
+                <Heart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-slate-700 mb-2">No Wishlist Items Yet</h2>
+                <p className="text-slate-500 mb-6">Tambahkan room favorit Anda ke wishlist</p>
+                <Button
+                  onClick={() => setActiveView('home')}
+                  className="bg-stone-700 hover:bg-stone-800 text-white px-6 py-2 rounded-lg"
+                >
+                  Explore Rooms
+                </Button>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { id: '1', name: 'Luxury Penthouse', price: 2500, image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBwZW50aG91c2V8ZW58MHx8fHwxNzY4NTI4NDI3fDA&ixlib=rb-4.0.3&q=80&w=500', rating: 4.9 },
+                  { id: '2', name: 'Modern Studio', price: 800, image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzdHVkaW98ZW58MHx8fHwxNzY4NTI4NDI3fDA&ixlib=rb-4.0.3&q=80&w=500', rating: 4.7 },
+                  { id: '3', name: 'Cozy Apartment', price: 1200, image: 'https://images.unsplash.com/photo-1494145904049-0dca59b4bbad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3p5JTIwYXBhcnRtZW50fGVufDB8fHx8MTc2ODUyODQyN3ww&ixlib=rb-4.0.3&q=80&w=500', rating: 4.8 },
+                ].filter(room => wishlist.includes(room.id)).map((room) => (
+                  <motion.div
+                    key={room.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all overflow-hidden"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => toggleWishlist(room.id)}
+                        className="absolute top-4 right-4 bg-white rounded-full p-2 hover:bg-red-50 transition-all shadow-lg"
+                      >
+                        <Heart className="w-5 h-5 text-red-500 fill-red-500" />
+                      </button>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold text-slate-900 mb-2">{room.name}</h3>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        <span className="text-sm font-semibold text-slate-700">{room.rating}</span>
+                      </div>
+                      <p className="text-2xl font-bold text-stone-700 mb-4">${room.price}/mo</p>
+                      <Button
+                        onClick={() => navigateToRoomDetail(room.id)}
+                        className="w-full bg-stone-700 hover:bg-stone-800 text-white py-2 rounded-lg"
+                      >
+                        View Details
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}        {activeView === 'room-detail' && selectedRoomId && (
           <RoomDetail roomId={selectedRoomId} onBookNow={navigateToBooking} onBack={() => setActiveView('home')} />
         )}
         {activeView === 'booking' && selectedRoomId && (
@@ -430,8 +582,16 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 </div>
                 
                 {/* Logout Button */}
-                <Button 
-                  onClick={onLogout}
+                <Button
+                  onClick={() => {
+                    // Clear UserPlatform specific state
+                    localStorage.removeItem('user_platform_active_view');
+                    localStorage.removeItem('user_platform_selected_room_id');
+                    localStorage.removeItem('user_platform_mobile_menu_open');
+                    localStorage.removeItem('user_platform_is_editing_profile');
+                    // Call parent logout
+                    onLogout?.();
+                  }}
                   className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 shadow-lg hover:shadow-xl transition-all"
                 >
                   <LogOut className="w-5 h-5 mr-2" />

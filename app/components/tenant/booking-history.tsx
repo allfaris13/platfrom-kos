@@ -2,6 +2,10 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { ExtendBooking } from './extend-booking';
+import { CancelBooking } from './cancel-booking';
 import { 
   Calendar, 
   MapPin, 
@@ -10,7 +14,10 @@ import {
   Clock,
   Search,
   CheckCircle2,
-  XCircle
+  XCircle,
+  TrendingUp,
+  Star,
+  Trash2
 } from 'lucide-react';
 
 interface Booking {
@@ -70,6 +77,20 @@ interface BookingHistoryProps {
 }
 
 export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
+  const [extendModalOpen, setExtendModalOpen] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
+  const handleExtendClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setExtendModalOpen(true);
+  };
+
+  const handleCancelClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setCancelModalOpen(true);
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Confirmed':
@@ -101,76 +122,118 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-stone-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-stone-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
-        <div className="mb-12">
-          <div className="inline-block mb-4">
-            <Badge className="bg-stone-900/10 text-stone-900 font-semibold">My Bookings</Badge>
+        <motion.div 
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-12"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <motion.div 
+              className="w-12 h-12 bg-gradient-to-br from-stone-700 to-stone-900 rounded-lg flex items-center justify-center shadow-lg"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+            >
+              <Calendar className="w-6 h-6 text-white" />
+            </motion.div>
+            <div>
+              <h1 className="text-4xl font-bold text-slate-900">My Bookings</h1>
+              <p className="text-slate-600 mt-1">Track and manage all your rental reservations</p>
+            </div>
           </div>
-          <h1 className="text-5xl font-bold text-slate-900 mb-3">Booking History</h1>
-          <p className="text-lg text-slate-600">Manage and view all your rental reservations</p>
-        </div>
+        </motion.div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ staggerChildren: 0.1, delayChildren: 0.2 }}
+        >
           {[
-            { label: 'Total Bookings', value: '3', icon: '📅', color: 'from-stone-700 to-stone-900' },
-            { label: 'Active', value: '1', icon: '✓', color: 'from-emerald-500 to-emerald-600' },
-            { label: 'Pending', value: '1', icon: '⏳', color: 'from-amber-500 to-amber-600' },
-            { label: 'Total Spent', value: '$13,000', icon: '💰', color: 'from-blue-500 to-blue-600' },
+            { label: 'Total Bookings', value: '3', icon: '📅', color: 'from-stone-700 to-stone-900', bgColor: 'from-stone-50 to-stone-100' },
+            { label: 'Active', value: '1', icon: '✓', color: 'from-emerald-500 to-emerald-600', bgColor: 'from-emerald-50 to-emerald-100' },
+            { label: 'Pending', value: '1', icon: '⏳', color: 'from-amber-500 to-amber-600', bgColor: 'from-amber-50 to-amber-100' },
+            { label: 'Total Spent', value: '$13,000', icon: '💰', color: 'from-blue-500 to-blue-600', bgColor: 'from-blue-50 to-blue-100' },
           ].map((stat, index) => (
-            <div key={stat.label}>
-              <Card className="p-6 bg-white/80 backdrop-blur-sm border-slate-200/60 hover:shadow-lg transition-all duration-300">
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              whileHover={{ y: -5 }}
+            >
+              <Card className={`p-6 bg-gradient-to-br ${stat.bgColor} border-0 shadow-lg hover:shadow-xl transition-all duration-300`}>
                 <div className={`w-14 h-14 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
                   <span className="text-2xl">{stat.icon}</span>
                 </div>
-                <p className="text-sm text-slate-600 font-medium mb-2">{stat.label}</p>
+                <p className="text-sm text-slate-600 font-semibold mb-2 uppercase tracking-wide">{stat.label}</p>
                 <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
               </Card>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Bookings List */}
-        <div className="space-y-6">
+        <motion.div 
+          className="space-y-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ staggerChildren: 0.15, delayChildren: 0.4 }}
+        >
           {mockBookings.map((booking, index) => (
-            <div key={booking.id}>
-              <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-slate-200/60 bg-white/90 backdrop-blur-sm">
+            <motion.div
+              key={booking.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.15 }}
+              whileHover={{ y: -5 }}
+            >
+              <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 shadow-lg bg-white">
                 <div className="flex flex-col md:flex-row">
                   {/* Room Image with Overlay */}
-                  <div className="md:w-72 h-56 md:h-auto flex-shrink-0 relative overflow-hidden">
+                  <motion.div 
+                    className="md:w-80 h-56 md:h-auto flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300"
+                    whileHover={{ scale: 1.05 }}
+                  >
                     <ImageWithFallback
                       src={booking.roomImage}
                       alt={booking.roomName}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
-                  </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+                  </motion.div>
 
                   {/* Booking Details */}
-                  <div className="flex-1 p-7">
-                    <div className="flex items-start justify-between mb-5">
+                  <div className="flex-1 p-8">
+                    <div className="flex items-start justify-between mb-6">
                       <div>
                         <h3 className="text-2xl font-bold text-slate-900 mb-2">
                           {booking.roomName}
                         </h3>
                         <div className="flex items-center gap-2 text-slate-600">
-                          <MapPin className="w-4 h-4 text-stone-700" />
+                          <MapPin className="w-4 h-4 text-stone-900" />
                           <span className="font-medium">{booking.location}</span>
                         </div>
                       </div>
-                      <Badge className={`${getStatusColor(booking.status)} border-2 flex items-center gap-2 px-4 py-1.5 font-semibold text-sm`}>
-                        {getStatusIcon(booking.status)}
-                        {booking.status}
-                      </Badge>
+                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                        <Badge className={`${getStatusColor(booking.status)} border-2 flex items-center gap-2 px-4 py-2 font-semibold text-sm shadow-md hover:shadow-lg transition-all`}>
+                          {getStatusIcon(booking.status)}
+                          {booking.status}
+                        </Badge>
+                      </motion.div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-                      <div className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/50">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                      <motion.div 
+                        className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/50 hover:shadow-md transition-all"
+                        whileHover={{ y: -2 }}
+                      >
                         <p className="text-xs text-slate-600 font-semibold mb-2 uppercase tracking-wide">Check-in</p>
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-5 h-5 text-stone-700" />
+                          <Calendar className="w-5 h-5 text-stone-900" />
                           <span className="font-semibold text-slate-900">
                             {new Date(booking.moveInDate).toLocaleDateString('en-US', {
                               month: 'short',
@@ -179,12 +242,15 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                             })}
                           </span>
                         </div>
-                      </div>
+                      </motion.div>
 
-                      <div className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/50">
+                      <motion.div 
+                        className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/50 hover:shadow-md transition-all"
+                        whileHover={{ y: -2 }}
+                      >
                         <p className="text-xs text-slate-600 font-semibold mb-2 uppercase tracking-wide">Check-out</p>
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-5 h-5 text-stone-700" />
+                          <Calendar className="w-5 h-5 text-stone-900" />
                           <span className="font-semibold text-slate-900">
                             {new Date(booking.moveOutDate).toLocaleDateString('en-US', {
                               month: 'short',
@@ -193,76 +259,147 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                             })}
                           </span>
                         </div>
-                      </div>
+                      </motion.div>
 
-                      <div className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/50">
-                        <p className="text-xs text-slate-600 font-semibold mb-2 uppercase tracking-wide">Duration</p>
+                      <motion.div 
+                        className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200/50 hover:shadow-md transition-all"
+                        whileHover={{ y: -2 }}
+                      >
+                        <p className="text-xs text-purple-700 font-semibold mb-2 uppercase tracking-wide">Duration</p>
                         <div className="flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-stone-700" />
-                          <span className="font-semibold text-slate-900">{booking.duration}</span>
+                          <Clock className="w-5 h-5 text-purple-700" />
+                          <span className="font-semibold text-purple-900">{booking.duration}</span>
                         </div>
-                      </div>
+                      </motion.div>
 
-                      <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200/50">
-                        <p className="text-xs text-blue-700 font-semibold mb-2 uppercase tracking-wide">Monthly</p>
+                      <motion.div 
+                        className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200/50 hover:shadow-md transition-all"
+                        whileHover={{ y: -2 }}
+                      >
+                        <p className="text-xs text-emerald-700 font-semibold mb-2 uppercase tracking-wide">Monthly</p>
                         <div className="flex items-center gap-1">
-                          <DollarSign className="w-5 h-5 text-blue-700" />
-                          <span className="font-bold text-blue-900 text-lg">
+                          <DollarSign className="w-5 h-5 text-emerald-700" />
+                          <span className="font-bold text-emerald-900 text-lg">
                             {booking.monthlyRent.toLocaleString()}
                           </span>
                         </div>
-                      </div>
+                      </motion.div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-5 border-t border-slate-200">
-                      <div>
-                        <p className="text-sm text-slate-600 font-medium mb-1">Amount Paid</p>
-                        <p className="text-3xl font-bold bg-gradient-to-r from-stone-700 to-stone-900 bg-clip-text text-transparent">
-                          ${booking.totalPaid.toLocaleString()}
-                        </p>
-                      </div>
+                    <div className="flex items-center justify-between pt-6 border-t border-slate-200">
+                      <motion.div whileHover={{ scale: 1.05 }}>
+                        <div>
+                          <p className="text-sm text-slate-600 font-medium mb-1">Total Amount Paid</p>
+                          <p className="text-4xl font-bold bg-gradient-to-r from-stone-700 to-stone-900 bg-clip-text text-transparent">
+                            ${booking.totalPaid.toLocaleString()}
+                          </p>
+                        </div>
+                      </motion.div>
 
-                      <div className="flex gap-3">
-                        <Button
-                          variant="outline"
-                          onClick={() => onViewRoom(booking.id)}
-                          className="border-slate-300 hover:bg-slate-50 font-medium"
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </Button>
-                        {booking.status === 'Confirmed' && (
-                          <Button className="bg-stone-900 hover:bg-stone-800 text-white font-medium shadow-md hover:shadow-lg transition-all">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Extend Booking
+                      <div className="flex gap-3 flex-wrap">
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            variant="outline"
+                            onClick={() => onViewRoom(booking.id)}
+                            className="border-slate-300 hover:bg-slate-100 font-semibold shadow-md hover:shadow-lg transition-all"
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
                           </Button>
+                        </motion.div>
+                        {booking.status === 'Confirmed' && (
+                          <>
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                              <Button 
+                                onClick={() => handleExtendClick(booking)}
+                                className="bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-stone-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+                              >
+                                <TrendingUp className="w-4 h-4 mr-2" />
+                                Extend Booking
+                              </Button>
+                            </motion.div>
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                              <Button 
+                                onClick={() => handleCancelClick(booking)}
+                                variant="outline"
+                                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold shadow-md hover:shadow-lg transition-all"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Cancel
+                              </Button>
+                            </motion.div>
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
               </Card>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Empty State (if no bookings) */}
         {mockBookings.length === 0 && (
-          <Card className="p-16 text-center bg-gradient-to-br from-slate-50 to-stone-50 border-slate-200/60">
-            <div className="w-20 h-20 bg-gradient-to-br from-stone-700 to-stone-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <Calendar className="w-10 h-10 text-white" />
-            </div>
-            <h3 className="text-3xl font-bold text-slate-900 mb-3">No bookings yet</h3>
-            <p className="text-slate-600 mb-8 text-lg max-w-md mx-auto">
-              Start your journey to premium living. Explore our collection of luxury boarding houses and apartments.
-            </p>
-            <Button className="bg-stone-900 hover:bg-stone-800 text-white font-semibold px-8 py-2 shadow-lg hover:shadow-xl transition-all">
-              <Search className="w-4 h-4 mr-2" />
-              Browse Rooms
-            </Button>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card className="p-16 text-center bg-gradient-to-br from-slate-50 to-stone-50 border-0 shadow-lg">
+              <motion.div 
+                className="w-20 h-20 bg-gradient-to-br from-stone-700 to-stone-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+                whileHover={{ scale: 1.1, rotate: 10 }}
+              >
+                <Calendar className="w-10 h-10 text-white" />
+              </motion.div>
+              <h3 className="text-3xl font-bold text-slate-900 mb-3">No bookings yet</h3>
+              <p className="text-slate-600 mb-8 text-lg max-w-md mx-auto">
+                Start your journey to premium living. Explore our collection of luxury boarding houses and apartments.
+              </p>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button className="bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-stone-800 text-white font-semibold px-8 py-2.5 shadow-lg hover:shadow-xl transition-all">
+                  <Search className="w-4 h-4 mr-2" />
+                  Browse Rooms
+                </Button>
+              </motion.div>
+            </Card>
+          </motion.div>
         )}
       </div>
+
+      {/* Extend Booking Modal */}
+      {selectedBooking && (
+        <ExtendBooking 
+          isOpen={extendModalOpen}
+          onClose={() => setExtendModalOpen(false)}
+          bookingData={{
+            id: selectedBooking.id,
+            roomName: selectedBooking.roomName,
+            currentEndDate: selectedBooking.moveOutDate,
+            pricePerMonth: selectedBooking.monthlyRent,
+            image: selectedBooking.roomImage,
+          }}
+        />
+      )}
+
+      {/* Cancel Booking Modal */}
+      {selectedBooking && (
+        <CancelBooking 
+          isOpen={cancelModalOpen}
+          onClose={() => setCancelModalOpen(false)}
+          bookingData={{
+            id: selectedBooking.id,
+            roomName: selectedBooking.roomName,
+            moveOutDate: selectedBooking.moveOutDate,
+            monthlyRent: selectedBooking.monthlyRent,
+            totalPaid: selectedBooking.totalPaid,
+            image: selectedBooking.roomImage,
+            duration: selectedBooking.duration,
+            status: selectedBooking.status,
+          }}
+        />
+      )}
     </div>
   );
 }
