@@ -4,8 +4,9 @@ import { RoomDetail } from './RoomDetail';
 import { BookingFlow } from './booking-flow';
 import { BookingHistory } from './booking-history';
 import { ContactUs } from './contact-us';
+import { Gallery } from './Gallery';
 import { motion } from 'framer-motion';
-import { Home, Search, Calendar, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, CheckCircle2, DollarSign, XCircle, Bell, Settings, MessageCircle, ArrowLeft, Heart, Star } from 'lucide-react';
+import { Home, Search, Calendar, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, CheckCircle2, DollarSign, XCircle, Bell, Settings, MessageCircle, ArrowLeft, Heart, Star, Image } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -14,7 +15,7 @@ import { Badge } from '@/app/components/ui/badge';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 
 interface UserPlatformProps {
-  onLogout?: () => void;
+  onLogout?: () => void;
 }
 
 export function UserPlatform({ onLogout }: UserPlatformProps) {
@@ -43,6 +44,13 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     return stored === 'true';
   };
 
+  // LOGIKA BARU: Load wishlist dari localStorage agar tidak hilang saat refresh
+  const getInitialWishlist = (): string[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem('user_platform_wishlist');
+    return stored ? JSON.parse(stored) : [];
+  };
+
   const [activeView, setActiveView] = useState(getInitialActiveView);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(getInitialSelectedRoomId);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(getInitialMobileMenuOpen);
@@ -68,6 +76,12 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   useEffect(() => {
     localStorage.setItem('user_platform_is_editing_profile', isEditingProfile.toString());
   }, [isEditingProfile]);
+
+  // LOGIKA BARU: Simpan wishlist ke localStorage setiap kali ada perubahan
+  const [wishlist, setWishlist] = useState<string[]>(getInitialWishlist);
+  useEffect(() => {
+    localStorage.setItem('user_platform_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
   
   // Editable user data
   const [userData, setUserData] = useState({
@@ -80,9 +94,9 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     totalBookings: 3,
     totalSpent: 3600,
     profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NzIyNDZ8MHwxfHNlYXJjaHwxfHx1c2VyJTIwYXZhdGFyfGVufDB8fHx8fDE3MDAwMDAwMDB|&ixlib=rb-4.0.3&q=80&w=400',
-  });
+  });
 
-  const [editData, setEditData] = useState(userData);  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [editData, setEditData] = useState(userData);
   const [searchQuery, setSearchQuery] = useState('');
 
   const toggleWishlist = (roomId: string) => {
@@ -92,33 +106,35 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         : [...prev, roomId]
     );
   };
-  const navigateToRoomDetail = (roomId: string) => {
-    setSelectedRoomId(roomId);
-    setActiveView('room-detail');
-  };
+  const navigateToRoomDetail = (roomId: string) => {
+    setSelectedRoomId(roomId);
+    setActiveView('room-detail');
+  };
 
-  const navigateToBooking = (roomId: string) => {
-    setSelectedRoomId(roomId);
-    setActiveView('booking');
-  };
+  const navigateToBooking = (roomId: string) => {
+    setSelectedRoomId(roomId);
+    setActiveView('booking');
+  };
 
-  const handleSaveProfile = () => {
-    setUserData(editData);
-    setIsEditingProfile(false);
-  };
+  const handleSaveProfile = () => {
+    setUserData(editData);
+    setIsEditingProfile(false);
+  };
 
-  const handleCancelEdit = () => {
-    setEditData(userData);
-    setIsEditingProfile(false);
-  };
+  const handleCancelEdit = () => {
+    setEditData(userData);
+    setIsEditingProfile(false);
+  };
 
-  const menuItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'search', label: 'Search', icon: Search },
+  const menuItems = [
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'gallery', label: 'Galery Koskosan', icon: Image },
     { id: 'wishlist', label: 'Wishlist', icon: Heart },
     { id: 'history', label: 'My Bookings', icon: History },
-    { id: 'profile', label: 'Profile', icon: User },  ];
-  return (
+    { id: 'profile', label: 'Profile', icon: User },
+  ];
+
+  return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-stone-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-['Poppins']">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-md hover:shadow-lg transition-shadow">
@@ -229,7 +245,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
       {/* Main Content */}
       <main>
         {activeView === 'home' && <Homepage onRoomClick={navigateToRoomDetail} wishlist={wishlist} onToggleWishlist={toggleWishlist} />}
-        {activeView === 'search' && <Homepage onRoomClick={navigateToRoomDetail} wishlist={wishlist} onToggleWishlist={toggleWishlist} />}
+        {activeView === 'gallery' && <Gallery />}
         {activeView === 'contact' && <ContactUs />}
         {activeView === 'wishlist' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -296,16 +312,18 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
               </div>
             )}
           </div>
-        )}        {activeView === 'room-detail' && selectedRoomId && (
-          <RoomDetail roomId={selectedRoomId} onBookNow={navigateToBooking} onBack={() => setActiveView('home')} />
-        )}
-        {activeView === 'booking' && selectedRoomId && (
-          <BookingFlow roomId={selectedRoomId} onBack={() => setActiveView('room-detail')} />
-        )}
-        {activeView === 'history' && <BookingHistory onViewRoom={navigateToRoomDetail} />}
-        {activeView === 'profile' && (
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            {/* Profile Header */}
+        )}
+
+        {activeView === 'room-detail' && selectedRoomId && (
+          <RoomDetail roomId={selectedRoomId} onBookNow={navigateToBooking} onBack={() => setActiveView('home')} />
+        )}
+        {activeView === 'booking' && selectedRoomId && (
+          <BookingFlow roomId={selectedRoomId} onBack={() => setActiveView('room-detail')} />
+        )}
+        {activeView === 'history' && <BookingHistory onViewRoom={navigateToRoomDetail} />}
+        {activeView === 'profile' && (
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            {/* Profile Header */}
             <Card className="mb-10 p-8 bg-gradient-to-r from-stone-900 via-stone-800 to-slate-900 text-white border-0 shadow-2xl">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
                 {/* Avatar */}
@@ -349,13 +367,15 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                   <Button 
                     onClick={() => setIsEditingProfile(true)}
                     className="bg-white text-stone-900 hover:bg-stone-100 font-bold px-6 py-2 shadow-lg"
-                  >                    Edit Profile
+                  >
+                    Edit Profile
                   </Button>
                 )}
               </div>
             </Card>
-            {/* Edit Profile Modal */}
-            {isEditingProfile && (
+
+            {/* Edit Profile Modal */}
+            {isEditingProfile && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                 <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl border-0">
                   <div className="p-8">
@@ -515,47 +535,6 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
               </Card>
             </div>
 
-            {/* Booking Statistics */}
-            <Card className="mt-10 p-8 bg-gradient-to-br from-white to-slate-50 border-slate-200/60 hover:shadow-lg transition-all">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 bg-gradient-to-br from-stone-700 to-stone-900 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Booking Statistics</h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-blue-700 font-semibold uppercase tracking-wide">Active Bookings</p>
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <p className="text-4xl font-bold text-blue-600">1</p>
-                </div>
-                <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-green-700 font-semibold uppercase tracking-wide">Completed</p>
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  </div>
-                  <p className="text-4xl font-bold text-green-600">2</p>
-                </div>
-                <div className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-orange-700 font-semibold uppercase tracking-wide">Total Spent</p>
-                    <DollarSign className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <p className="text-4xl font-bold text-orange-600">${userData.totalSpent}</p>
-                </div>
-                <div className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-purple-700 font-semibold uppercase tracking-wide">Avg. Rating</p>
-                    <span className="text-xl">⭐</span>
-                  </div>
-                  <p className="text-4xl font-bold text-purple-600">4.8/5</p>
-                </div>
-              </div>
-            </Card>
-
             {/* Danger Zone */}
             <Card className="mt-10 p-8 border-red-200 bg-gradient-to-br from-red-50 to-rose-50 hover:shadow-lg transition-all">
               <div className="flex items-center gap-3 mb-4">
@@ -571,7 +550,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                     variant="outline" 
                     className="flex-1 border-2 border-red-300 text-red-700 hover:bg-red-100 font-semibold py-2"
                   >
-                    Deactivate Account
+                    Deactivate
                   </Button>
                   <Button 
                     variant="outline" 
@@ -589,6 +568,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                     localStorage.removeItem('user_platform_selected_room_id');
                     localStorage.removeItem('user_platform_mobile_menu_open');
                     localStorage.removeItem('user_platform_is_editing_profile');
+                    localStorage.removeItem('user_platform_wishlist');
                     // Call parent logout
                     onLogout?.();
                   }}
@@ -603,7 +583,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         )}
       </main>
 
-      {/* Footer */}
+      {/* Footer */}
       <footer className="bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white py-16 mt-24 border-t border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
@@ -670,16 +650,14 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
             </p>
             <div className="flex items-center gap-6">
               <a href="#" className="text-slate-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3a9 9 0 01-9 9m0-9a9 9 0 109 9m-9-9V3m0 9a9 9 0 009-9"/></svg>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
+                </svg>
               </a>
-              <a href="#" className="text-slate-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a6 6 0 00-6 6v3H7v4h2v8h4v-8h3l1-4h-4V8a2 2 0 012-2h3z"/></svg>
-              </a>
-              <a href="#" className="text-slate-400 hover:text-white transition-colors">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75 2.25 9-0.5 11-4.5a4.5 4.5 0 00-1-1z"/></svg>
-              </a>
+              {/* Tambahkan ikon sosial lainnya di sini jika diperlukan */}
             </div>
-          </div>        </div>
+          </div>
+        </div>
       </footer>
     </div>
   );

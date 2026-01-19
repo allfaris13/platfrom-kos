@@ -91,7 +91,7 @@ export function Login({ onLoginAsAdmin, onLoginAsUser, onLoginAsGuest }: LoginPr
             </div>
           </motion.div>
           
-          <motion.h1 variants={itemVariants} className="text-6xl font-bold mb-4 text-white drop-shadow-lg">LuxeStay</motion.h1>
+          <motion.h1 variants={itemVariants} className="text-6xl font-bold mb-4 text-white drop-shadow-lg">Koskosan</motion.h1>
           <motion.p variants={itemVariants} className="text-2xl text-amber-200 mb-6 drop-shadow-md font-semibold">
             Premium Boarding House Management
           </motion.p>

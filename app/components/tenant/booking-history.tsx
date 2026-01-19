@@ -1,7 +1,7 @@
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
-import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { ImageWithFallback } from '@/app/components/gambar/ImageWithFallback';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { ExtendBooking } from './extend-booking';
@@ -93,36 +93,26 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Confirmed':
-        return <CheckCircle2 className="w-5 h-5" />;
-      case 'Pending':
-        return <Clock className="w-5 h-5" />;
-      case 'Completed':
-        return <CheckCircle2 className="w-5 h-5" />;
-      case 'Cancelled':
-        return <XCircle className="w-5 h-5" />;
-      default:
-        return null;
+      case 'Confirmed': return <CheckCircle2 className="w-5 h-5" />;
+      case 'Pending': return <Clock className="w-5 h-5" />;
+      case 'Completed': return <CheckCircle2 className="w-5 h-5" />;
+      case 'Cancelled': return <XCircle className="w-5 h-5" />;
+      default: return null;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Confirmed':
-        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'Pending':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'Completed':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Cancelled':
-        return 'bg-red-100 text-red-700 border-red-200';
-      default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'Confirmed': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
+      case 'Pending': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800';
+      case 'Completed': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+      case 'Cancelled': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
+      default: return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-stone-50 py-12">
+    <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors overflow-x-hidden min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
         <motion.div 
@@ -139,8 +129,8 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
               <Calendar className="w-6 h-6 text-white" />
             </motion.div>
             <div>
-              <h1 className="text-4xl font-bold text-slate-900">My Bookings</h1>
-              <p className="text-slate-600 mt-1">Track and manage all your rental reservations</p>
+              <h1 className="text-4xl font-bold text-slate-900 dark:text-white">My Bookings</h1>
+              <p className="text-slate-600 dark:text-slate-400 mt-1">Track and manage all your rental reservations</p>
             </div>
           </div>
         </motion.div>
@@ -153,10 +143,10 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
           transition={{ staggerChildren: 0.1, delayChildren: 0.2 }}
         >
           {[
-            { label: 'Total Bookings', value: '3', icon: '📅', color: 'from-stone-700 to-stone-900', bgColor: 'from-stone-50 to-stone-100' },
-            { label: 'Active', value: '1', icon: '✓', color: 'from-emerald-500 to-emerald-600', bgColor: 'from-emerald-50 to-emerald-100' },
-            { label: 'Pending', value: '1', icon: '⏳', color: 'from-amber-500 to-amber-600', bgColor: 'from-amber-50 to-amber-100' },
-            { label: 'Total Spent', value: '$13,000', icon: '💰', color: 'from-blue-500 to-blue-600', bgColor: 'from-blue-50 to-blue-100' },
+            { label: 'Total Bookings', value: '3', icon: '📅', color: 'from-stone-700 to-stone-900', bgColor: 'from-stone-50 to-stone-100 dark:from-slate-900 dark:to-slate-900' },
+            { label: 'Active', value: '1', icon: '✓', color: 'from-emerald-500 to-emerald-600', bgColor: 'from-emerald-50 to-emerald-100 dark:from-slate-900 dark:to-slate-900' },
+            { label: 'Pending', value: '1', icon: '⏳', color: 'from-amber-500 to-amber-600', bgColor: 'from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-900' },
+            { label: 'Total Spent', value: '$13,000', icon: '💰', color: 'from-blue-500 to-blue-600', bgColor: 'from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-900' },
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -165,12 +155,12 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -5 }}
             >
-              <Card className={`p-6 bg-gradient-to-br ${stat.bgColor} border-0 shadow-lg hover:shadow-xl transition-all duration-300`}>
+              <Card className={`p-6 bg-gradient-to-br ${stat.bgColor} border-0 dark:border dark:border-slate-800 shadow-lg hover:shadow-xl transition-all duration-300`}>
                 <div className={`w-14 h-14 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
                   <span className="text-2xl">{stat.icon}</span>
                 </div>
-                <p className="text-sm text-slate-600 font-semibold mb-2 uppercase tracking-wide">{stat.label}</p>
-                <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-semibold mb-2 uppercase tracking-wide">{stat.label}</p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
               </Card>
             </motion.div>
           ))}
@@ -191,11 +181,11 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
               transition={{ duration: 0.5, delay: index * 0.15 }}
               whileHover={{ y: -5 }}
             >
-              <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 shadow-lg bg-white">
+              <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 dark:border dark:border-slate-800 shadow-lg bg-white dark:bg-slate-900">
                 <div className="flex flex-col md:flex-row">
                   {/* Room Image with Overlay */}
                   <motion.div 
-                    className="md:w-80 h-56 md:h-auto flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300"
+                    className="md:w-80 h-56 md:h-auto flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900"
                     whileHover={{ scale: 1.05 }}
                   >
                     <ImageWithFallback
@@ -210,11 +200,11 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                   <div className="flex-1 p-8">
                     <div className="flex items-start justify-between mb-6">
                       <div>
-                        <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
                           {booking.roomName}
                         </h3>
-                        <div className="flex items-center gap-2 text-slate-600">
-                          <MapPin className="w-4 h-4 text-stone-900" />
+                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                          <MapPin className="w-4 h-4 text-stone-900 dark:text-stone-400" />
                           <span className="font-medium">{booking.location}</span>
                         </div>
                       </div>
@@ -227,70 +217,60 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                      {/* Check-in Card */}
                       <motion.div 
-                        className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/50 hover:shadow-md transition-all"
+                        className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-800/80 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:shadow-md transition-all"
                         whileHover={{ y: -2 }}
                       >
-                        <p className="text-xs text-slate-600 font-semibold mb-2 uppercase tracking-wide">Check-in</p>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-5 h-5 text-stone-900" />
-                          <span className="font-semibold text-slate-900">
-                            {new Date(booking.moveInDate).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-2 uppercase tracking-wide">Check-in</p>
+                        <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                          <Calendar className="w-5 h-5 text-stone-900 dark:text-slate-400" />
+                          <span className="font-semibold">{new Date(booking.moveInDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                         </div>
                       </motion.div>
 
+                      {/* Check-out Card */}
                       <motion.div 
-                        className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200/50 hover:shadow-md transition-all"
+                        className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-800/80 rounded-xl border border-slate-200/50 dark:border-slate-700/50 hover:shadow-md transition-all"
                         whileHover={{ y: -2 }}
                       >
-                        <p className="text-xs text-slate-600 font-semibold mb-2 uppercase tracking-wide">Check-out</p>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-5 h-5 text-stone-900" />
-                          <span className="font-semibold text-slate-900">
-                            {new Date(booking.moveOutDate).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-2 uppercase tracking-wide">Check-out</p>
+                        <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+                          <Calendar className="w-5 h-5 text-stone-900 dark:text-slate-400" />
+                          <span className="font-semibold">{new Date(booking.moveOutDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                         </div>
                       </motion.div>
 
+                      {/* Duration Card */}
                       <motion.div 
-                        className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200/50 hover:shadow-md transition-all"
+                        className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/30 rounded-xl border border-purple-200/50 dark:border-purple-800/50 hover:shadow-md transition-all"
                         whileHover={{ y: -2 }}
                       >
-                        <p className="text-xs text-purple-700 font-semibold mb-2 uppercase tracking-wide">Duration</p>
+                        <p className="text-xs text-purple-700 dark:text-purple-400 font-semibold mb-2 uppercase tracking-wide">Duration</p>
                         <div className="flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-purple-700" />
-                          <span className="font-semibold text-purple-900">{booking.duration}</span>
+                          <Clock className="w-5 h-5 text-purple-700 dark:text-purple-400" />
+                          <span className="font-semibold text-purple-900 dark:text-purple-200">{booking.duration}</span>
                         </div>
                       </motion.div>
 
+                      {/* Monthly Card */}
                       <motion.div 
-                        className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200/50 hover:shadow-md transition-all"
+                        className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/30 rounded-xl border border-emerald-200/50 dark:border-emerald-800/50 hover:shadow-md transition-all"
                         whileHover={{ y: -2 }}
                       >
-                        <p className="text-xs text-emerald-700 font-semibold mb-2 uppercase tracking-wide">Monthly</p>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold mb-2 uppercase tracking-wide">Monthly</p>
                         <div className="flex items-center gap-1">
-                          <DollarSign className="w-5 h-5 text-emerald-700" />
-                          <span className="font-bold text-emerald-900 text-lg">
-                            {booking.monthlyRent.toLocaleString()}
-                          </span>
+                          <DollarSign className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+                          <span className="font-bold text-emerald-900 dark:text-emerald-200 text-lg">{booking.monthlyRent.toLocaleString()}</span>
                         </div>
                       </motion.div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-6 border-t border-slate-200">
+                    <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-800">
                       <motion.div whileHover={{ scale: 1.05 }}>
                         <div>
-                          <p className="text-sm text-slate-600 font-medium mb-1">Total Amount Paid</p>
-                          <p className="text-4xl font-bold bg-gradient-to-r from-stone-700 to-stone-900 bg-clip-text text-transparent">
+                          <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-1">Total Amount Paid</p>
+                          <p className="text-4xl font-bold bg-gradient-to-r from-stone-700 to-stone-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                             ${booking.totalPaid.toLocaleString()}
                           </p>
                         </div>
@@ -301,7 +281,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                           <Button
                             variant="outline"
                             onClick={() => onViewRoom(booking.id)}
-                            className="border-slate-300 hover:bg-slate-100 font-semibold shadow-md hover:shadow-lg transition-all"
+                            className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold shadow-md hover:shadow-lg transition-all dark:text-white"
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
@@ -312,7 +292,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                               <Button 
                                 onClick={() => handleExtendClick(booking)}
-                                className="bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-stone-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+                                className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 hover:from-stone-600 hover:to-stone-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
                               >
                                 <TrendingUp className="w-4 h-4 mr-2" />
                                 Extend Booking
@@ -322,7 +302,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                               <Button 
                                 onClick={() => handleCancelClick(booking)}
                                 variant="outline"
-                                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold shadow-md hover:shadow-lg transition-all"
+                                className="border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 font-semibold shadow-md hover:shadow-lg transition-all"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Cancel
@@ -339,26 +319,26 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
           ))}
         </motion.div>
 
-        {/* Empty State (if no bookings) */}
+        {/* Empty State */}
         {mockBookings.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="p-16 text-center bg-gradient-to-br from-slate-50 to-stone-50 border-0 shadow-lg">
+            <Card className="p-16 text-center bg-gradient-to-br from-slate-50 to-stone-50 dark:from-slate-900 dark:to-slate-950 border-0 dark:border dark:border-slate-800 shadow-lg">
               <motion.div 
                 className="w-20 h-20 bg-gradient-to-br from-stone-700 to-stone-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
                 whileHover={{ scale: 1.1, rotate: 10 }}
               >
                 <Calendar className="w-10 h-10 text-white" />
               </motion.div>
-              <h3 className="text-3xl font-bold text-slate-900 mb-3">No bookings yet</h3>
-              <p className="text-slate-600 mb-8 text-lg max-w-md mx-auto">
+              <h3 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">No bookings yet</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-8 text-lg max-w-md mx-auto">
                 Start your journey to premium living. Explore our collection of luxury boarding houses and apartments.
               </p>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button className="bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-stone-800 text-white font-semibold px-8 py-2.5 shadow-lg hover:shadow-xl transition-all">
+                <Button className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 text-white font-semibold px-8 py-2.5 shadow-lg hover:shadow-xl transition-all">
                   <Search className="w-4 h-4 mr-2" />
                   Browse Rooms
                 </Button>
@@ -368,7 +348,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
         )}
       </div>
 
-      {/* Extend Booking Modal */}
+      {/* Modals remain same, they should handle dark mode internally via their components */}
       {selectedBooking && (
         <ExtendBooking 
           isOpen={extendModalOpen}
@@ -383,7 +363,6 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
         />
       )}
 
-      {/* Cancel Booking Modal */}
       {selectedBooking && (
         <CancelBooking 
           isOpen={cancelModalOpen}

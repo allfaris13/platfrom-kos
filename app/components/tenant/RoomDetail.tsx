@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
-import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { ImageWithFallback } from '@/app/components/gambar/ImageWithFallback';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -97,7 +97,7 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-stone-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-stone-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 py-8 text-slate-900 dark:text-slate-100 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Top Header - Back Button & Title */}
@@ -109,7 +109,7 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
         >
           <div className="flex items-center gap-4">
             <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-              <Button variant="ghost" onClick={onBack} className="rounded-full h-10 w-10 p-0 hover:bg-slate-100 dark:hover:bg-slate-700">
+              <Button variant="ghost" onClick={onBack} className="rounded-full h-10 w-10 p-0 hover:bg-slate-100 dark:hover:bg-slate-800">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </motion.div>
@@ -122,10 +122,10 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
               <Heart className="w-6 h-6 text-slate-600 dark:text-slate-400" />
             </motion.button>
-            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
               <Share2 className="w-6 h-6 text-slate-600 dark:text-slate-400" />
             </motion.button>
           </div>
@@ -150,7 +150,7 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                 transition={{ duration: 0.5 }}
               >
                 <Card className="overflow-hidden border-0 shadow-xl">
-                  <div className="relative h-[500px] bg-gradient-to-br from-slate-200 to-slate-300 group">
+                  <div className="relative h-[500px] bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-700 group">
                     <motion.div
                       key={currentImageIndex}
                       initial={{ opacity: 0 }}
@@ -172,17 +172,17 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                           onClick={prevImage}
                           whileHover={{ scale: 1.1, backgroundColor: '#ffffff' }}
                           whileTap={{ scale: 0.95 }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-all"
                         >
-                          <ChevronLeft className="w-6 h-6 text-slate-900" />
+                          <ChevronLeft className="w-6 h-6 text-slate-900 dark:text-slate-100" />
                         </motion.button>
                         <motion.button
                           onClick={nextImage}
                           whileHover={{ scale: 1.1, backgroundColor: '#ffffff' }}
                           whileTap={{ scale: 0.95 }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-all"
                         >
-                          <ChevronRight className="w-6 h-6 text-slate-900" />
+                          <ChevronRight className="w-6 h-6 text-slate-900 dark:text-slate-100" />
                         </motion.button>
                       </>
                     )}
@@ -204,7 +204,7 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setCurrentImageIndex(idx)}
                     className={`h-24 rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${
-                      idx === currentImageIndex ? 'border-stone-900 shadow-lg' : 'border-slate-200 hover:border-slate-300'
+                      idx === currentImageIndex ? 'border-stone-900 dark:border-stone-400 shadow-lg' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                   >
                     <img src={img} alt="thumbnail" className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
@@ -325,14 +325,14 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="p-8 sticky top-8 shadow-2xl border-0 bg-white">
+            <Card className="p-8 sticky top-8 shadow-2xl border-0 bg-white dark:bg-slate-800">
               {/* Price Section */}
               <motion.div className="mb-8">
-                <div className="text-5xl font-bold text-stone-900 mb-2">
+                <div className="text-5xl font-bold text-stone-900 dark:text-white mb-2">
                   ${room.price}
-                  <span className="text-xl text-slate-600 ml-2 font-normal">/month</span>
+                  <span className="text-xl text-slate-600 dark:text-slate-400 ml-2 font-normal">/month</span>
                 </div>
-                <p className="text-sm text-slate-600 mt-2">Includes basic utilities and maintenance</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">Includes basic utilities and maintenance</p>
               </motion.div>
 
               {/* Availability Calendar */}
@@ -344,22 +344,23 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                 className="mb-8"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <Clock className="w-5 h-5 text-stone-900" />
-                  <h3 className="font-bold text-slate-900">Availability</h3>
+                  <Clock className="w-5 h-5 text-stone-900 dark:text-white" />
+                  <h3 className="font-bold text-slate-900 dark:text-white">Availability</h3>
                 </div>
                 
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-xl p-4">
+                {/* Bagian Kalender yang diperbaiki dark mode-nya */}
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-4 transition-colors">
                   <div className="flex justify-between items-center mb-4">
-                    <button className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors">
+                    <button className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors text-slate-900 dark:text-slate-100">
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="font-bold text-sm text-slate-900">January 2026</span>
-                    <button className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors">
+                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100">January 2026</span>
+                    <button className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors text-slate-900 dark:text-slate-100">
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                   
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2 text-slate-600 font-semibold">
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2 text-slate-600 dark:text-slate-400 font-semibold">
                     <span>Su</span>
                     <span>Mo</span>
                     <span>Tu</span>
@@ -375,7 +376,9 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                         key={i}
                         whileHover={{ scale: 1.1 }}
                         className={`py-2 text-xs rounded cursor-pointer transition-all font-medium ${
-                          i === 15 ? 'bg-gradient-to-br from-stone-700 to-stone-900 text-white shadow-md' : 'hover:bg-white'
+                          i === 15 
+                            ? 'bg-gradient-to-br from-stone-700 to-stone-900 dark:from-stone-500 dark:to-stone-700 text-white shadow-md' 
+                            : 'hover:bg-white dark:hover:bg-slate-600 text-slate-900 dark:text-slate-200'
                         }`}
                       >
                         {i + 1}
@@ -399,28 +402,28 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
               </motion.div>
 
               {/* Cost Breakdown */}
-              <div className="space-y-4 border-t border-slate-200 pt-6 mb-6">
+              <div className="space-y-4 border-t border-slate-200 dark:border-slate-700 pt-6 mb-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-700 font-medium">Monthly rent</span>
-                  <span className="font-bold text-slate-900">${room.price}</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">Monthly rent</span>
+                  <span className="font-bold text-slate-900 dark:text-white">${room.price}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-700 font-medium">Security deposit</span>
-                  <span className="font-bold text-slate-900">${room.price}</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">Security deposit</span>
+                  <span className="font-bold text-slate-900 dark:text-white">${room.price}</span>
                 </div>
-                <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-lg">
-                  <span className="font-bold text-slate-900">Total due</span>
-                  <span className="font-bold text-stone-900">${room.price * 2}</span>
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700 text-lg">
+                  <span className="font-bold text-slate-900 dark:text-white">Total due</span>
+                  <span className="font-bold text-stone-900 dark:text-stone-300">${room.price * 2}</span>
                 </div>
               </div>
 
               {/* Security Badge */}
-              <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+              <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
                 <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-bold text-emerald-900 mb-1">Secure Booking</p>
-                    <p className="text-xs text-emerald-800 leading-relaxed">
+                    <p className="text-xs font-bold text-emerald-900 dark:text-emerald-100 mb-1">Secure Booking</p>
+                    <p className="text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">
                       Free cancellation within 24 hours • Verified property • Protected payment
                     </p>
                   </div>
