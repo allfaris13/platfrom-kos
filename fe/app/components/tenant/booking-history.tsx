@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   XCircle,
   TrendingUp,
-  Star,
   Trash2
 } from 'lucide-react';
 

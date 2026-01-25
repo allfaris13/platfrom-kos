@@ -1,6 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, Filter, Download, Upload } from 'lucide-react';
 import { rooms as mockRooms, Room } from '@/app/data/mockData';
+import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
+
+interface BackendRoom {
+  id: string;
+  nomor_kamar?: string;
+  name?: string;
+  tipe_kamar?: string;
+  type?: string;
+  harga_per_bulan?: number;
+  price?: number;
+  image_url?: string;
+  status?: string;
+  capacity?: number;
+  floor?: number;
+  description?: string;
+  fasilitas?: string;
+}
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/app/components/ui/dialog';
@@ -59,7 +76,7 @@ export function LuxuryRoomManagement() {
       // But let's assume we use the data as is or map it.
       // Room interface in mockData has 'image'. Backend has 'image_url'.
       // Let's map it.
-      const mapped = data.map((r: any) => ({
+      const mapped = data.map((r: BackendRoom) => ({
         ...r,
         image: r.image_url ? (r.image_url.startsWith('http') ? r.image_url : `http://localhost:8080${r.image_url}`) : 'https://via.placeholder.com/300',
         name: r.nomor_kamar || r.name || 'Unnamed', // Backend uses NomorKamar
@@ -74,7 +91,10 @@ export function LuxuryRoomManagement() {
   };
 
   useEffect(() => {
-    fetchRooms();
+    const init = async () => {
+      await fetchRooms();
+    };
+    void init();
   }, []);
 
   const handleSubmit = async () => {
@@ -240,7 +260,7 @@ export function LuxuryRoomManagement() {
                   </div>
                   <div>
                     <Label htmlFor="status" className="text-slate-300">Status</Label>
-                    <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+                    <Select value={formData.status} onValueChange={(value: string) => setFormData({ ...formData, status: value as Room['status'] })}>
                       <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                         <SelectValue />
                       </SelectTrigger>
@@ -400,7 +420,7 @@ export function LuxuryRoomManagement() {
                 >
                   <td className="p-4">
                     <div className="size-16 rounded-xl overflow-hidden ring-2 ring-slate-700 group-hover:ring-amber-500/50 transition-all">
-                      <img 
+                      <ImageWithFallback 
                         src={room.image} 
                         alt={room.name}
                         className="w-full h-full object-cover"
@@ -474,7 +494,7 @@ export function LuxuryRoomManagement() {
           {viewingRoom && (
             <div className="space-y-4">
               <div className="aspect-video rounded-xl overflow-hidden">
-                <img
+                <ImageWithFallback
                   src={viewingRoom.image}
                   alt={viewingRoom.name}
                   className="w-full h-full object-cover"

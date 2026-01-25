@@ -38,34 +38,37 @@ export default function App() {
   const [adminPage, setAdminPage] = useState<AdminPage>('dashboard');
   const [tenantPage, setTenantPage] = useState<TenantPage>('landing');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [bookingData, setBookingData] = useState<any>(null);
+  const [bookingData, setBookingData] = useState<{ roomId: string; moveInDate: string; duration: string } | null>(null);
   const [userRole, setUserRole] = useState<'admin' | 'tenant' | 'guest' | null>(null);
   const [isClient, setIsClient] = useState(false);
 
-  // Load state from localStorage on client mount ONLY
   useEffect(() => {
-    setIsClient(true);
-    const storedViewMode = localStorage.getItem(STORAGE_KEYS.VIEW_MODE) as ViewMode;
-    if (storedViewMode) setViewMode(storedViewMode);
+    const init = () => {
+      setIsClient(true);
+      const storedViewMode = localStorage.getItem(STORAGE_KEYS.VIEW_MODE) as ViewMode;
+      if (storedViewMode) setViewMode(storedViewMode);
 
-    const storedAdminPage = localStorage.getItem(STORAGE_KEYS.ADMIN_PAGE) as AdminPage;
-    if (storedAdminPage) setAdminPage(storedAdminPage);
+      const storedAdminPage = localStorage.getItem(STORAGE_KEYS.ADMIN_PAGE) as AdminPage;
+      if (storedAdminPage) setAdminPage(storedAdminPage);
 
-    const storedTenantPage = localStorage.getItem(STORAGE_KEYS.TENANT_PAGE) as TenantPage;
-    if (storedTenantPage) setTenantPage(storedTenantPage);
+      const storedTenantPage = localStorage.getItem(STORAGE_KEYS.TENANT_PAGE) as TenantPage;
+      if (storedTenantPage) setTenantPage(storedTenantPage);
 
-    const storedRoomId = localStorage.getItem(STORAGE_KEYS.SELECTED_ROOM_ID);
-    if (storedRoomId) setSelectedRoomId(storedRoomId);
+      const storedRoomId = localStorage.getItem(STORAGE_KEYS.SELECTED_ROOM_ID);
+      if (storedRoomId) setSelectedRoomId(storedRoomId);
 
-    const storedBookingData = localStorage.getItem(STORAGE_KEYS.BOOKING_DATA);
-    if (storedBookingData) {
-        try {
-            setBookingData(JSON.parse(storedBookingData));
-        } catch {}
-    }
+      const storedBookingData = localStorage.getItem(STORAGE_KEYS.BOOKING_DATA);
+      if (storedBookingData) {
+          try {
+              setBookingData(JSON.parse(storedBookingData));
+          } catch {}
+      }
 
-    const storedUserRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE) as 'admin' | 'tenant' | 'guest';
-    if (storedUserRole) setUserRole(storedUserRole);
+      const storedUserRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE) as 'admin' | 'tenant' | 'guest';
+      if (storedUserRole) setUserRole(storedUserRole);
+    };
+    
+    setTimeout(init, 0);
   }, []);
 
   // Save state to localStorage whenever it changes

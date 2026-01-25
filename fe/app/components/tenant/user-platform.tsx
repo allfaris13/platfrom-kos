@@ -13,6 +13,7 @@ import { Label } from '@/app/components/ui/label';
 import { Card } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
+import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 
 interface UserPlatformProps {
   onLogout?: () => void;
@@ -28,25 +29,29 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-    const storedActiveView = localStorage.getItem('user_platform_active_view');
-    if (storedActiveView) setActiveView(storedActiveView);
+    const init = () => {
+      setIsClient(true);
+      const storedActiveView = localStorage.getItem('user_platform_active_view');
+      if (storedActiveView) setActiveView(storedActiveView);
 
-    const storedRoomId = localStorage.getItem('user_platform_selected_room_id');
-    if (storedRoomId) setSelectedRoomId(storedRoomId);
+      const storedRoomId = localStorage.getItem('user_platform_selected_room_id');
+      if (storedRoomId) setSelectedRoomId(storedRoomId);
 
-    const storedMobileMenu = localStorage.getItem('user_platform_mobile_menu_open');
-    if (storedMobileMenu) setMobileMenuOpen(storedMobileMenu === 'true');
+      const storedMobileMenu = localStorage.getItem('user_platform_mobile_menu_open');
+      if (storedMobileMenu) setMobileMenuOpen(storedMobileMenu === 'true');
 
-    const storedEditing = localStorage.getItem('user_platform_is_editing_profile');
-    if (storedEditing) setIsEditingProfile(storedEditing === 'true');
+      const storedEditing = localStorage.getItem('user_platform_is_editing_profile');
+      if (storedEditing) setIsEditingProfile(storedEditing === 'true');
 
-    const storedWishlist = localStorage.getItem('user_platform_wishlist');
-    if (storedWishlist) {
-        try {
-            setWishlist(JSON.parse(storedWishlist));
-        } catch {}
-    }
+      const storedWishlist = localStorage.getItem('user_platform_wishlist');
+      if (storedWishlist) {
+          try {
+              setWishlist(JSON.parse(storedWishlist));
+          } catch {}
+      }
+    };
+    
+    setTimeout(init, 0);
   }, []);
 
   // Save state to localStorage whenever it changes, only on client
@@ -93,7 +98,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   });
 
   const [editData, setEditData] = useState(userData);
-  const [searchQuery, setSearchQuery] = useState('');
+
 
   const toggleWishlist = (roomId: string) => {
     setWishlist(prev => 
@@ -284,7 +289,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                     className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all overflow-hidden"
                   >
                     <div className="relative h-48 overflow-hidden">
-                      <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
+                      <ImageWithFallback src={room.image} alt={room.name} className="w-full h-full object-cover" />
                       <button
                         onClick={() => toggleWishlist(room.id)}
                         className="absolute top-4 right-4 bg-white rounded-full p-2 hover:bg-red-50 transition-all shadow-lg"
@@ -327,7 +332,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
               <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
                 {/* Avatar */}
                 <div className="relative">
-                  <img
+                  <ImageWithFallback
                     src={userData.profileImage}
                     alt={userData.name}
                     className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl"

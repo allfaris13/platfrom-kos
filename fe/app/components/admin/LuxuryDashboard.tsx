@@ -4,19 +4,7 @@ import { rooms, tenants, payments } from '@/app/data/mockData';
 import { useEffect, useState } from 'react';
 import { api } from '@/app/services/api';
 
-interface Room {
-  status: string;
-  price?: number;
-}
 
-interface Tenant {
-  status: string;
-}
-
-interface Payment {
-  status: string;
-  amount: number;
-}
 
 interface TooltipPayload {
   payload: {
@@ -68,7 +56,7 @@ export function LuxuryDashboard() {
         console.error("Failed to fetch dashboard stats:", error);
       }
     };
-    fetchStats();
+    void fetchStats();
   }, []);
 
   // Use real data
@@ -236,7 +224,7 @@ export function LuxuryDashboard() {
                 <YAxis 
                   stroke="#64748b"
                   style={{ fontSize: '12px' }}
-                  tickFormatter={(value: any) => formatPrice(value)}
+                  tickFormatter={(value: number) => formatPrice(value)}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 

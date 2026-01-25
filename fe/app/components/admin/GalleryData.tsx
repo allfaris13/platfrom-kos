@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Search, Trash2, Plus, Upload } from 'lucide-react';
+import { Search, Trash2, Plus } from 'lucide-react';
 import Image from 'next/image';
 import { Input } from '@/app/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/app/components/ui/dialog';
 import { Label } from '@/app/components/ui/label';
@@ -39,7 +38,11 @@ export function GalleryData() {
   };
 
   useEffect(() => {
-    fetchGalleries();
+    // Fetch initial data on mount
+    const loadData = async () => {
+      await fetchGalleries();
+    };
+    void loadData();
   }, []);
 
   const handleCreate = async () => {
@@ -78,7 +81,7 @@ export function GalleryData() {
     return matchesSearch && matchesCategory;
   });
 
-  const categories = ['All', ...Array.from(new Set(galleries.map(img => img.category)))];
+
 
   return (
     <div className="p-6 space-y-6">

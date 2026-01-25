@@ -16,7 +16,6 @@ import { Input } from '@/app/components/ui/input';
 import { Badge } from '@/app/components/ui/badge';
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { 
-  Search, 
   MapPin, 
   Wifi, 
   Wind, 
@@ -26,7 +25,8 @@ import {
   Heart,
   CheckCircle2,
   Calendar,
-  MessageCircle
+  MessageCircle,
+  LucideIcon
 } from 'lucide-react';
 import { api } from '@/app/services/api';
 
@@ -76,7 +76,7 @@ const featuredRooms: Room[] = [
   { id: '4', name: 'Executive Suite', type: 'Executive', price: 2000, image: 'https://images.unsplash.com/photo-1661258279966-cfeb51c98327?q=80&w=1080', location: 'Luxury Quarter', rating: 5.0, reviews: 203, facilities: ['WiFi', 'AC', 'TV', 'Coffee Maker'] },
 ];
 
-const facilityIcons: { [key: string]: any } = { WiFi: Wifi, AC: Wind, TV: Tv, 'Coffee Maker': Coffee };
+const facilityIcons: { [key: string]: LucideIcon } = { WiFi: Wifi, AC: Wind, TV: Tv, 'Coffee Maker': Coffee };
 
 const reviewsData = [
   { name: 'Sarah Chen', role: 'Marketing Executive', review: 'LuxeStay exceeded all my expectations. The attention to detail is incredible.', image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?q=80&w=400', stayDuration: '8 months' },
@@ -313,12 +313,12 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist }: Homep
               <h2 className="text-5xl font-bold text-slate-900 dark:text-slate-100 mb-8">Redefining Premium Living</h2>
               <div className="space-y-6 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
                 <p>Founded in 2018, LuxeStay began as a vision to revolutionize the boarding house experience in Indonesia. Our founders experienced the challenges of finding quality accommodation during their university years.</p>
-                <p>Today, LuxeStay represents more than just accommodation - it's a movement towards redefining what premium living means for modern professionals and students alike.</p>
+                <p>Today, LuxeStay represents more than just accommodation - it&apos;s a movement towards redefining what premium living means for modern professionals and students alike.</p>
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 1 }} viewport={{ once: true }} className="relative">
               <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
-                <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000" alt="LuxeStay Story" className="w-full h-full object-cover" />
+                <ImageWithFallback src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000" alt="LuxeStay Story" className="w-full h-full object-cover" />
               </div>
               <div className="absolute -bottom-8 -left-8 bg-stone-900 text-white p-8 rounded-2xl shadow-2xl">
                 <p className="text-4xl font-bold mb-1">2018</p>
@@ -346,9 +346,9 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist }: Homep
               {[...firstRowReviews, ...firstRowReviews].map((review, i) => (
                 <Card key={i} className="min-w-[400px] bg-slate-50 dark:bg-slate-900 border-0 shadow-md p-8">
                   <div className="flex gap-1 mb-4">{[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}</div>
-                  <blockquote className="italic mb-8 text-slate-700 dark:text-slate-300 text-lg">"{review.review}"</blockquote>
+                  <blockquote className="italic mb-8 text-slate-700 dark:text-slate-300 text-lg">&quot;{review.review}&quot;</blockquote>
                   <div className="flex items-center gap-4 border-t border-slate-200 dark:border-slate-800 pt-6">
-                    <img src={review.image} className="w-12 h-12 rounded-full object-cover" alt="" />
+                    <ImageWithFallback src={review.image} className="w-12 h-12 rounded-full object-cover" alt="" />
                     <div><p className="font-bold">{review.name}</p><p className="text-sm text-slate-500">{review.role} • {review.stayDuration}</p></div>
                   </div>
                 </Card>
@@ -365,9 +365,9 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist }: Homep
               {[...secondRowReviews, ...secondRowReviews].map((review, i) => (
                 <Card key={i} className="min-w-[400px] bg-slate-50 dark:bg-slate-900 border-0 shadow-md p-8">
                   <div className="flex gap-1 mb-4">{[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}</div>
-                  <blockquote className="italic mb-8 text-slate-700 dark:text-slate-300 text-lg">"{review.review}"</blockquote>
+                  <blockquote className="italic mb-8 text-slate-700 dark:text-slate-300 text-lg">&quot;{review.review}&quot;</blockquote>
                   <div className="flex items-center gap-4 border-t border-slate-200 dark:border-slate-800 pt-6">
-                    <img src={review.image} className="w-12 h-12 rounded-full object-cover" alt="" />
+                    <ImageWithFallback src={review.image} className="w-12 h-12 rounded-full object-cover" alt="" />
                     <div><p className="font-bold">{review.name}</p><p className="text-sm text-slate-500">{review.role} • {review.stayDuration}</p></div>
                   </div>
                 </Card>

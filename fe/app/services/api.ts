@@ -35,7 +35,7 @@ export const api = {
     return res.json();
   },
 
-  deleteRoom: async (id: number) => {
+  deleteRoom: async () => {
     // Note: Backend endpoint for delete room is not yet implemented in KamarHandler, 
     // but the plan implied CRUD. For now we skip or add if needed. 
     // Assuming we use DELETE /kamar/:id

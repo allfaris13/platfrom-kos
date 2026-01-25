@@ -67,7 +67,6 @@ func main() {
 		api.POST("/login", authHandler.Login)
 		api.GET("/kamar", kamarHandler.GetKamars)
 		api.GET("/kamar/:id", kamarHandler.GetKamarByID)
-		api.GET("/kamar/:id", kamarHandler.GetKamarByID)
 		api.GET("/kamar/:id/reviews", reviewHandler.GetReviews)
 		api.GET("/reviews", reviewHandler.GetAllReviews) // New endpoint for homepage
 		api.GET("/galleries", galleryHandler.GetGalleries)
