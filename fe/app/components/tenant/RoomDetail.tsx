@@ -1,32 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
-import { ImageWithFallback } from '@/app/components/gambar/ImageWithFallback';
+import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { motion } from 'framer-motion';
+import { Textarea } from '@/app/components/ui/textarea';
 import { 
   ArrowLeft, 
   MapPin, 
   Star, 
   Wifi, 
   Wind, 
-  Tv, 
-  Coffee,
   Bed,
-  Bath,
-  Ruler,
   ChevronLeft,
   ChevronRight,
   Check,
-  Calendar,
+  Calendar as CalendarIcon,
   Utensils,
   Monitor,
   Briefcase,
   Heart,
-  Share2,
-  Shield,
-  Clock
+  Share2
 } from 'lucide-react';
+import { api } from '@/app/services/api';
+import { Calendar } from '@/app/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/app/components/ui/popover';
+import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
+import { Separator } from '@/app/components/ui/separator';
+import { Label } from '@/app/components/ui/label';
 
 interface RoomDetailProps {
   roomId: string;
@@ -34,15 +36,27 @@ interface RoomDetailProps {
   onBack: () => void;
 }
 
-// Data Kamar
-const roomDetails: { [key: string]: any } = {
+interface RoomData {
+  name: string;
+  type: string;
+  price: number;
+  location: string;
+  description: string;
+  bedrooms: number;
+  bathrooms: number;
+  size: string;
+  facilities: { name: string; icon: React.ComponentType<{ className?: string }> }[];
+  features: string[];
+  images: string[];
+}
+
+// Data Kamar (Mock data fallback for room details structure)
+const roomDetails: { [key: string]: RoomData } = {
   '1': {
     name: 'Premium Suite 201',
     type: 'Luxury',
     price: 1200,
     location: 'South Jakarta',
-    rating: 4.9,
-    reviews: 98,
     description: 'Luxurious premium suite with full kitchen and spacious balcony. Ideal for those who appreciate the finer things.',
     bedrooms: 1,
     bathrooms: 1,
@@ -75,7 +89,7 @@ const roomDetails: { [key: string]: any } = {
   },
 };
 
-const facilityIcons: { [key: string]: any } = {
+const facilityIcons: { [key: string]: React.ComponentType<{ className?: string }> } = {
   'High-Speed WiFi': Wifi,
   'Air conditioning': Wind,
   'Smart TV': Monitor,
@@ -84,9 +98,68 @@ const facilityIcons: { [key: string]: any } = {
   'Full Kitchen': Utensils,
 };
 
+interface Review {
+  id: number;
+  user_id: number;
+  rating: number;
+  comment: string;
+  created_at: string;
+  user: {
+    username: string;
+  }
+}
+
 export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  
+  // Booking State
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [guests, setGuests] = useState("1");
+  const [duration, setDuration] = useState("1"); // Months
+
+  // In a real app we'd fetch room details by ID from API
+  // For now we mock room info but fetch reviews
   const room = roomDetails[roomId] || roomDetails['1'];
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+        try {
+            // Note: Backend endpoint expects numeric ID. Our demo uses string '1'.
+            // In integration we should ensure IDs match. Assuming roomId is numeric string.
+            const kID = parseInt(roomId) || 1; 
+            const data = await api.getReviews(String(kID));
+            setReviews(data);
+        } catch (e) {
+            console.error("Failed to fetch reviews", e);
+        }
+    };
+    fetchReviews();
+  }, [roomId]);
+
+  const handleSubmitReview = async () => {
+      setIsSubmittingReview(true);
+      try {
+          const kID = parseInt(roomId) || 1;
+          await api.createReview({
+              kamar_id: kID,
+              rating: newReview.rating,
+              comment: newReview.comment,
+              user_id: 1 // Mock user ID for now
+          });
+          // Refresh reviews
+          const data = await api.getReviews(String(kID));
+          setReviews(data);
+          setNewReview({ rating: 5, comment: '' });
+      } catch (e) {
+          console.error("Failed to submit review", e);
+          alert("Failed to submit review. Please try again.");
+      } finally {
+          setIsSubmittingReview(false);
+      }
+  };
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % room.images.length);
@@ -96,12 +169,17 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
     setCurrentImageIndex((prev) => (prev - 1 + room.images.length) % room.images.length);
   };
 
+  const averageRating = reviews.length > 0 
+    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
+    : "No ratings";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-stone-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 py-8 text-slate-900 dark:text-slate-100 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Top Header - Back Button & Title */}
         <motion.div
+// ... existing header code ...
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
@@ -207,7 +285,7 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                       idx === currentImageIndex ? 'border-stone-900 dark:border-stone-400 shadow-lg' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
                   >
-                    <img src={img} alt="thumbnail" className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
+                    <ImageWithFallback src={img} alt="thumbnail" className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
                   </motion.div>
                 ))}
               </div>
@@ -231,12 +309,13 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg">
                       <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-                      <span className="font-bold text-amber-900 dark:text-amber-400">{room.rating}</span>
-                      <span className="text-amber-700 dark:text-amber-500">({room.reviews} reviews)</span>
+                      <span className="font-bold text-amber-900 dark:text-amber-400">{averageRating}</span>
+                      <span className="text-amber-700 dark:text-amber-500">({reviews.length} reviews)</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
+                    {/* ... stats ... */}
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                       <Bed className="w-5 h-5 text-stone-900 dark:text-stone-100" />
                       <div>
@@ -244,26 +323,13 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
                         <p className="font-bold text-slate-900 dark:text-slate-100">{room.bedrooms}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <Bath className="w-5 h-5 text-stone-900 dark:text-stone-100" />
-                      <div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Bathrooms</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-100">{room.bathrooms}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <Ruler className="w-5 h-5 text-stone-900 dark:text-stone-100" />
-                      <div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Size</p>
-                        <p className="font-bold text-slate-900 dark:text-slate-100">{room.size}</p>
-                      </div>
-                    </div>
+                    {/* ... other stats ... */}
                   </div>
                 </div>
 
                 <h3 className="font-bold text-lg mb-4 text-slate-900 dark:text-slate-100">Amenities & Facilities</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {room.facilities.map((facility: any, idx: number) => {
+                  {room.facilities.map((facility: { name: string; icon: React.ComponentType<{ className?: string }> }, idx: number) => {
                     const Icon = facilityIcons[facility.name] || facility.icon;
                     return (
                       <motion.div
@@ -290,6 +356,89 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
               <Card className="p-6 border-0 shadow-lg bg-white dark:bg-slate-800">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">About This Room</h2>
                 <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-lg">{room.description}</p>
+              </Card>
+            </motion.div>
+
+            {/* Reviews Section - NEW */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+              viewport={{ once: true }}
+            >
+              <Card className="p-6 border-0 shadow-lg bg-white dark:bg-slate-800">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Guest Reviews</h2>
+                    <div className="flex items-center gap-1">
+                        <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                        <span className="font-bold text-lg">{averageRating}</span>
+                    </div>
+                </div>
+
+                {/* Review Form */}
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl mb-8">
+                    <h3 className="font-semibold mb-3">Write a Review</h3>
+                    <div className="space-y-3">
+                        <div className="flex gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    onClick={() => setNewReview({ ...newReview, rating: star })}
+                                    className="focus:outline-none"
+                                >
+                                    <Star 
+                                        className={`w-6 h-6 ${star <= newReview.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                        <Textarea 
+                            placeholder="Share your experience..." 
+                            value={newReview.comment}
+                            onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                            className="bg-white dark:bg-slate-800"
+                        />
+                        <Button 
+                            onClick={handleSubmitReview} 
+                            disabled={isSubmittingReview || !newReview.comment}
+                            className="bg-stone-800 hover:bg-stone-900 text-white"
+                        >
+                            {isSubmittingReview ? 'Submitting...' : 'Post Review'}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Reviews List */}
+                <div className="space-y-6">
+                    {reviews.length === 0 ? (
+                        <p className="text-slate-500 text-center py-4">No reviews yet. Be the first to review!</p>
+                    ) : (
+                        reviews.map((review: Review) => (
+                            <div key={review.id} className="border-b border-slate-100 dark:border-slate-700 last:border-0 pb-6 last:pb-0">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="size-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                                            {review.user?.username?.charAt(0).toUpperCase() || 'U'}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-slate-900 dark:text-slate-100">{review.user?.username || 'Anonymous'}</p>
+                                            <p className="text-xs text-slate-500">{new Date(review.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-0.5">
+                                        {[...Array(5)].map((_, i) => (
+                                            <Star 
+                                                key={i} 
+                                                className={`w-4 h-4 ${i < review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-600'}`} 
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                <p className="text-slate-600 dark:text-slate-300 leading-relaxed mt-2">{review.comment}</p>
+                            </div>
+                        ))
+                    )}
+                </div>
               </Card>
             </motion.div>
 
@@ -325,108 +474,84 @@ export function RoomDetail({ roomId, onBookNow, onBack }: RoomDetailProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="p-8 sticky top-8 shadow-2xl border-0 bg-white dark:bg-slate-800">
-              {/* Price Section */}
-              <motion.div className="mb-8">
-                <div className="text-5xl font-bold text-stone-900 dark:text-white mb-2">
-                  ${room.price}
-                  <span className="text-xl text-slate-600 dark:text-slate-400 ml-2 font-normal">/month</span>
+            <Card className="p-6 shadow-xl border-0 bg-white dark:bg-slate-800 sticky top-24">
+              <div className="flex justify-between items-end mb-6">
+                <div>
+                  <span className="text-3xl font-bold text-slate-900 dark:text-slate-100">${room.price}</span>
+                  <span className="text-slate-500 dark:text-slate-400"> / month</span>
                 </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">Includes basic utilities and maintenance</p>
-              </motion.div>
-
-              {/* Availability Calendar */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
-                className="mb-8"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <Clock className="w-5 h-5 text-stone-900 dark:text-white" />
-                  <h3 className="font-bold text-slate-900 dark:text-white">Availability</h3>
-                </div>
-                
-                {/* Bagian Kalender yang diperbaiki dark mode-nya */}
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-4 transition-colors">
-                  <div className="flex justify-between items-center mb-4">
-                    <button className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors text-slate-900 dark:text-slate-100">
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100">January 2026</span>
-                    <button className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors text-slate-900 dark:text-slate-100">
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2 text-slate-600 dark:text-slate-400 font-semibold">
-                    <span>Su</span>
-                    <span>Mo</span>
-                    <span>Tu</span>
-                    <span>We</span>
-                    <span>Th</span>
-                    <span>Fr</span>
-                    <span>Sa</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-7 gap-1">
-                    {[...Array(31)].map((_, i) => (
-                      <motion.div 
-                        key={i}
-                        whileHover={{ scale: 1.1 }}
-                        className={`py-2 text-xs rounded cursor-pointer transition-all font-medium ${
-                          i === 15 
-                            ? 'bg-gradient-to-br from-stone-700 to-stone-900 dark:from-stone-500 dark:to-stone-700 text-white shadow-md' 
-                            : 'hover:bg-white dark:hover:bg-slate-600 text-slate-900 dark:text-slate-200'
-                        }`}
-                      >
-                        {i + 1}
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* CTA Button */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button 
-                  onClick={() => onBookNow(roomId)}
-                  className="w-full bg-gradient-to-r from-stone-700 to-stone-900 hover:from-stone-600 hover:to-stone-800 text-white h-13 text-lg font-bold rounded-xl mb-6 shadow-lg hover:shadow-xl transition-all"
-                >
-                  Book Now
-                </Button>
-              </motion.div>
-
-              {/* Cost Breakdown */}
-              <div className="space-y-4 border-t border-slate-200 dark:border-slate-700 pt-6 mb-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-700 dark:text-slate-300 font-medium">Monthly rent</span>
-                  <span className="font-bold text-slate-900 dark:text-white">${room.price}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-700 dark:text-slate-300 font-medium">Security deposit</span>
-                  <span className="font-bold text-slate-900 dark:text-white">${room.price}</span>
-                </div>
-                <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700 text-lg">
-                  <span className="font-bold text-slate-900 dark:text-white">Total due</span>
-                  <span className="font-bold text-stone-900 dark:text-stone-300">${room.price * 2}</span>
+                <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400 mr-1" />
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{averageRating}</span>
                 </div>
               </div>
 
-              {/* Security Badge */}
-              <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-bold text-emerald-900 dark:text-emerald-100 mb-1">Secure Booking</p>
-                    <p className="text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">
-                      Free cancellation within 24 hours • Verified property • Protected payment
-                    </p>
+              <div className="space-y-4 mb-6">
+                <div className="grid gap-2">
+                  <Label>Check-in Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal border-slate-200 dark:border-slate-700">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar mode="single" selected={date} onSelect={(selectedDate) => setDate(selectedDate)} initialFocus />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>Duration</Label>
+                    <Select value={duration} onValueChange={setDuration}>
+                      <SelectTrigger className="border-slate-200 dark:border-slate-700">
+                        <SelectValue placeholder="Months" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1,3,6,12].map(m => (
+                          <SelectItem key={m} value={String(m)}>{m} Month{m>1?'s':''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+                  <div className="grid gap-2">
+                    <Label>Guests</Label>
+                    <Select value={guests} onValueChange={setGuests}>
+                      <SelectTrigger className="border-slate-200 dark:border-slate-700">
+                        <SelectValue placeholder="Guests" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1,2,3].map(g => (
+                          <SelectItem key={g} value={String(g)}>{g} Guest{g>1?'s':''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => onBookNow(roomId)}
+                className="w-full h-12 text-lg bg-stone-800 hover:bg-stone-900 text-white mb-6 shadow-lg shadow-stone-800/20"
+              >
+                Book Now
+              </Button>
+
+              <div className="space-y-3 text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/30 p-4 rounded-lg">
+                <div className="flex justify-between">
+                  <span>${room.price} x {duration} months</span>
+                  <span>${room.price * parseInt(duration)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Service fee</span>
+                  <span>$50</span>
+                </div>
+                <Separator className="bg-slate-200 dark:bg-slate-700" />
+                <div className="flex justify-between font-bold text-slate-900 dark:text-slate-100 text-base">
+                  <span>Total</span>
+                  <span>${room.price * parseInt(duration) + 50}</span>
                 </div>
               </div>
             </Card>

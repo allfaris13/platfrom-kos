@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, Filter, Download, Upload } from 'lucide-react';
-import { rooms as initialRooms, Room } from '@/app/data/mockData';
+import { rooms as mockRooms, Room } from '@/app/data/mockData';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/app/components/ui/dialog';
 import { Label } from '@/app/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
+import { api } from '@/app/services/api';
 
 export function LuxuryRoomManagement() {
-  const [rooms, setRooms] = useState<Room[]>(initialRooms);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
@@ -17,6 +18,7 @@ export function LuxuryRoomManagement() {
   const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
   const [sortField, setSortField] = useState<'name' | 'price' | 'floor'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState<Partial<Room>>({
     name: '',
@@ -38,25 +40,73 @@ export function LuxuryRoomManagement() {
       return matchesSearch && matchesStatus && matchesType;
     })
     .sort((a, b) => {
+      // Handle string or number comparison safely
       const aVal = a[sortField];
       const bVal = b[sortField];
+      
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+         return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      // Numeric
       const modifier = sortOrder === 'asc' ? 1 : -1;
       return aVal > bVal ? modifier : -modifier;
     });
 
-  const handleSubmit = () => {
-    if (editingRoom) {
-      setRooms(rooms.map(r => r.id === editingRoom.id ? { ...formData, id: r.id, image: r.image } as Room : r));
-    } else {
-      const newRoom: Room = {
-        ...formData,
-        id: `R${String(rooms.length + 1).padStart(3, '0')}`,
-        image: rooms[0].image,
-        facilities: formData.facilities || [],
-      } as Room;
-      setRooms([...rooms, newRoom]);
+  const fetchRooms = async () => {
+    try {
+      const data = await api.getRooms();
+      // Backend returns fields like image_url, we might need to map them if frontend expects camelCase 'image'
+      // But let's assume we use the data as is or map it.
+      // Room interface in mockData has 'image'. Backend has 'image_url'.
+      // Let's map it.
+      const mapped = data.map((r: any) => ({
+        ...r,
+        image: r.image_url ? (r.image_url.startsWith('http') ? r.image_url : `http://localhost:8080${r.image_url}`) : 'https://via.placeholder.com/300',
+        name: r.nomor_kamar || r.name || 'Unnamed', // Backend uses NomorKamar
+        price: r.harga_per_bulan || r.price,
+        type: r.tipe_kamar || r.type,
+      }));
+      setRooms(mapped);
+    } catch (e) {
+      console.error(e);
+      setRooms(mockRooms); // Fallback
     }
-    resetForm();
+  };
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (editingRoom) {
+       // Update logic (not implemented in backend phase 3, skipping for now or use mock)
+       // setRooms(rooms.map(r => r.id === editingRoom.id ? { ...formData, id: r.id, image: r.image } as Room : r));
+       alert("Update not supported in this demo phase");
+    } else {
+      const data = new FormData();
+      data.append('nomor_kamar', formData.name || '');
+      data.append('tipe_kamar', formData.type || 'Single');
+      data.append('harga_per_bulan', String(formData.price));
+      data.append('status', formData.status || 'Tersedia');
+      data.append('capacity', String(formData.capacity));
+      data.append('floor', String(formData.floor));
+      data.append('description', formData.description || '');
+      // Facilities is string in backend, array in frontend.
+      data.append('fasilitas', (formData.facilities || []).join(', ')); 
+      if (imageFile) {
+        data.append('image', imageFile);
+      }
+
+      try {
+        await api.createRoom(data);
+        fetchRooms();
+        setIsDialogOpen(false);
+        resetForm();
+      } catch (e) {
+        console.error(e);
+        alert("Failed to create room");
+      }
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -241,9 +291,16 @@ export function LuxuryRoomManagement() {
 
                 <div>
                   <Label className="text-slate-300 mb-2 block">Upload Image</Label>
-                  <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center hover:border-amber-500/50 transition-colors cursor-pointer">
+                  <div className="border-2 border-dashed border-slate-700 rounded-xl p-8 text-center hover:border-amber-500/50 transition-colors cursor-pointer relative">
+                    <input 
+                        type="file" 
+                        onChange={e => setImageFile(e.target.files?.[0] || null)} 
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
                     <Upload className="size-8 text-slate-500 mx-auto mb-2" />
-                    <p className="text-sm text-slate-400">Click to upload room image</p>
+                    <p className="text-sm text-slate-400">
+                        {imageFile ? imageFile.name : "Click to upload room image"}
+                    </p>
                     <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 10MB</p>
                   </div>
                 </div>

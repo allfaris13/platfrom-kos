@@ -74,42 +74,45 @@ interface AppProviderProps {
 }
 
 export function AppProvider({ children }: AppProviderProps) {
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-
-  // Initialize from LocalStorage
-  useEffect(() => {
+  // Use lazy initialization to avoid setState in useEffect
+  const [rooms, setRooms] = useState<Room[]>(() => {
+    if (typeof window === 'undefined') return [];
     const storedRooms = localStorage.getItem(STORAGE_ROOMS_KEY);
-    const storedBookings = localStorage.getItem(STORAGE_BOOKINGS_KEY);
-    const storedUser = localStorage.getItem(STORAGE_CURRENT_USER_KEY);
-
     if (storedRooms) {
       try {
-        setRooms(JSON.parse(storedRooms));
+        return JSON.parse(storedRooms);
       } catch {
-        setRooms(INITIAL_ROOMS);
+        return INITIAL_ROOMS;
       }
-    } else {
-      setRooms(INITIAL_ROOMS);
     }
+    return INITIAL_ROOMS;
+  });
 
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const storedBookings = localStorage.getItem(STORAGE_BOOKINGS_KEY);
     if (storedBookings) {
       try {
-        setBookings(JSON.parse(storedBookings));
+        return JSON.parse(storedBookings);
       } catch {
-        setBookings([]);
+        return [];
       }
     }
+    return [];
+  });
 
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const storedUser = localStorage.getItem(STORAGE_CURRENT_USER_KEY);
     if (storedUser) {
       try {
-        setCurrentUser(JSON.parse(storedUser));
+        return JSON.parse(storedUser);
       } catch {
-        setCurrentUser(null);
+        return null;
       }
     }
-  }, []);
+    return null;
+  });
 
   // Persist rooms to localStorage
   useEffect(() => {
@@ -184,11 +187,14 @@ export function AppProvider({ children }: AppProviderProps) {
   }, [bookings, updateBooking, updateRoomStatus]);
 
   const extendBooking = useCallback((request: ExtendBookingRequest) => {
-    updateBooking(request.bookingId, {
-      moveOutDate: request.newEndDate,
-      totalPaid: bookings.find(b => b.id === request.bookingId)?.totalPaid! + request.additionalCost,
-      status: 'Active'
-    });
+    const booking = bookings.find(b => b.id === request.bookingId);
+    if (booking) {
+      updateBooking(request.bookingId, {
+        moveOutDate: request.newEndDate,
+        totalPaid: booking.totalPaid + request.additionalCost,
+        status: 'Active'
+      });
+    }
   }, [bookings, updateBooking]);
 
   // Stats Functions

@@ -6,7 +6,7 @@ import { BookingHistory } from './booking-history';
 import { ContactUs } from './contact-us';
 import { Gallery } from './Gallery';
 import { motion } from 'framer-motion';
-import { Home, Search, Calendar, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, CheckCircle2, DollarSign, XCircle, Bell, Settings, MessageCircle, ArrowLeft, Heart, Star, Image } from 'lucide-react';
+import { Home, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, XCircle, MessageCircle, Heart, Star, Image } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -19,70 +19,66 @@ interface UserPlatformProps {
 }
 
 export function UserPlatform({ onLogout }: UserPlatformProps) {
-  // Load initial state from localStorage
-  const getInitialActiveView = (): string => {
-    if (typeof window === 'undefined') return 'home';
-    const stored = localStorage.getItem('user_platform_active_view');
-    return stored || 'home';
-  };
+  // Initialize with server-safe defaults
+  const [activeView, setActiveView] = useState('home');
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [isClient, setIsClient] = useState(false);
 
-  const getInitialSelectedRoomId = (): string | null => {
-    if (typeof window === 'undefined') return null;
-    const stored = localStorage.getItem('user_platform_selected_room_id');
-    return stored || null;
-  };
-
-  const getInitialMobileMenuOpen = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    const stored = localStorage.getItem('user_platform_mobile_menu_open');
-    return stored === 'true';
-  };
-
-  const getInitialIsEditingProfile = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    const stored = localStorage.getItem('user_platform_is_editing_profile');
-    return stored === 'true';
-  };
-
-  // LOGIKA BARU: Load wishlist dari localStorage agar tidak hilang saat refresh
-  const getInitialWishlist = (): string[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem('user_platform_wishlist');
-    return stored ? JSON.parse(stored) : [];
-  };
-
-  const [activeView, setActiveView] = useState(getInitialActiveView);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(getInitialSelectedRoomId);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(getInitialMobileMenuOpen);
-  const [isEditingProfile, setIsEditingProfile] = useState(getInitialIsEditingProfile);
-
-  // Save state to localStorage whenever it changes
   useEffect(() => {
+    setIsClient(true);
+    const storedActiveView = localStorage.getItem('user_platform_active_view');
+    if (storedActiveView) setActiveView(storedActiveView);
+
+    const storedRoomId = localStorage.getItem('user_platform_selected_room_id');
+    if (storedRoomId) setSelectedRoomId(storedRoomId);
+
+    const storedMobileMenu = localStorage.getItem('user_platform_mobile_menu_open');
+    if (storedMobileMenu) setMobileMenuOpen(storedMobileMenu === 'true');
+
+    const storedEditing = localStorage.getItem('user_platform_is_editing_profile');
+    if (storedEditing) setIsEditingProfile(storedEditing === 'true');
+
+    const storedWishlist = localStorage.getItem('user_platform_wishlist');
+    if (storedWishlist) {
+        try {
+            setWishlist(JSON.parse(storedWishlist));
+        } catch {}
+    }
+  }, []);
+
+  // Save state to localStorage whenever it changes, only on client
+  useEffect(() => {
+    if (!isClient) return;
     localStorage.setItem('user_platform_active_view', activeView);
-  }, [activeView]);
+  }, [activeView, isClient]);
 
   useEffect(() => {
+    if (!isClient) return;
     if (selectedRoomId) {
       localStorage.setItem('user_platform_selected_room_id', selectedRoomId);
     } else {
       localStorage.removeItem('user_platform_selected_room_id');
     }
-  }, [selectedRoomId]);
+  }, [selectedRoomId, isClient]);
 
   useEffect(() => {
+    if (!isClient) return;
     localStorage.setItem('user_platform_mobile_menu_open', mobileMenuOpen.toString());
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, isClient]);
 
   useEffect(() => {
+    if (!isClient) return;
     localStorage.setItem('user_platform_is_editing_profile', isEditingProfile.toString());
-  }, [isEditingProfile]);
+  }, [isEditingProfile, isClient]);
 
-  // LOGIKA BARU: Simpan wishlist ke localStorage setiap kali ada perubahan
-  const [wishlist, setWishlist] = useState<string[]>(getInitialWishlist);
   useEffect(() => {
+    if (!isClient) return;
     localStorage.setItem('user_platform_wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
-  
+  }, [wishlist, isClient]);
+
   // Editable user data
   const [userData, setUserData] = useState({
     name: 'John Doe',
@@ -133,6 +129,9 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     { id: 'history', label: 'My Bookings', icon: History },
     { id: 'profile', label: 'Profile', icon: User },
   ];
+
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-stone-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-['Poppins']">

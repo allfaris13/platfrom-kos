@@ -23,9 +23,35 @@ type Kamar struct {
 	Fasilitas     string         `json:"fasilitas"` // text
 	HargaPerBulan float64        `json:"harga_per_bulan"`
 	Status        string         `json:"status"` // enum
+	Capacity      int            `json:"capacity"`
+	Floor         int            `json:"floor"`
+	Description   string         `json:"description"`
+	ImageURL      string         `json:"image_url"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+type Gallery struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	Title     string         `json:"title"`
+	Category  string         `json:"category"`
+	ImageURL  string         `json:"image_url"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+type Review struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	UserID    uint           `json:"user_id"` // User who wrote the review
+	User      User           `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	KamarID   uint           `json:"kamar_id"` // Room being reviewed
+	Rating    float64        `json:"rating"`   // 1.0 - 5.0
+	Comment   string         `json:"comment"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 type Penyewa struct {

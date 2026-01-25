@@ -14,7 +14,7 @@ import {
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Badge } from '@/app/components/ui/badge';
-import { ImageWithFallback } from '@/app/components/gambar/ImageWithFallback';
+import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { 
   Search, 
   MapPin, 
@@ -28,6 +28,7 @@ import {
   Calendar,
   MessageCircle
 } from 'lucide-react';
+import { api } from '@/app/services/api';
 
 // --- Komponen Counter untuk Trust Indicators ---
 function Counter({ value, suffix = "", decimals = 0 }: { value: number, suffix?: string, decimals?: number }) {
@@ -97,6 +98,36 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist }: Homep
   const [searchLocation, setSearchLocation] = useState('');
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  const [reviews, setReviews] = useState(reviewsData); // Initialize with mock, update with API
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+        try {
+            const data = await api.getAllReviews();
+            if (data && data.length > 0) {
+                // Map API data to UI structure
+                const mappedReviews = data.map((r: { user?: { username: string }; comment: string; rating: number }) => ({
+                    name: r.user?.username || 'Anonymous',
+                    role: 'Resident', // API doesn't have role, use default
+                    review: r.comment,
+                    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400', // Default image or random
+                    stayDuration: 'Verified',
+                    rating: r.rating
+                }));
+                // Combine with mock if not enough data, or replace
+                // If we have enough real data (e.g. > 3), use real data. Else mix.
+                if (mappedReviews.length >= 4) {
+                    setReviews(mappedReviews);
+                } else {
+                    setReviews([...mappedReviews, ...reviewsData]);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch homepage reviews", e);
+        }
+    };
+    fetchReviews();
+  }, []);
   
   // --- REAL-TIME FILTER LOGIC ---
   // Kita pakai useMemo supaya displayRooms berubah otomatis setiap kali state di atas berubah
@@ -119,8 +150,9 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist }: Homep
     });
   }, [searchLocation, selectedPrice, selectedType]);
 
-  const firstRowReviews = reviewsData.slice(0, 3);
-  const secondRowReviews = reviewsData.slice(3, 6);
+  const midPoint = Math.ceil(reviews.length / 2);
+  const firstRowReviews = reviews.slice(0, midPoint);
+  const secondRowReviews = reviews.slice(midPoint);
 
   return (
     <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors overflow-x-hidden">

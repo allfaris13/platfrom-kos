@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/app/components/ui/button';
 
 // Login Component
-import { Login } from '@/app/components/Login';
+import { Login } from '@/app/components/shared/Login';
 
 // Admin Components
 import { AdminSidebar } from '@/app/components/admin/AdminSidebar';
@@ -33,56 +33,84 @@ const STORAGE_KEYS = {
 };
 
 export default function App() {
-  // Load initial state from localStorage
-  const getInitialViewMode = (): ViewMode => {
-    if (typeof window === 'undefined') return 'login';
-    const stored = localStorage.getItem(STORAGE_KEYS.VIEW_MODE);
-    return (stored as ViewMode) || 'login';
-  };
+  // Initialize with server-safe defaults to prevent hydration mismatch
+  const [viewMode, setViewMode] = useState<ViewMode>('login');
+  const [adminPage, setAdminPage] = useState<AdminPage>('dashboard');
+  const [tenantPage, setTenantPage] = useState<TenantPage>('landing');
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [bookingData, setBookingData] = useState<any>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'tenant' | 'guest' | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
-  const getInitialAdminPage = (): AdminPage => {
-    if (typeof window === 'undefined') return 'dashboard';
-    const stored = localStorage.getItem(STORAGE_KEYS.ADMIN_PAGE);
-    return (stored as AdminPage) || 'dashboard';
-  };
+  // Load state from localStorage on client mount ONLY
+  useEffect(() => {
+    setIsClient(true);
+    const storedViewMode = localStorage.getItem(STORAGE_KEYS.VIEW_MODE) as ViewMode;
+    if (storedViewMode) setViewMode(storedViewMode);
 
-  const getInitialTenantPage = (): TenantPage => {
-    if (typeof window === 'undefined') return 'landing';
-    const stored = localStorage.getItem(STORAGE_KEYS.TENANT_PAGE);
-    return (stored as TenantPage) || 'landing';
-  };
+    const storedAdminPage = localStorage.getItem(STORAGE_KEYS.ADMIN_PAGE) as AdminPage;
+    if (storedAdminPage) setAdminPage(storedAdminPage);
 
-  const getInitialSelectedRoomId = (): string | null => {
-    if (typeof window === 'undefined') return null;
-    const stored = localStorage.getItem(STORAGE_KEYS.SELECTED_ROOM_ID);
-    return stored || null;
-  };
+    const storedTenantPage = localStorage.getItem(STORAGE_KEYS.TENANT_PAGE) as TenantPage;
+    if (storedTenantPage) setTenantPage(storedTenantPage);
 
-  const getInitialBookingData = (): any => {
-    if (typeof window === 'undefined') return null;
-    const stored = localStorage.getItem(STORAGE_KEYS.BOOKING_DATA);
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch {
-        return null;
-      }
+    const storedRoomId = localStorage.getItem(STORAGE_KEYS.SELECTED_ROOM_ID);
+    if (storedRoomId) setSelectedRoomId(storedRoomId);
+
+    const storedBookingData = localStorage.getItem(STORAGE_KEYS.BOOKING_DATA);
+    if (storedBookingData) {
+        try {
+            setBookingData(JSON.parse(storedBookingData));
+        } catch {}
     }
-    return null;
-  };
 
-  const getInitialUserRole = (): 'admin' | 'tenant' | 'guest' | null => {
-    if (typeof window === 'undefined') return null;
-    const stored = localStorage.getItem(STORAGE_KEYS.USER_ROLE);
-    return (stored as 'admin' | 'tenant' | 'guest') || null;
-  };
+    const storedUserRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE) as 'admin' | 'tenant' | 'guest';
+    if (storedUserRole) setUserRole(storedUserRole);
+  }, []);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode);
-  const [adminPage, setAdminPage] = useState<AdminPage>(getInitialAdminPage);
-  const [tenantPage, setTenantPage] = useState<TenantPage>(getInitialTenantPage);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(getInitialSelectedRoomId);
-  const [bookingData, setBookingData] = useState<any>(getInitialBookingData);
-  const [userRole, setUserRole] = useState<'admin' | 'tenant' | 'guest' | null>(getInitialUserRole);
+  // Save state to localStorage whenever it changes
+  // We only save if isClient is true to avoid overwriting with initial defaults if effects run weirdly (though unlikely in this structure)
+  useEffect(() => {
+    if (!isClient) return;
+    localStorage.setItem(STORAGE_KEYS.VIEW_MODE, viewMode);
+  }, [viewMode, isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    localStorage.setItem(STORAGE_KEYS.ADMIN_PAGE, adminPage);
+  }, [adminPage, isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    localStorage.setItem(STORAGE_KEYS.TENANT_PAGE, tenantPage);
+  }, [tenantPage, isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    if (selectedRoomId) {
+      localStorage.setItem(STORAGE_KEYS.SELECTED_ROOM_ID, selectedRoomId);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.SELECTED_ROOM_ID);
+    }
+  }, [selectedRoomId, isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    if (bookingData) {
+      localStorage.setItem(STORAGE_KEYS.BOOKING_DATA, JSON.stringify(bookingData));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.BOOKING_DATA);
+    }
+  }, [bookingData, isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    if (userRole) {
+      localStorage.setItem(STORAGE_KEYS.USER_ROLE, userRole);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
+    }
+  }, [userRole, isClient]);
 
   // Function to clear all stored state (for logout)
   const clearStoredState = () => {
@@ -91,42 +119,7 @@ export default function App() {
     });
   };
 
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.VIEW_MODE, viewMode);
-  }, [viewMode]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ADMIN_PAGE, adminPage);
-  }, [adminPage]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.TENANT_PAGE, tenantPage);
-  }, [tenantPage]);
-
-  useEffect(() => {
-    if (selectedRoomId) {
-      localStorage.setItem(STORAGE_KEYS.SELECTED_ROOM_ID, selectedRoomId);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.SELECTED_ROOM_ID);
-    }
-  }, [selectedRoomId]);
-
-  useEffect(() => {
-    if (bookingData) {
-      localStorage.setItem(STORAGE_KEYS.BOOKING_DATA, JSON.stringify(bookingData));
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.BOOKING_DATA);
-    }
-  }, [bookingData]);
-
-  useEffect(() => {
-    if (userRole) {
-      localStorage.setItem(STORAGE_KEYS.USER_ROLE, userRole);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
-    }
-  }, [userRole]);
 
   // Login Screen
   if (viewMode === 'login') {

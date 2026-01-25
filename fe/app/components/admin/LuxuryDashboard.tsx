@@ -1,6 +1,8 @@
 import { TrendingUp, Users, Home, CreditCard, ArrowUpRight } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { rooms, tenants, payments } from '@/app/data/mockData';
+import { rooms, tenants, payments } from '@/app/data/mockData'; 
+import { useEffect, useState } from 'react';
+import { api } from '@/app/services/api';
 
 interface Room {
   status: string;
@@ -49,15 +51,34 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export function LuxuryDashboard() {
-  const availableRooms = (rooms as Room[]).filter(r => r.status === 'Tersedia').length;
-  const occupiedRooms = (rooms as Room[]).filter(r => r.status === 'Penuh').length;
-  const activeTenants = (tenants as Tenant[]).filter(t => t.status === 'Active').length;
-  const pendingPayments = (payments as Payment[]).filter(p => p.status === 'Pending').length;
-  const totalRevenue = (payments as Payment[])
-    .filter(p => p.status === 'Confirmed')
-    .reduce((sum: number, p: Payment) => sum + p.amount, 0);
+  const [stats, setStats] = useState({
+    total_revenue: 0,
+    active_tenants: 0,
+    available_rooms: 0,
+    occupied_rooms: 0,
+    pending_payments: 0
+  });
 
-  // Revenue trend data (6 months)
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await api.getDashboardStats();
+        setStats(data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // Use real data
+  const availableRooms = stats.available_rooms;
+  const occupiedRooms = stats.occupied_rooms;
+  const activeTenants = stats.active_tenants;
+  const pendingPayments = stats.pending_payments;
+  const totalRevenue = stats.total_revenue;
+
+  // Mock revenue trend data (backend doesn't support historical data yet)
   const revenueData = [
     { month: 'Jul', revenue: 4200000, target: 4000000 },
     { month: 'Aug', revenue: 5100000, target: 4500000 },
@@ -69,8 +90,8 @@ export function LuxuryDashboard() {
 
   // Occupancy data for donut chart
   const occupancyData = [
-    { name: 'Tersedia', value: availableRooms, color: '#10b981' },
-    { name: 'Terisi', value: occupiedRooms, color: '#f59e0b' }
+    { name: 'Tersedia', value: Number(availableRooms), color: '#10b981' },
+    { name: 'Terisi', value: Number(occupiedRooms), color: '#f59e0b' }
   ];
 
   const formatPrice = (price: number) => {

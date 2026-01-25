@@ -3,6 +3,7 @@ package handlers
 import (
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/service"
+	"koskosan-be/internal/utils"
 	"net/http"
 	"strconv"
 
@@ -43,10 +44,44 @@ func (h *KamarHandler) GetKamarByID(c *gin.Context) {
 }
 
 func (h *KamarHandler) CreateKamar(c *gin.Context) {
-	var kamar models.Kamar
-	if err := c.ShouldBindJSON(&kamar); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	// Parse multipart form
+	// We need to manually parse fields since it's multipart
+	nomorKamar := c.PostForm("nomor_kamar")
+	tipeKamar := c.PostForm("tipe_kamar")
+	fasilitas := c.PostForm("fasilitas")
+	status := c.PostForm("status")
+	description := c.PostForm("description")
+
+	harga, _ := strconv.ParseFloat(c.PostForm("harga_per_bulan"), 64)
+	capacity, _ := strconv.Atoi(c.PostForm("capacity"))
+	floor, _ := strconv.Atoi(c.PostForm("floor"))
+
+	// File upload
+	var imageURL string
+	file, err := c.FormFile("image")
+	if err == nil {
+		// If file is provided, validate and save
+		if utils.IsImageFile(file) {
+			filename, err := utils.SaveFile(file, "uploads/rooms")
+			if err == nil {
+				imageURL = "/uploads/rooms/" + filename
+			}
+		}
+	} else {
+		// Optional default image if none provided
+		imageURL = "https://via.placeholder.com/400"
+	}
+
+	kamar := models.Kamar{
+		NomorKamar:    nomorKamar,
+		TipeKamar:     tipeKamar,
+		Fasilitas:     fasilitas,
+		HargaPerBulan: harga,
+		Status:        status,
+		Capacity:      capacity,
+		Floor:         floor,
+		Description:   description,
+		ImageURL:      imageURL,
 	}
 
 	if err := h.service.Create(&kamar); err != nil {
