@@ -18,7 +18,7 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// 2. Initialize Database
-	database.InitDB()
+	database.InitDB(cfg)
 	db := database.GetDB()
 
 	// 3. Initialize Repositories

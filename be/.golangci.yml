@@ -1,0 +1,16 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - gosimple
+    - staticcheck
+    - unused
+    - govet
+    - ineffassign
+    - typecheck
+  disable-all: false
+
+issues:
+  exclude-use-default: false

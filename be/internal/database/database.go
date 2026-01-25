@@ -1,6 +1,8 @@
 package database
 
 import (
+	"fmt"
+	"koskosan-be/internal/config"
 	"koskosan-be/internal/models"
 	"log"
 
@@ -10,9 +12,10 @@ import (
 
 var DB *gorm.DB
 
-func InitDB() {
+func InitDB(cfg *config.Config) {
 	var err error
-	dsn := "host=localhost user=postgres password=12345678 dbname=tugas_arkan port=5432 sslmode=disable TimeZone=Asia/Jakarta"
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
+		cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort)
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
