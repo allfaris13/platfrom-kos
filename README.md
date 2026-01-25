@@ -19,10 +19,10 @@ Biar gak nyasar di dalem kodingan, nih liat dulu denahnya:
 
 ```mermaid
 graph TD
-    User(👱 Penghuni/Juragan) -->|Ngetuk Pintu HTTPS| FE[🏠 Frontend\n(Next.js Lobby)]
-    FE -->|Request API| BE[🏢 Backend\n(Golang Kantor)]
-    BE -->|Query Data| DB[(🗄️ Database\nPostgreSQL Gudang)]
-    BE -->|Auth Check| Satpam[👮 Auth Service\n(JWT Guard)]
+    User("👱 Penghuni/Juragan") -->|Ngetuk Pintu HTTPS| FE["🏠 Frontend<br>(Next.js Lobby)"]
+    FE -->|Request API| BE["🏢 Backend<br>(Golang Kantor)"]
+    BE -->|Query Data| DB[("🗄️ Database<br>PostgreSQL Gudang")]
+    BE -->|Auth Check| Satpam["👮 Auth Service<br>(JWT Guard)"]
 ```
 
 ---
