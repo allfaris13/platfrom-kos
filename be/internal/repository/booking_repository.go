@@ -8,7 +8,9 @@ import (
 
 type BookingRepository interface {
 	FindByPenyewaID(penyewaID uint) ([]models.Pemesanan, error)
+	FindByID(id uint) (*models.Pemesanan, error)
 	Create(booking *models.Pemesanan) error
+	Update(booking *models.Pemesanan) error
 	GetPaymentsByBookingID(bookingID uint) ([]models.Pembayaran, error)
 }
 
@@ -26,8 +28,18 @@ func (r *bookingRepository) FindByPenyewaID(penyewaID uint) ([]models.Pemesanan,
 	return bookings, err
 }
 
+func (r *bookingRepository) FindByID(id uint) (*models.Pemesanan, error) {
+	var booking models.Pemesanan
+	err := r.db.First(&booking, id).Error
+	return &booking, err
+}
+
 func (r *bookingRepository) Create(booking *models.Pemesanan) error {
 	return r.db.Create(booking).Error
+}
+
+func (r *bookingRepository) Update(booking *models.Pemesanan) error {
+	return r.db.Save(booking).Error
 }
 
 func (r *bookingRepository) GetPaymentsByBookingID(bookingID uint) ([]models.Pembayaran, error) {

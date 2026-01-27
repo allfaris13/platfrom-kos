@@ -1,38 +1,75 @@
 'use client';
 
-import { Home, Users, CreditCard, TrendingUp } from 'lucide-react';
+import { Home, Users, CreditCard, TrendingUp, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { rooms, tenants, payments, Room, Tenant, Payment } from '@/app/data/mockData';
-import { useApp } from '@/app/context';
+import { useEffect, useState } from 'react';
+import { api } from '@/app/services/api';
+
+interface Stats {
+  total_revenue: number;
+  active_tenants: number;
+  available_rooms: number;
+  occupied_rooms: number;
+  pending_payments: number;
+}
+
+interface Tenant {
+  id: string | number;
+  nama_lengkap: string;
+  status: string;
+  user?: { username: string };
+}
+
+interface Room {
+  id: string | number;
+  status: string;
+}
 
 export function AdminDashboard() {
-  // Gunakan global state untuk real-time data
-  const { getAllBookings, getTotalRevenue, getActiveBookings, getOccupiedRooms, getAllRooms } = useApp();
-  
-  const allBookings = getAllBookings();
-  const globalRevenue = getTotalRevenue();
-  const globalActiveBookings = getActiveBookings();
-  const globalOccupiedRooms = getOccupiedRooms();
-  const globalRooms = getAllRooms();
-  const globalAvailableRooms = globalRooms.filter(r => r.status === 'Available').length;
+  const [statsData, setStatsData] = useState<Stats | null>(null);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fallback ke mock data jika global state kosong (untuk backward compatibility)
-  const displayBookings = allBookings.length > 0 ? allBookings : [];
-  const displayRevenue = globalRevenue || 0;
-  const displayActiveBookings = globalActiveBookings || tenants.filter(t => t.status === 'Active').length;
-  const displayOccupiedRooms = globalOccupiedRooms || rooms.filter(r => r.status === 'Penuh').length;
-  const displayAvailableRooms = globalAvailableRooms || rooms.filter(r => r.status === 'Tersedia').length;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [s, t, r] = await Promise.all([
+          api.getDashboardStats(),
+          api.getTenants(),
+          api.getRooms()
+        ]);
+        setStatsData(s);
+        setTenants(t);
+        setRooms(r);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void fetchData();
+  }, []);
 
-  const availableRooms = displayAvailableRooms;
-  const occupiedRooms = displayOccupiedRooms;
-  const activeTenants = displayActiveBookings;
-  const pendingPayments = payments.filter(p => p.status === 'Pending').length;
-  const totalRevenue = displayRevenue;
+  if (isLoading || !statsData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+        <p className="text-slate-400">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  const availableRooms = statsData.available_rooms;
+  const occupiedRooms = statsData.occupied_rooms;
+  const activeTenants = statsData.active_tenants;
+  const pendingPayments = statsData.pending_payments;
+  const totalRevenue = statsData.total_revenue;
 
   const stats = [
     {
       title: 'Total Rooms',
-      value: globalRooms.length || rooms.length,
+      value: rooms.length,
       subtitle: `${availableRooms} Available`,
       icon: Home,
       color: 'blue'
@@ -40,7 +77,7 @@ export function AdminDashboard() {
     {
       title: 'Active Bookings',
       value: activeTenants,
-      subtitle: `${displayBookings.length} Total`,
+      subtitle: `${tenants.length} Registered`,
       icon: Users,
       color: 'green'
     },
@@ -53,7 +90,7 @@ export function AdminDashboard() {
     },
     {
       title: 'Total Revenue',
-      value: `$${totalRevenue.toLocaleString()}`,
+      value: `Rp ${totalRevenue.toLocaleString()}`,
       subtitle: 'All time',
       icon: TrendingUp,
       color: 'purple'
@@ -108,8 +145,8 @@ export function AdminDashboard() {
               {tenants.slice(0, 4).map((tenant: Tenant) => (
                 <div key={tenant.id} className="flex items-center justify-between py-2 border-b last:border-0">
                   <div>
-                    <p className="font-medium">{tenant.name}</p>
-                    <p className="text-sm text-slate-600">{tenant.roomName}</p>
+                    <p className="font-medium text-white">{tenant.nama_lengkap}</p>
+                    <p className="text-sm text-slate-400">{tenant.user?.username || 'User'}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     tenant.status === 'Active' 

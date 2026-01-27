@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
-import { rooms as initialRooms, Room } from '@/app/data/mockData';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { Search, Plus, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
+import { api } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/app/components/ui/dialog';
@@ -15,12 +16,68 @@ import {
   TableRow,
 } from '@/app/components/ui/table';
 
+interface Room {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  status: string;
+  capacity: number;
+  floor: number;
+  description: string;
+  image: string;
+  facilities: string[];
+}
+
+interface BackendRoom {
+  id: number;
+  nomor_kamar: string;
+  tipe_kamar: string;
+  harga_per_bulan: number;
+  status: string;
+  capacity: number;
+  floor: number;
+  description: string;
+  image_url: string;
+  fasilitas: string;
+}
+
 export function RoomManagement() {
-  const [rooms, setRooms] = useState<Room[]>(initialRooms);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const fetchRooms = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.getRooms();
+      const mapped: Room[] = data.map((r: BackendRoom) => ({
+        id: String(r.id),
+        name: r.nomor_kamar,
+        type: r.tipe_kamar,
+        price: r.harga_per_bulan,
+        status: r.status,
+        capacity: r.capacity || 1,
+        floor: r.floor || 1,
+        description: r.description || '',
+        image: r.image_url ? (r.image_url.startsWith('http') ? r.image_url : `http://localhost:8080${r.image_url}`) : 'https://via.placeholder.com/300',
+        facilities: r.fasilitas ? r.fasilitas.split(',').map((f: string) => f.trim()) : []
+      }));
+      setRooms(mapped);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
 
   const [formData, setFormData] = useState<Partial<Room>>({
     name: '',
@@ -38,24 +95,44 @@ export function RoomManagement() {
     room.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSubmit = () => {
-    if (editingRoom) {
-      setRooms(rooms.map(r => r.id === editingRoom.id ? { ...formData, id: r.id, image: r.image } as Room : r));
-    } else {
-      const newRoom: Room = {
-        ...formData,
-        id: `R${String(rooms.length + 1).padStart(3, '0')}`,
-        image: rooms[0].image,
-        facilities: formData.facilities || [],
-      } as Room;
-      setRooms([...rooms, newRoom]);
+  const handleSubmit = async () => {
+    const data = new FormData();
+    data.append('nomor_kamar', formData.name || '');
+    data.append('tipe_kamar', formData.type || 'Single');
+    data.append('harga_per_bulan', String(formData.price));
+    data.append('status', formData.status || 'Tersedia');
+    data.append('capacity', String(formData.capacity));
+    data.append('floor', String(formData.floor));
+    data.append('description', formData.description || '');
+    data.append('fasilitas', (formData.facilities || []).join(', '));
+    if (imageFile) {
+        data.append('image', imageFile);
     }
-    resetForm();
+
+    try {
+      if (editingRoom) {
+        await api.updateRoom(editingRoom.id, data);
+      } else {
+        await api.createRoom(data);
+      }
+      await fetchRooms();
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save room");
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this room?')) {
-      setRooms(rooms.filter(r => r.id !== id));
+      try {
+          await api.deleteRoom(id);
+          await fetchRooms();
+      } catch (e) {
+          console.error(e);
+          alert("Failed to delete room");
+      }
     }
   };
 
@@ -145,7 +222,7 @@ export function RoomManagement() {
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+                  <Select value={formData.status} onValueChange={(value: string) => setFormData({ ...formData, status: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -191,6 +268,11 @@ export function RoomManagement() {
                 />
               </div>
 
+              <div>
+                <Label>Room Image</Label>
+                <Input type="file" onChange={e => setImageFile(e.target.files?.[0] || null)} className="mt-1" />
+              </div>
+
               <div className="flex justify-end gap-2 mt-6">
                 <Button variant="outline" onClick={resetForm}>Cancel</Button>
                 <Button onClick={handleSubmit}>
@@ -231,7 +313,22 @@ export function RoomManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRooms.map((room) => (
+            {isLoading ? (
+               <TableRow>
+                 <TableCell colSpan={8} className="text-center py-10">
+                   <div className="flex flex-col items-center gap-2">
+                     <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                     <p className="text-slate-500">Loading rooms...</p>
+                   </div>
+                 </TableCell>
+               </TableRow>
+            ) : filteredRooms.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-10 text-slate-500">
+                    No rooms found.
+                  </TableCell>
+                </TableRow>
+            ) : filteredRooms.map((room) => (
               <TableRow key={room.id}>
                 <TableCell className="font-medium">{room.id}</TableCell>
                 <TableCell>{room.name}</TableCell>
@@ -289,11 +386,14 @@ export function RoomManagement() {
           </DialogHeader>
           {viewingRoom && (
             <div className="space-y-4">
-              <img
-                src={viewingRoom.image}
-                alt={viewingRoom.name}
-                className="w-full h-48 object-cover rounded-lg"
-              />
+              <div className="relative w-full h-48">
+                 <Image
+                   src={viewingRoom.image}
+                   alt={viewingRoom.name}
+                   fill
+                   className="object-cover rounded-lg"
+                 />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-slate-600">Room Name</p>
@@ -323,7 +423,7 @@ export function RoomManagement() {
               <div>
                 <p className="text-sm text-slate-600">Facilities</p>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {viewingRoom.facilities.map((facility, idx) => (
+                  {viewingRoom.facilities.map((facility: string, idx: number) => (
                     <span key={idx} className="px-3 py-1 bg-slate-100 rounded-full text-sm">
                       {facility}
                     </span>

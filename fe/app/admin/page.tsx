@@ -1,11 +1,11 @@
 "use client";
 
 import { AdminSidebar } from "@/app/components/admin/AdminSidebar";
-import { AdminDashboard } from "@/app/components/admin/AdminDashboard";
-import { FinancialReports } from "@/app/components/admin/FinancialReports";
-import { RoomManagement } from "@/app/components/admin/RoomManagement";
+import { LuxuryDashboard } from "@/app/components/admin/LuxuryDashboard";
+import { LuxuryReports } from "@/app/components/admin/LuxuryReports";
+import { LuxuryRoomManagement } from "@/app/components/admin/LuxuryRoomManagement";
 import { TenantData } from "@/app/components/admin/TenantData";
-import { PaymentConfirmation } from "@/app/components/admin/PaymentConfirmation";
+import { LuxuryPaymentConfirmation } from "@/app/components/admin/LuxuryPaymentConfirmation";
 import { GalleryData } from "@/app/components/admin/GalleryData";
 import { AdminLogin } from "@/app/components/shared/AdminLogin";
 import { Button } from "@/app/components/ui/button";
@@ -44,20 +44,19 @@ export default function AdminPage() {
   const renderContent = () => {
     switch (currentPage) {
       case "dashboard":
-        return <AdminDashboard />;
-// ... existing switch cases ...
+        return <LuxuryDashboard />;
       case "rooms":
-        return <RoomManagement />;
+        return <LuxuryRoomManagement />;
       case "tenants":
         return <TenantData />;
       case "payments":
-        return <PaymentConfirmation />;
+        return <LuxuryPaymentConfirmation />;
       case "reports":
-        return <FinancialReports />;
+        return <LuxuryReports />;
       case "gallery":
         return <GalleryData />;
       default:
-        return <AdminDashboard />;
+        return <LuxuryDashboard />;
     }
   };
 

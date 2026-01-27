@@ -93,3 +93,68 @@ func (h *KamarHandler) CreateKamar(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, kamar)
 }
+
+func (h *KamarHandler) UpdateKamar(c *gin.Context) {
+	idStr := c.Param("id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	kamar, err := h.service.GetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Kamar not found"})
+		return
+	}
+
+	// Update fields if provided in multipart form
+	if v := c.PostForm("nomor_kamar"); v != "" {
+		kamar.NomorKamar = v
+	}
+	if v := c.PostForm("tipe_kamar"); v != "" {
+		kamar.TipeKamar = v
+	}
+	if v := c.PostForm("fasilitas"); v != "" {
+		kamar.Fasilitas = v
+	}
+	if v := c.PostForm("status"); v != "" {
+		kamar.Status = v
+	}
+	if v := c.PostForm("description"); v != "" {
+		kamar.Description = v
+	}
+	if v := c.PostForm("harga_per_bulan"); v != "" {
+		kamar.HargaPerBulan, _ = strconv.ParseFloat(v, 64)
+	}
+	if v := c.PostForm("capacity"); v != "" {
+		kamar.Capacity, _ = strconv.Atoi(v)
+	}
+	if v := c.PostForm("floor"); v != "" {
+		kamar.Floor, _ = strconv.Atoi(v)
+	}
+
+	// File upload
+	file, err := c.FormFile("image")
+	if err == nil {
+		if utils.IsImageFile(file) {
+			filename, err := utils.SaveFile(file, "uploads/rooms")
+			if err == nil {
+				kamar.ImageURL = "/uploads/rooms/" + filename
+			}
+		}
+	}
+
+	if err := h.service.Update(kamar); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, kamar)
+}
+
+func (h *KamarHandler) DeleteKamar(c *gin.Context) {
+	idStr := c.Param("id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	if err := h.service.Delete(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "kamar deleted successfully"})
+}

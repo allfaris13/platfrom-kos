@@ -9,9 +9,9 @@ import (
 
 func SeedData() {
 	// Seed Admin User
-	var count int64
-	DB.Model(&models.User{}).Count(&count)
-	if count == 0 {
+	var adminUser models.User
+	err := DB.Where("username = ?", "admin").First(&adminUser).Error
+	if err != nil { // Not found or error
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 		admin := models.User{
 			Username: "admin",
@@ -19,10 +19,11 @@ func SeedData() {
 			Role:     "admin",
 		}
 		DB.Create(&admin)
-		log.Println("Admin user seeded")
+		log.Println("Admin user 'admin' with password 'admin123' ensured")
 	}
 
 	// Seed Kamar
+	var count int64
 	DB.Model(&models.Kamar{}).Count(&count)
 	if count == 0 {
 		kamars := []models.Kamar{

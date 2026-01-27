@@ -28,6 +28,7 @@ func main() {
 	reviewRepo := repository.NewReviewRepository(db)
 	penyewaRepo := repository.NewPenyewaRepository(db)
 	bookingRepo := repository.NewBookingRepository(db)
+	paymentRepo := repository.NewPaymentRepository(db)
 
 	// 4. Initialize Services
 	authService := service.NewAuthService(userRepo, penyewaRepo, cfg)
@@ -37,6 +38,8 @@ func main() {
 	reviewService := service.NewReviewService(reviewRepo)
 	profileService := service.NewProfileService(userRepo, penyewaRepo)
 	bookingService := service.NewBookingService(bookingRepo, penyewaRepo)
+	paymentService := service.NewPaymentService(paymentRepo, bookingRepo, kamarRepo)
+	tenantService := service.NewTenantService(penyewaRepo)
 
 	// 5. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -46,6 +49,8 @@ func main() {
 	reviewHandler := handlers.NewReviewHandler(reviewService)
 	profileHandler := handlers.NewProfileHandler(profileService)
 	bookingHandler := handlers.NewBookingHandler(bookingService)
+	paymentHandler := handlers.NewPaymentHandler(paymentService)
+	tenantHandler := handlers.NewTenantHandler(tenantService)
 
 	// 6. Setup Router
 	if cfg.Port == "" {
@@ -83,6 +88,8 @@ func main() {
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
 			protected.POST("/kamar", kamarHandler.CreateKamar)
+			protected.PUT("/kamar/:id", kamarHandler.UpdateKamar)
+			protected.DELETE("/kamar/:id", kamarHandler.DeleteKamar)
 			protected.POST("/galleries", galleryHandler.CreateGallery)
 			protected.DELETE("/galleries/:id", galleryHandler.DeleteGallery)
 			protected.GET("/dashboard", dashboardHandler.GetStats)
@@ -90,6 +97,9 @@ func main() {
 			protected.GET("/profile", profileHandler.GetProfile)
 			protected.PUT("/profile", profileHandler.UpdateProfile)
 			protected.GET("/my-bookings", bookingHandler.GetMyBookings)
+			protected.GET("/payments", paymentHandler.GetAllPayments)
+			protected.PUT("/payments/:id/confirm", paymentHandler.ConfirmPayment)
+			protected.GET("/tenants", tenantHandler.GetAllTenants)
 			// Add other protected routes here
 		}
 	}

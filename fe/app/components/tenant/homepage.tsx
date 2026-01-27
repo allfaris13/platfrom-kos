@@ -29,6 +29,13 @@ import {
   LucideIcon
 } from 'lucide-react';
 import { api } from '@/app/services/api';
+import { 
+    Select, 
+    SelectContent, 
+    SelectItem, 
+    SelectTrigger, 
+    SelectValue 
+} from '@/app/components/ui/select';
 
 // --- Komponen Counter untuk Trust Indicators ---
 function Counter({ value, suffix = "", decimals = 0 }: { value: number, suffix?: string, decimals?: number }) {
@@ -100,61 +107,83 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
   const [searchLocation, setSearchLocation] = useState('');
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
-  const [reviews, setReviews] = useState(reviewsData); // Initialize with mock, update with API
+  const [reviews, setReviews] = useState(reviewsData);
+  const [realRooms, setRealRooms] = useState<Room[]>([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
 
   useEffect(() => {
-    const fetchReviews = async () => {
+    const fetchHomepageData = async () => {
+        setIsLoadingRooms(true);
         try {
-            const data = await api.getAllReviews();
-            if (data && data.length > 0) {
-                // Map API data to UI structure
-                const mappedReviews = data.map((r: { user?: { username: string }; comment: string; rating: number }) => ({
+            const [roomsData, reviewsDataApi] = await Promise.all([
+                api.getRooms(),
+                api.getAllReviews()
+            ]);
+
+            if (roomsData) {
+                const mapped = roomsData.map((r: { id: number; nomor_kamar: string; tipe_kamar: string; harga_per_bulan: number; image_url: string; fasilitas: string; status: string }) => ({
+                    id: String(r.id),
+                    name: r.nomor_kamar,
+                    type: r.tipe_kamar,
+                    price: r.harga_per_bulan,
+                    image: r.image_url ? (r.image_url.startsWith('http') ? r.image_url : `http://localhost:8080${r.image_url}`) : 'https://via.placeholder.com/600',
+                    location: 'Pekanbaru, Indonesia', 
+                    rating: 4.8, 
+                    reviews: 12,
+                    facilities: r.fasilitas ? r.fasilitas.split(',').map((f: string) => f.trim()) : [],
+                    status: r.status
+                }));
+                setRealRooms(mapped);
+            }
+
+            if (reviewsDataApi && reviewsDataApi.length > 0) {
+                const mappedReviews = reviewsDataApi.map((r: { user?: { username: string }; comment: string; rating: number }) => ({
                     name: r.user?.username || 'Anonymous',
-                    role: 'Resident', // API doesn't have role, use default
+                    role: 'Resident',
                     review: r.comment,
-                    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400', // Default image or random
+                    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400',
                     stayDuration: 'Verified',
                     rating: r.rating
                 }));
-                // Combine with mock if not enough data, or replace
-                // If we have enough real data (e.g. > 3), use real data. Else mix.
-                if (mappedReviews.length >= 4) {
-                    setReviews(mappedReviews);
-                } else {
-                    setReviews([...mappedReviews, ...reviewsData]);
-                }
+                setReviews(mappedReviews.length >= 4 ? mappedReviews : [...mappedReviews, ...reviewsData]);
             }
         } catch (e) {
-            console.error("Failed to fetch homepage reviews", e);
+            console.error("Failed to fetch homepage data", e);
+        } finally {
+            setIsLoadingRooms(false);
         }
     };
-    fetchReviews();
+    void fetchHomepageData();
   }, []);
   
   // --- REAL-TIME FILTER LOGIC ---
-  // Kita pakai useMemo supaya displayRooms berubah otomatis setiap kali state di atas berubah
   const displayRooms = useMemo(() => {
-    return featuredRooms.filter((room) => {
-      // 1. Logika Lokasi
+    const source = realRooms.length > 0 ? realRooms : featuredRooms;
+    return source.filter((room) => {
+      if (realRooms.length > 0 && (room as any).status !== 'Tersedia') return false;
+
       const matchesLocation = searchLocation === '' || room.location.toLowerCase().includes(searchLocation.toLowerCase());
       
-      // 2. Logika Tipe
       const matchesType = selectedType === 'all' || room.type.toLowerCase() === selectedType.toLowerCase();
       
-      // 3. Logika Harga
       let matchesPrice = true;
-      if (selectedPrice === '0-1000') matchesPrice = room.price <= 1000;
-      else if (selectedPrice === '1000-2000') matchesPrice = room.price > 1000 && room.price <= 2000;
-      else if (selectedPrice === '2000+') matchesPrice = room.price > 2000;
-      // Jika "all", matchesPrice akan selalu true (semua muncul)
+      const priceVal = realRooms.length > 0 ? room.price : room.price * 1000;
+      if (selectedPrice === '0-1000') matchesPrice = priceVal <= 1000000;
+      else if (selectedPrice === '1000-2000') matchesPrice = priceVal > 1000000 && priceVal <= 2000000;
+      else if (selectedPrice === '2000+') matchesPrice = priceVal > 2000000;
 
       return matchesLocation && matchesType && matchesPrice;
     });
-  }, [searchLocation, selectedPrice, selectedType]);
+  }, [realRooms, searchLocation, selectedType, selectedPrice]);
 
   const midPoint = Math.ceil(reviews.length / 2);
   const firstRowReviews = reviews.slice(0, midPoint);
   const secondRowReviews = reviews.slice(midPoint);
+
+  const formatCurrency = (val: number) => {
+      if (val < 10000) return `$${val}`; // Mock data fallback
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+  };
 
   return (
     <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors overflow-x-hidden">
@@ -206,31 +235,40 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
                 </div>
                 <div>
                   <label className="text-sm font-semibold text-stone-200 mb-3 block uppercase tracking-wide">Price</label>
-                  <select value={selectedPrice} onChange={(e) => setSelectedPrice(e.target.value)} className="w-full px-4 py-2.5 bg-white/90 border border-white/30 rounded-lg text-slate-900 dark:bg-slate-700/90 dark:text-slate-100 outline-none">
-                    <option value="all">All Prices</option>
-                    <option value="0-1000">$0 - $1000</option>
-                    <option value="1000-2000">$1000 - $2000</option>
-                    <option value="2000+">$2000+</option>
-                  </select>
+                  <Select value={selectedPrice} onValueChange={setSelectedPrice}>
+                    <SelectTrigger className="w-full bg-white/90 border-white/30 text-slate-900 dark:bg-slate-700/90 dark:text-slate-100">
+                      <SelectValue placeholder="All Prices" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Prices</SelectItem>
+                      <SelectItem value="0-1000">Rp 0 - Rp 1jt</SelectItem>
+                      <SelectItem value="1000-2000">Rp 1jt - Rp 2jt</SelectItem>
+                      <SelectItem value="2000+">Rp 2jt+</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-sm font-semibold text-stone-200 mb-3 block uppercase tracking-wide">Type</label>
-                  <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="w-full px-4 py-2.5 bg-white/90 border border-white/30 rounded-lg text-slate-900 dark:bg-slate-700/90 dark:text-slate-100 outline-none">
-                    <option value="all">All Types</option>
-                    <option value="standard">Standard</option>
-                    <option value="deluxe">Deluxe</option>
-                    <option value="premium">Premium</option>
-                    <option value="executive">Executive</option>
-                  </select>
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger className="w-full bg-white/90 border-white/30 text-slate-900 dark:bg-slate-700/90 dark:text-slate-100">
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="standard">Standard</SelectItem>
+                      <SelectItem value="deluxe">Deluxe</SelectItem>
+                      <SelectItem value="premium">Premium</SelectItem>
+                      <SelectItem value="executive">Executive</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              {/* Tombol Search dihapus agar bisa langsung muncul (Real-time) */}
             </Card>
           </motion.div>
         </div>
       </section>
 
-      {/* Conversion Banner for Guests */}
+      {/* Conversion Banner Section */}
       {!isLoggedIn && (
         <section className="bg-amber-500 py-12">
           <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -250,7 +288,7 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
             {searchLocation || selectedPrice !== 'all' || selectedType !== 'all' ? 'Search Results' : 'Featured Rooms'}
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            {displayRooms.length > 0 ? 'Handpicked premium accommodations' : 'No rooms match your specific criteria.'}
+            {isLoadingRooms ? 'Loading premium rooms...' : displayRooms.length > 0 ? 'Handpicked premium accommodations' : 'No rooms match your specific criteria.'}
           </p>
         </motion.div>
 
@@ -308,7 +346,7 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
 
                   <CardFooter className="border-t pt-5 flex items-center justify-between">
                     <div>
-                      <span className="text-3xl font-bold">${room.price}</span>
+                      <span className="text-3xl font-bold">{formatCurrency(room.price)}</span>
                       <span className="text-sm ml-1">/mo</span>
                     </div>
                     <Button onClick={() => onRoomClick(room.id)} className="bg-stone-800 hover:bg-stone-700 text-white font-semibold shadow-md px-6">

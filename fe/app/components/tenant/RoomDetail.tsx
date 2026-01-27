@@ -120,26 +120,62 @@ export function RoomDetail({ roomId, onBookNow, onBack, isLoggedIn, onLoginPromp
   // Booking State
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [guests, setGuests] = useState("1");
-  const [duration, setDuration] = useState("1"); // Months
-
-  // In a real app we'd fetch room details by ID from API
-  // For now we mock room info but fetch reviews
-  const room = roomDetails[roomId] || roomDetails['1'];
+  const [duration, setDuration] = useState("1"); 
+  const [realRoom, setRealRoom] = useState<RoomData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchReviews = async () => {
+    const fetchData = async () => {
+        setIsLoading(true);
         try {
-            // Note: Backend endpoint expects numeric ID. Our demo uses string '1'.
-            // In integration we should ensure IDs match. Assuming roomId is numeric string.
-            const kID = parseInt(roomId) || 1; 
-            const data = await api.getReviews(String(kID));
-            setReviews(data);
+            const [roomData, reviewsData] = await Promise.all([
+                api.getRoomById(roomId),
+                api.getReviews(roomId).catch(() => []) // Graceful if no reviews
+            ]);
+
+            if (roomData) {
+                const mapped: RoomData = {
+                    name: roomData.nomor_kamar,
+                    type: roomData.tipe_kamar,
+                    price: roomData.harga_per_bulan,
+                    location: 'Pekanbaru, Indonesia', // Default if missing
+                    description: roomData.description || 'No description available.',
+                    bedrooms: 1,
+                    bathrooms: 1,
+                    size: '24m²',
+                    facilities: (roomData.fasilitas || "").split(',').map((f: string) => ({
+                        name: f.trim(),
+                        icon: facilityIcons[f.trim()] || Check
+                    })),
+                    features: (roomData.fasilitas || "").split(',').map((f: string) => f.trim()),
+                    images: [
+                        roomData.image_url ? (roomData.image_url.startsWith('http') ? roomData.image_url : `http://localhost:8080${roomData.image_url}`) : 'https://via.placeholder.com/1080',
+                        'https://images.unsplash.com/photo-1662454419736-de132ff75638?q=80&w=1080', // Fallback secondary images
+                        'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1080'
+                    ]
+                };
+                setRealRoom(mapped);
+            }
+            setReviews(reviewsData);
         } catch (e) {
-            console.error("Failed to fetch reviews", e);
+            console.error("Failed to fetch room detail", e);
+        } finally {
+            setIsLoading(false);
         }
     };
-    fetchReviews();
+    fetchData();
   }, [roomId]);
+
+  const room = realRoom || roomDetails['1'];
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="size-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+        <p className="text-slate-500 italic">Fetching room details...</p>
+      </div>
+    );
+  }
 
   const handleSubmitReview = async () => {
       const token = localStorage.getItem('token');

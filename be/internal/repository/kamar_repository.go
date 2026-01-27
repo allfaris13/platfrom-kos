@@ -10,6 +10,8 @@ type KamarRepository interface {
 	FindAll() ([]models.Kamar, error)
 	FindByID(id uint) (*models.Kamar, error)
 	Create(kamar *models.Kamar) error
+	Update(kamar *models.Kamar) error
+	Delete(id uint) error
 }
 
 type kamarRepository struct {
@@ -34,4 +36,12 @@ func (r *kamarRepository) FindByID(id uint) (*models.Kamar, error) {
 
 func (r *kamarRepository) Create(kamar *models.Kamar) error {
 	return r.db.Create(kamar).Error
+}
+
+func (r *kamarRepository) Update(kamar *models.Kamar) error {
+	return r.db.Save(kamar).Error
+}
+
+func (r *kamarRepository) Delete(id uint) error {
+	return r.db.Delete(&models.Kamar{}, id).Error
 }

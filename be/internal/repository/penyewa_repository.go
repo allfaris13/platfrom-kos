@@ -8,6 +8,7 @@ import (
 
 type PenyewaRepository interface {
 	FindByUserID(userID uint) (*models.Penyewa, error)
+	FindAll() ([]models.Penyewa, error)
 	Create(penyewa *models.Penyewa) error
 	Update(penyewa *models.Penyewa) error
 }
@@ -24,6 +25,12 @@ func (r *penyewaRepository) FindByUserID(userID uint) (*models.Penyewa, error) {
 	var penyewa models.Penyewa
 	err := r.db.Where("user_id = ?", userID).First(&penyewa).Error
 	return &penyewa, err
+}
+
+func (r *penyewaRepository) FindAll() ([]models.Penyewa, error) {
+	var penyewas []models.Penyewa
+	err := r.db.Preload("User").Find(&penyewas).Error
+	return penyewas, err
 }
 
 func (r *penyewaRepository) Create(penyewa *models.Penyewa) error {

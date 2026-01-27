@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Check, X, Eye } from 'lucide-react';
-import { payments as initialPayments } from '@/app/data/mockData';
+import { useEffect, useState } from 'react';
+import { Check, X, Eye, Loader2 } from 'lucide-react';
+import { api } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
 import {
   Table,
@@ -12,14 +12,68 @@ import {
 } from '@/app/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
 
-export function PaymentConfirmation() {
-  const [payments, setPayments] = useState(initialPayments);
-  const [viewingPayment, setViewingPayment] = useState<typeof payments[0] | null>(null);
+interface Payment {
+  id: string;
+  tenantName: string;
+  roomName: string;
+  amount: number;
+  date: string;
+  method: string;
+  status: 'Pending' | 'Confirmed' | 'Rejected';
+  receiptUrl: string;
+}
 
-  const handleConfirm = (id: string) => {
-    setPayments(payments.map(p => 
-      p.id === id ? { ...p, status: 'Confirmed' as const } : p
-    ));
+interface BackendPayment {
+  id: number;
+  jumlah_bayar: number;
+  tanggal_bayar: string;
+  status_pembayaran: string;
+  bukti_transfer: string;
+  pemesanan?: {
+    penyewa?: { nama_lengkap: string };
+    kamar?: { nomor_kamar: string };
+  };
+}
+
+export function PaymentConfirmation() {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [viewingPayment, setViewingPayment] = useState<Payment | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchPayments = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.getPayments();
+      const mapped = data.map((p: BackendPayment) => ({
+        id: String(p.id),
+        tenantName: p.pemesanan?.penyewa?.nama_lengkap || 'Guest',
+        roomName: p.pemesanan?.kamar?.nomor_kamar || 'Kamar',
+        amount: p.jumlah_bayar,
+        date: new Date(p.tanggal_bayar).toLocaleDateString('id-ID'),
+        method: 'Transfer Bank',
+        status: p.status_pembayaran as Payment['status'],
+        receiptUrl: p.bukti_transfer ? (p.bukti_transfer.startsWith('http') ? p.bukti_transfer : `http://localhost:8080${p.bukti_transfer}`) : '',
+      }));
+      setPayments(mapped);
+    } catch (e) {
+      console.error("Failed to fetch payments:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchPayments();
+  }, []);
+
+  const handleConfirm = async (id: string) => {
+    try {
+      await api.confirmPayment(Number(id));
+      await fetchPayments();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to confirm payment");
+    }
   };
 
   const handleReject = (id: string) => {
@@ -43,7 +97,6 @@ export function PaymentConfirmation() {
         <p className="text-slate-600 mt-1">Review and confirm tenant payments</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg border p-4">
           <p className="text-sm text-slate-600">Pending</p>
@@ -65,8 +118,7 @@ export function PaymentConfirmation() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg border">
+      <div className="bg-white rounded-lg border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -81,7 +133,22 @@ export function PaymentConfirmation() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.map((payment) => (
+            {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-10">
+                    <div className="flex flex-col items-center gap-2">
+                       <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                       <p className="text-slate-500">Loading payments...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+            ) : payments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-10 text-slate-500">
+                    No payments found.
+                  </TableCell>
+                </TableRow>
+            ) : payments.map((payment) => (
               <TableRow key={payment.id}>
                 <TableCell className="font-medium">{payment.id}</TableCell>
                 <TableCell>{payment.tenantName}</TableCell>
@@ -135,7 +202,6 @@ export function PaymentConfirmation() {
         </Table>
       </div>
 
-      {/* View Dialog */}
       <Dialog open={!!viewingPayment} onOpenChange={() => setViewingPayment(null)}>
         <DialogContent>
           <DialogHeader>
@@ -171,9 +237,12 @@ export function PaymentConfirmation() {
               </div>
               <div>
                 <p className="text-sm text-slate-600 mb-2">Receipt</p>
-                <div className="bg-slate-100 rounded-lg p-8 text-center">
-                  <p className="text-slate-500">Receipt preview would appear here</p>
-                  <p className="text-xs text-slate-400 mt-2">{viewingPayment.receiptUrl}</p>
+                <div className="overflow-hidden rounded-lg border bg-slate-50">
+                  {viewingPayment.receiptUrl ? (
+                      <img src={viewingPayment.receiptUrl} alt="Receipt" className="w-full h-auto max-h-96 object-contain" />
+                  ) : (
+                      <div className="p-8 text-center text-slate-500">No receipt image provided</div>
+                  )}
                 </div>
               </div>
               {viewingPayment.status === 'Pending' && (
@@ -181,7 +250,7 @@ export function PaymentConfirmation() {
                   <Button 
                     className="flex-1" 
                     onClick={() => {
-                      handleConfirm(viewingPayment.id);
+                      void handleConfirm(viewingPayment.id);
                       setViewingPayment(null);
                     }}
                   >

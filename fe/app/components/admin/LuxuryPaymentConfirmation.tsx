@@ -1,20 +1,75 @@
-import { useState } from 'react';
-import { Check, X, Eye, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import { payments as initialPayments } from '@/app/data/mockData';
+import { useEffect, useState } from 'react';
+import { Check, X, Eye, Clock, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { api } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
 
-export function LuxuryPaymentConfirmation() {
-  const [payments, setPayments] = useState(initialPayments);
-  const [viewingPayment, setViewingPayment] = useState<typeof payments[0] | null>(null);
+interface Payment {
+  id: number;
+  tenantName: string;
+  roomName: string;
+  amount: number;
+  date: string;
+  method: string;
+  status: 'Pending' | 'Confirmed' | 'Rejected';
+  receiptUrl: string;
+}
 
-  const handleConfirm = (id: string) => {
-    setPayments(payments.map(p => 
-      p.id === id ? { ...p, status: 'Confirmed' as const } : p
-    ));
+interface BackendPayment {
+  id: number;
+  jumlah_bayar: number;
+  tanggal_bayar: string;
+  status_pembayaran: string;
+  bukti_transfer: string;
+  pemesanan?: {
+    penyewa?: { nama_lengkap: string };
+    kamar?: { nomor_kamar: string };
+  };
+}
+
+export function LuxuryPaymentConfirmation() {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [viewingPayment, setViewingPayment] = useState<Payment | null>(null);
+
+  const fetchPayments = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.getPayments();
+      const mapped = data.map((p: BackendPayment) => ({
+        id: p.id,
+        tenantName: p.pemesanan?.penyewa?.nama_lengkap || 'Guest',
+        roomName: p.pemesanan?.kamar?.nomor_kamar || 'Kamar',
+        amount: p.jumlah_bayar,
+        date: new Date(p.tanggal_bayar).toLocaleDateString('id-ID'),
+        method: 'Transfer Bank', 
+        status: p.status_pembayaran as Payment['status'],
+        receiptUrl: p.bukti_transfer ? (p.bukti_transfer.startsWith('http') ? p.bukti_transfer : `http://localhost:8080${p.bukti_transfer}`) : '',
+      }));
+      setPayments(mapped);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleReject = (id: string) => {
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const handleConfirm = async (id: number) => {
+    try {
+      await api.confirmPayment(id);
+      fetchPayments();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to confirm payment");
+    }
+  };
+
+  const handleReject = (id: number) => {
+    // Backend Reject not yet implemented, keeping local update for demo or skipping
     setPayments(payments.map(p => 
       p.id === id ? { ...p, status: 'Rejected' as const } : p
     ));
@@ -134,7 +189,17 @@ export function LuxuryPaymentConfirmation() {
       <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
         <h2 className="text-2xl font-semibold text-white mb-6">Payment Timeline</h2>
         
-        <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
+            <p className="text-slate-400 font-medium italic">Loading payments...</p>
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="text-center py-20 bg-slate-800/10 rounded-xl border border-dashed border-slate-800">
+            <p className="text-slate-500">No payments found in the records.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
           {payments.map((payment, index) => (
             <div 
               key={payment.id} 
@@ -215,6 +280,7 @@ export function LuxuryPaymentConfirmation() {
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* Full-Screen Receipt Overlay */}

@@ -1,8 +1,33 @@
 import { TrendingUp, Users, Home, CreditCard, ArrowUpRight } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { rooms, tenants, payments } from '@/app/data/mockData'; 
 import { useEffect, useState } from 'react';
 import { api } from '@/app/services/api';
+
+interface Tenant {
+  id: string;
+  nama_lengkap: string;
+  user?: {
+    username: string;
+  };
+  status?: string;
+  kamar?: { nomor_kamar: string };
+}
+
+interface Payment {
+  id: string;
+  status_pembayaran: string;
+}
+
+interface DashboardStatResponse {
+  total_revenue: number;
+  active_tenants: number;
+  available_rooms: number;
+  occupied_rooms: number;
+  pending_payments: number;
+  monthly_trend?: { month: string; revenue: number }[];
+  type_breakdown?: { type: string; revenue: number; count: number; occupied: number }[];
+  demographics?: { name: string; value: number; color: string }[];
+}
 
 
 
@@ -39,24 +64,38 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export function LuxuryDashboard() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStatResponse>({
     total_revenue: 0,
     active_tenants: 0,
     available_rooms: 0,
     occupied_rooms: 0,
-    pending_payments: 0
+    pending_payments: 0,
+    monthly_trend: [],
+    type_breakdown: [],
+    demographics: []
   });
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [roomsCount, setRoomsCount] = useState(0);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchAllData = async () => {
       try {
-        const data = await api.getDashboardStats();
-        setStats(data);
+        const [statsData, tenantsData, paymentsData, roomsData] = await Promise.all([
+          api.getDashboardStats(),
+          api.getTenants(),
+          api.getPayments(),
+          api.getRooms()
+        ]);
+        setStats(statsData);
+        setTenants(tenantsData);
+        setPayments(paymentsData);
+        setRoomsCount(roomsData.length);
       } catch (error) {
-        console.error("Failed to fetch dashboard stats:", error);
+        console.error("Failed to fetch dashboard data:", error);
       }
     };
-    void fetchStats();
+    void fetchAllData();
   }, []);
 
   // Use real data
@@ -66,15 +105,17 @@ export function LuxuryDashboard() {
   const pendingPayments = stats.pending_payments;
   const totalRevenue = stats.total_revenue;
 
-  // Mock revenue trend data (backend doesn't support historical data yet)
-  const revenueData = [
-    { month: 'Jul', revenue: 4200000, target: 4000000 },
-    { month: 'Aug', revenue: 5100000, target: 4500000 },
-    { month: 'Sep', revenue: 4800000, target: 5000000 },
-    { month: 'Oct', revenue: 5400000, target: 5200000 },
-    { month: 'Nov', revenue: 6200000, target: 5800000 },
-    { month: 'Dec', revenue: 5900000, target: 6000000 }
-  ];
+  // Historical revenue data from backend
+  const revenueData = (stats.monthly_trend && stats.monthly_trend.length > 0) 
+    ? [...stats.monthly_trend].reverse().map(d => ({ ...d, target: d.revenue * 0.9 })) // Mock target for visual
+    : [
+         { month: 'Jul', revenue: 4200000, target: 4000000 },
+         { month: 'Aug', revenue: 5100000, target: 4500000 },
+         { month: 'Sep', revenue: 4800000, target: 5000000 },
+         { month: 'Oct', revenue: 5400000, target: 5200000 },
+         { month: 'Nov', revenue: 6200000, target: 5800000 },
+         { month: 'Dec', revenue: 5900000, target: 6000000 }
+      ];
 
   // Occupancy data for donut chart
   const occupancyData = [
@@ -163,20 +204,20 @@ export function LuxuryDashboard() {
             </div>
             <p className="text-slate-400 text-sm mb-1">Available Rooms</p>
             <p className="text-3xl font-bold text-white mb-1">{availableRooms}</p>
-            <p className="text-xs text-slate-500">Out of {rooms.length} total rooms</p>
+            <p className="text-xs text-slate-500">Out of {roomsCount} total rooms</p>
           </div>
         </div>
 
         {/* Pending Payments */}
-        <div className="group relative overflow-hidden bg-gradient-to-br from-orange-500/10 to-orange-600/10 border border-orange-500/20 rounded-2xl p-6 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-transparent rounded-full blur-3xl" />
+        <div className="group relative overflow-hidden bg-gradient-to-br from-red-500/10 to-red-600/10 border border-red-500/20 rounded-2xl p-6 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/20 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-orange-500/20 rounded-xl">
-                <CreditCard className="size-6 text-orange-400" />
+              <div className="p-3 bg-red-500/20 rounded-xl">
+                <CreditCard className="size-6 text-red-400" />
               </div>
-              <div className="px-2 py-1 bg-orange-500/20 rounded-lg">
-                <span className="text-xs text-orange-400 font-medium">Action Required</span>
+              <div className="px-2 py-1 bg-red-500/20 rounded-lg">
+                <span className="text-xs text-red-400 font-medium">Action Required</span>
               </div>
             </div>
             <p className="text-slate-400 text-sm mb-1">Pending Payments</p>
@@ -300,28 +341,28 @@ export function LuxuryDashboard() {
         <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">New Registrations</h3>
           <div className="space-y-3">
-            {tenants.slice(0, 4).map((tenant) => (
+            {tenants.length > 0 ? tenants.slice(0, 4).map((tenant) => (
               <div key={tenant.id} className="flex items-center gap-4 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl hover:bg-slate-800/50 transition-all duration-200">
-                <div className="size-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg font-semibold text-white">
-                    {tenant.name.charAt(0)}
+                <div className="size-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
+                  <span className="text-lg font-bold text-white">
+                    {(tenant.nama_lengkap || 'G').charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white truncate">{tenant.name}</p>
-                  <p className="text-sm text-slate-400 truncate">{tenant.roomName}</p>
+                  <p className="font-medium text-white truncate">{tenant.nama_lengkap || 'Guest'}</p>
+                  <p className="text-sm text-slate-400 truncate">
+                    {tenant.kamar?.nomor_kamar ? `Kamar ${tenant.kamar.nomor_kamar}` : (tenant.user?.username || 'User')}
+                  </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                  tenant.status === 'Active' 
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                    : tenant.status === 'Expired'
-                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                    : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap border ${
+                  tenant.status === 'Active' || !tenant.status
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                    : 'bg-red-500/20 text-red-400 border-red-500/30'
                 }`}>
-                  {tenant.status}
+                  {tenant.status || 'Active'}
                 </span>
               </div>
-            ))}
+            )) : <p className="text-slate-500 text-center py-4">No registrations found</p>}
           </div>
         </div>
 
@@ -333,13 +374,13 @@ export function LuxuryDashboard() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-slate-400">Occupancy Rate</span>
                 <span className="text-sm font-semibold text-white">
-                  {Math.round((occupiedRooms / rooms.length) * 100)}%
+                  {Math.round((occupiedRooms / (roomsCount || 1)) * 100)}%
                 </span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
                 <div 
-                  className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full transition-all duration-500"
-                  style={{ width: `${(occupiedRooms / rooms.length) * 100}%` }}
+                  className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(245,158,11,0.4)]"
+                  style={{ width: `${roomsCount > 0 ? (occupiedRooms / roomsCount) * 100 : 0}%` }}
                 />
               </div>
             </div>
@@ -348,13 +389,13 @@ export function LuxuryDashboard() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-slate-400">Payment Completion</span>
                 <span className="text-sm font-semibold text-white">
-                  {Math.round((payments.filter(p => p.status === 'Confirmed').length / payments.length) * 100)}%
+                  {payments.length > 0 ? Math.round((payments.filter((p: Payment) => p.status_pembayaran === 'Confirmed').length / payments.length) * 100) : 0}%
                 </span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
                 <div 
-                  className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
-                  style={{ width: `${(payments.filter(p => p.status === 'Confirmed').length / payments.length) * 100}%` }}
+                  className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                  style={{ width: `${payments.length > 0 ? (payments.filter((p: Payment) => p.status_pembayaran === 'Confirmed').length / payments.length) * 100 : 0}%` }}
                 />
               </div>
             </div>
@@ -364,9 +405,9 @@ export function LuxuryDashboard() {
                 <span className="text-sm text-slate-400">Tenant Satisfaction</span>
                 <span className="text-sm font-semibold text-white">95%</span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(37,99,235,0.4)]"
                   style={{ width: '95%' }}
                 />
               </div>
@@ -377,9 +418,9 @@ export function LuxuryDashboard() {
                 <span className="text-sm text-slate-400">Monthly Target</span>
                 <span className="text-sm font-semibold text-white">88%</span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
                 <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(147,51,234,0.4)]"
                   style={{ width: '88%' }}
                 />
               </div>

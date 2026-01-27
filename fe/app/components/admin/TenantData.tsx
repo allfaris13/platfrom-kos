@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Search } from 'lucide-react';
-import { tenants } from '@/app/data/mockData';
+import { useEffect, useState } from 'react';
+import { Search, Loader2 } from 'lucide-react';
+import { api } from '@/app/services/api';
 import { Input } from '@/app/components/ui/input';
 import {
   Table,
@@ -11,8 +11,54 @@ import {
   TableRow,
 } from '@/app/components/ui/table';
 
+interface Tenant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  roomName: string;
+  checkIn: string;
+  checkOut: string;
+  status: 'Active' | 'Expired' | 'Pending';
+}
+
+interface BackendTenant {
+  id: number;
+  nama_lengkap: string;
+  nomor_hp: string;
+  created_at: string;
+  user?: { email?: string; username?: string };
+}
+
 export function TenantData() {
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTenants = async () => {
+      setIsLoading(true);
+      try {
+        const data = await api.getTenants();
+        const mapped = data.map((t: BackendTenant) => ({
+          id: String(t.id),
+          name: t.nama_lengkap || 'Guest',
+          email: t.user?.email || t.user?.username || 'N/A',
+          phone: t.nomor_hp || 'N/A',
+          roomName: 'Kamar', 
+          checkIn: new Date(t.created_at).toLocaleDateString('id-ID'),
+          checkOut: '-',
+          status: 'Active' as const, 
+        }));
+        setTenants(mapped);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTenants();
+  }, []);
 
   const filteredTenants = tenants.filter(tenant =>
     tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -54,7 +100,22 @@ export function TenantData() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTenants.map((tenant) => (
+            {isLoading ? (
+               <TableRow>
+                 <TableCell colSpan={8} className="text-center py-10">
+                   <div className="flex flex-col items-center gap-2">
+                     <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                     <p className="text-slate-500">Loading tenants...</p>
+                   </div>
+                 </TableCell>
+               </TableRow>
+            ) : filteredTenants.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-10 text-slate-500">
+                  No tenants found.
+                </TableCell>
+              </TableRow>
+            ) : filteredTenants.map((tenant) => (
               <TableRow key={tenant.id}>
                 <TableCell className="font-medium">{tenant.id}</TableCell>
                 <TableCell>{tenant.name}</TableCell>

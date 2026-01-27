@@ -1,30 +1,62 @@
-import { TrendingUp, DollarSign, Calendar } from 'lucide-react';
+import { TrendingUp, DollarSign, Calendar, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { payments, rooms } from '@/app/data/mockData';
+import { useEffect, useState } from 'react';
+import { api } from '@/app/services/api';
 
 interface Payment {
-  id: string;
-  status: string;
-  amount: number;
+  id: string | number;
+  status_pembayaran: string;
+  jumlah_bayar: number;
 }
 
 interface Room {
-  id: string;
-  type: string;
+  id: string | number;
+  tipe_kamar: string;
   status: string;
-  price: number;
+  harga_per_bulan: number;
 }
 
 export function FinancialReports() {
-  const confirmedPayments = (payments as Payment[]).filter(p => p.status === 'Confirmed');
-  const totalRevenue = confirmedPayments.reduce((sum: number, p: Payment) => sum + p.amount, 0);
-  const pendingRevenue = (payments as Payment[])
-    .filter(p => p.status === 'Pending')
-    .reduce((sum: number, p: Payment) => sum + p.amount, 0);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [p, r] = await Promise.all([
+          api.getPayments(),
+          api.getRooms()
+        ]);
+        setPayments(p);
+        setRooms(r);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+        <p className="text-slate-400">Preparing financial reports...</p>
+      </div>
+    );
+  }
+
+  const confirmedPayments = payments.filter(p => p.status_pembayaran === 'Confirmed');
+  const totalRevenue = confirmedPayments.reduce((sum, p) => sum + p.jumlah_bayar, 0);
+  const pendingRevenue = payments
+    .filter(p => p.status_pembayaran === 'Pending')
+    .reduce((sum, p) => sum + p.jumlah_bayar, 0);
   
-  const occupiedRooms = (rooms as Room[]).filter(r => r.status === 'Penuh');
-  const potentialRevenue = (rooms as Room[]).reduce((sum: number, r: Room) => sum + r.price, 0);
-  const occupancyRate = (occupiedRooms.length / rooms.length) * 100;
+  const occupiedRooms = rooms.filter(r => r.status === 'Penuh');
+  const potentialRevenue = rooms.reduce((sum, r) => sum + (r.harga_per_bulan || 0), 0);
+  const occupancyRate = rooms.length > 0 ? (occupiedRooms.length / rooms.length) * 100 : 0;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -52,7 +84,6 @@ export function FinancialReports() {
         <p className="text-slate-600 mt-1">View revenue and financial statistics</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
@@ -115,7 +146,6 @@ export function FinancialReports() {
         </Card>
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -132,7 +162,7 @@ export function FinancialReports() {
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-600 transition-all"
-                      style={{ width: `${(data.revenue / maxRevenue) * 100}%` }}
+                      style={{ width: `${(data.revenue / (maxRevenue || 1)) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -151,7 +181,7 @@ export function FinancialReports() {
                 <div>
                   <p className="font-medium">Confirmed Payments</p>
                   <p className="text-sm text-slate-600 mt-1">
-                    {(payments as Payment[]).filter(p => p.status === 'Confirmed').length} transactions
+                    {payments.filter(p => p.status_pembayaran === 'Confirmed').length} transactions
                   </p>
                 </div>
                 <div className="text-right">
@@ -165,7 +195,7 @@ export function FinancialReports() {
                 <div>
                   <p className="font-medium">Pending Payments</p>
                   <p className="text-sm text-slate-600 mt-1">
-                    {(payments as Payment[]).filter(p => p.status === 'Pending').length} transactions
+                    {payments.filter(p => p.status_pembayaran === 'Pending').length} transactions
                   </p>
                 </div>
                 <div className="text-right">
@@ -179,7 +209,7 @@ export function FinancialReports() {
                 <div>
                   <p className="font-medium">Rejected Payments</p>
                   <p className="text-sm text-slate-600 mt-1">
-                    {(payments as Payment[]).filter(p => p.status === 'Rejected').length} transactions
+                    {payments.filter(p => p.status_pembayaran === 'Rejected').length} transactions
                   </p>
                 </div>
                 <div className="text-right">
@@ -191,23 +221,23 @@ export function FinancialReports() {
         </Card>
       </div>
 
-      {/* Revenue by Room Type */}
       <Card>
         <CardHeader>
           <CardTitle>Revenue by Room Type</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Array.from(new Set((rooms as Room[]).map(r => r.type))).map((type: unknown) => {
-              const typeRooms = (rooms as Room[]).filter(r => r.type === type);
+            {Array.from(new Set(rooms.map(r => r.tipe_kamar))).map((type) => {
+              const typeRooms = rooms.filter(r => r.tipe_kamar === type);
               const occupiedTypeRooms = typeRooms.filter(r => r.status === 'Penuh');
-              const typeRevenue = occupiedTypeRooms.reduce((sum: number, r: Room) => sum + r.price, 0);
+              const typeRevenue = occupiedTypeRooms.reduce((sum, r) => sum + r.harga_per_bulan, 0);
+              const occupancyPercent = typeRooms.length > 0 ? (occupiedTypeRooms.length / typeRooms.length) * 100 : 0;
               
               return (
-                <div key={type as string} className="p-4 border rounded-lg">
+                <div key={type} className="p-4 border rounded-lg">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <p className="font-medium">{type as string} Rooms</p>
+                      <p className="font-medium">{type} Rooms</p>
                       <p className="text-sm text-slate-600">
                         {occupiedTypeRooms.length}/{typeRooms.length} occupied
                       </p>
@@ -217,7 +247,7 @@ export function FinancialReports() {
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-blue-600"
-                      style={{ width: `${(occupiedTypeRooms.length / typeRooms.length) * 100}%` }}
+                      style={{ width: `${occupancyPercent}%` }}
                     />
                   </div>
                 </div>
