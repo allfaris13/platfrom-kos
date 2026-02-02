@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import useSWR from 'swr';
 import { motion, useInView, useMotionValue, useSpring, AnimatePresence } from 'framer-motion';
 import { 
   Card, 
@@ -74,6 +75,7 @@ const staggerContainer = {
 interface Room {
   id: string; name: string; type: string; price: number; image: string;
   location: string; rating: number; reviews: number; facilities: string[];
+  status?: string;
 }
 
 const featuredRooms: Room[] = [
@@ -107,60 +109,48 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
   const [searchLocation, setSearchLocation] = useState('');
   const [selectedPrice, setSelectedPrice] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
-  const [reviews, setReviews] = useState(reviewsData);
-  const [realRooms, setRealRooms] = useState<Room[]>([]);
-  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
 
-  useEffect(() => {
-    const fetchHomepageData = async () => {
-        setIsLoadingRooms(true);
-        try {
-            const [roomsData, reviewsDataApi] = await Promise.all([
-                api.getRooms(),
-                api.getAllReviews()
-            ]);
+  // Cache Rooms
+  const { data: roomsData, isLoading: isLoadingRooms } = useSWR('api/rooms', api.getRooms);
+  
+  // Cache Reviews
+  const { data: reviewsDataApi } = useSWR('api/reviews', api.getAllReviews);
 
-            if (roomsData) {
-                const mapped = roomsData.map((r: { id: number; nomor_kamar: string; tipe_kamar: string; harga_per_bulan: number; image_url: string; fasilitas: string; status: string }) => ({
-                    id: String(r.id),
-                    name: r.nomor_kamar,
-                    type: r.tipe_kamar,
-                    price: r.harga_per_bulan,
-                    image: r.image_url ? (r.image_url.startsWith('http') ? r.image_url : `http://localhost:8080${r.image_url}`) : 'https://via.placeholder.com/600',
-                    location: 'Pekanbaru, Indonesia', 
-                    rating: 4.8, 
-                    reviews: 12,
-                    facilities: r.fasilitas ? r.fasilitas.split(',').map((f: string) => f.trim()) : [],
-                    status: r.status
-                }));
-                setRealRooms(mapped);
-            }
+  const realRooms = useMemo(() => {
+    if (!roomsData) return [];
+    return (roomsData as Array<{ id: number; nomor_kamar: string; tipe_kamar: string; harga_per_bulan: number; image_url: string; fasilitas: string; status: string }>).map((r) => ({
+      id: String(r.id),
+      name: r.nomor_kamar,
+      type: r.tipe_kamar,
+      price: r.harga_per_bulan,
+      image: r.image_url ? (r.image_url.startsWith('http') ? r.image_url : `http://localhost:8080${r.image_url}`) : 'https://via.placeholder.com/600',
+      location: 'Kota Malang, Jawa Timur', 
+      rating: 4.8, 
+      reviews: 12,
+      facilities: r.fasilitas ? r.fasilitas.split(',').map((f: string) => f.trim()) : [],
+      status: r.status
+    }));
+  }, [roomsData]);
 
-            if (reviewsDataApi && reviewsDataApi.length > 0) {
-                const mappedReviews = reviewsDataApi.map((r: { user?: { username: string }; comment: string; rating: number }) => ({
-                    name: r.user?.username || 'Anonymous',
-                    role: 'Resident',
-                    review: r.comment,
-                    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400',
-                    stayDuration: 'Verified',
-                    rating: r.rating
-                }));
-                setReviews(mappedReviews.length >= 4 ? mappedReviews : [...mappedReviews, ...reviewsData]);
-            }
-        } catch (e) {
-            console.error("Failed to fetch homepage data", e);
-        } finally {
-            setIsLoadingRooms(false);
-        }
-    };
-    void fetchHomepageData();
-  }, []);
+  const reviews = useMemo(() => {
+    if (!reviewsDataApi || reviewsDataApi.length === 0) return reviewsData;
+    const mapped = (reviewsDataApi as Array<{ user?: { username: string }; comment: string; rating: number }>).map((r) => ({
+      name: r.user?.username || 'Anonymous',
+      role: 'Resident',
+      review: r.comment,
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400',
+      stayDuration: 'Verified',
+      rating: r.rating
+    }));
+    return mapped.length >= 4 ? mapped : [...mapped, ...reviewsData];
+  }, [reviewsDataApi]);
+
   
   // --- REAL-TIME FILTER LOGIC ---
   const displayRooms = useMemo(() => {
     const source = realRooms.length > 0 ? realRooms : featuredRooms;
-    return source.filter((room) => {
-      if (realRooms.length > 0 && (room as any).status !== 'Tersedia') return false;
+    return source.filter((room: Room) => {
+      if (realRooms.length > 0 && room.status !== 'Tersedia') return false;
 
       const matchesLocation = searchLocation === '' || room.location.toLowerCase().includes(searchLocation.toLowerCase());
       
@@ -200,7 +190,7 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
         <div className="relative max-w-7xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} className="text-center mb-16">
             <h1 className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-stone-100 to-stone-200 bg-clip-text text-transparent">Find Your Perfect Space</h1>
-            <p className="text-xl md:text-2xl text-stone-300 max-w-2xl mx-auto">Premium boarding houses and apartments tailored to your lifestyle</p>
+            <p className="text-xl md:text-2xl text-stone-300 max-w-2xl mx-auto">Premium male-only boarding houses in Malang tailored to your comfort</p>
             
             {!isLoggedIn && (
                <motion.div 
@@ -212,7 +202,7 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
                <Button onClick={onLoginPrompt} className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-8 py-6 rounded-xl text-lg shadow-2xl shadow-amber-500/20">Mulai Sewa Sekarang</Button>
                <div className="flex items-center gap-2 text-stone-400 bg-black/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
                  <CheckCircle2 className="w-4 h-4 text-amber-500" />
-                 <span className="text-sm">Bergabung dengan 1,200+ penyewa puas</span>
+                 <span className="text-sm">Bergabung dengan penghuni Rahmat ZAW</span>
                </div>
              </motion.div>
             )}
@@ -332,7 +322,7 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
 
                   <CardContent className="flex-1">
                     <div className="flex flex-wrap gap-2">
-                      {room.facilities.map((f) => {
+                      {room.facilities.map((f: string) => {
                         const Icon = facilityIcons[f];
                         return (
                           <div key={f} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-full text-xs font-medium">
@@ -344,12 +334,12 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
                     </div>
                   </CardContent>
 
-                  <CardFooter className="border-t pt-5 flex items-center justify-between">
-                    <div>
-                      <span className="text-3xl font-bold">{formatCurrency(room.price)}</span>
-                      <span className="text-sm ml-1">/mo</span>
+                  <CardFooter className="border-t pt-5 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-baseline">
+                      <span className="text-xl md:text-2xl font-bold">{formatCurrency(room.price)}</span>
+                      <span className="text-xs text-muted-foreground ml-1">/mo</span>
                     </div>
-                    <Button onClick={() => onRoomClick(room.id)} className="bg-stone-800 hover:bg-stone-700 text-white font-semibold shadow-md px-6">
+                    <Button onClick={() => onRoomClick(room.id)} className="bg-stone-800 hover:bg-stone-700 text-white font-semibold shadow-sm px-4">
                       View Details
                     </Button>
                   </CardFooter>
@@ -386,10 +376,10 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
             <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 1 }} viewport={{ once: true }}>
-              <h2 className="text-5xl font-bold text-slate-900 dark:text-slate-100 mb-8">Redefining Premium Living</h2>
+              <h2 className="text-5xl font-bold text-slate-900 dark:text-slate-100 mb-8">Redefining Boarding Experience</h2>
               <div className="space-y-6 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
-                <p>Founded in 2018, LuxeStay began as a vision to revolutionize the boarding house experience in Indonesia. Our founders experienced the challenges of finding quality accommodation during their university years.</p>
-                <p>Today, LuxeStay represents more than just accommodation - it&apos;s a movement towards redefining what premium living means for modern professionals and students alike.</p>
+                <p>Didirikan pada tahun 2018, Kost Putra Rahmat ZAW hadir dengan visi untuk merevolusi pengalaman tinggal di kost-kostan di kawasan Sigura-gura, Malang. Fokus kami adalah menyediakan hunian yang nyaman, aman, dan mendukung produktivitas mahasiswa.</p>
+                <p>Kini, Rahmat ZAW mewakili standar baru hunian premium bagi putra yang menginginkan kenyamanan maksimal dalam lingkungan yang kondusif.</p>
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 1 }} viewport={{ once: true }} className="relative">

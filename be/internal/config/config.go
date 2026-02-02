@@ -8,13 +8,14 @@ import (
 )
 
 type Config struct {
-	DBHost     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBPort     string
-	JWTSecret  string
-	Port       string
+	DBHost         string
+	DBUser         string
+	DBPassword     string
+	DBName         string
+	DBPort         string
+	JWTSecret      string
+	Port           string
+	AllowedOrigins string
 }
 
 func LoadConfig() *Config {
@@ -24,13 +25,14 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		DBName:     getEnv("DB_NAME", "koskosan"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		JWTSecret:  getEnv("JWT_SECRET", "secret"),
-		Port:       getEnv("PORT", "8080"),
+		DBHost:         getEnv("DB_HOST", "localhost"),
+		DBUser:         getEnv("DB_USER", "postgres"),
+		DBPassword:     getEnv("DB_PASSWORD", "postgres"),
+		DBName:         getEnv("DB_NAME", "koskosan"),
+		DBPort:         getEnv("DB_PORT", "5432"),
+		JWTSecret:      getEnv("JWT_SECRET", "secret"),
+		Port:           getEnv("PORT", "8080"),
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
 	}
 }
 

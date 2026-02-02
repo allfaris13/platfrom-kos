@@ -12,13 +12,20 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/app/components/ui/select';
 
 interface BookingFlowProps {
   roomId: string;
   onBack: () => void;
 }
 
-export function BookingFlow({ roomId, onBack }: BookingFlowProps) {
+export function BookingFlow({ onBack }: BookingFlowProps) {
   const [step, setStep] = useState(1);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingId, setBookingId] = useState('');
@@ -74,7 +81,7 @@ export function BookingFlow({ roomId, onBack }: BookingFlowProps) {
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-4">Booking Confirmed!</h1>
             <p className="text-lg text-muted-foreground mb-8">
-              Your booking request has been submitted successfully. We'll review your payment and send a confirmation email within 24 hours.
+              Your booking request has been submitted successfully. We&apos;ll review your payment and send a confirmation email within 24 hours.
             </p>
             <div className="space-y-3 p-6 bg-muted/50 rounded-lg mb-8 border border-border">
               <div className="flex justify-between">
@@ -119,7 +126,7 @@ export function BookingFlow({ roomId, onBack }: BookingFlowProps) {
             <div className="absolute top-6 left-0 w-full h-0.5 bg-muted z-0" />
             
             {/* Steps Map */}
-            {steps.map((s, index) => {
+            {steps.map((s) => {
               const isCompleted = step > s.number;
               const isActive = step === s.number;
 
@@ -225,16 +232,19 @@ export function BookingFlow({ roomId, onBack }: BookingFlowProps) {
 
                     <div className="space-y-2">
                       <Label htmlFor="duration">Rental Duration *</Label>
-                      <select
-                        id="duration"
+                      <Select 
                         value={formData.duration}
-                        onChange={(e) => handleInputChange('duration', e.target.value)}
-                        className="w-full h-10 px-3 py-2 border border-input rounded-md bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        onValueChange={(val) => handleInputChange('duration', val)}
                       >
-                        <option value="3">3 months</option>
-                        <option value="6">6 months</option>
-                        <option value="12">12 months</option>
-                      </select>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select duration" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="3">3 months</SelectItem>
+                          <SelectItem value="6">6 months</SelectItem>
+                          <SelectItem value="12">12 months</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900">
@@ -318,7 +328,7 @@ export function BookingFlow({ roomId, onBack }: BookingFlowProps) {
                         <h4 className="font-semibold text-sm text-foreground uppercase tracking-wider">Bank Details</h4>
                         <div className="grid grid-cols-2 gap-y-1 text-sm">
                           <span className="text-muted-foreground">Bank</span>
-                          <span className="font-medium text-right">LuxeStay Bank</span>
+                          <span className="font-medium text-right">Rahmat ZAW Bank</span>
                           <span className="text-muted-foreground">Account Number</span>
                           <span className="font-medium text-right">1234567890</span>
                           <span className="text-muted-foreground">Amount</span>

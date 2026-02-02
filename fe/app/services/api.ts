@@ -192,6 +192,17 @@ export const api = {
     return data;
   },
 
+  changePassword: async (data: { old_password: string; new_password: string }) => {
+    const res = await fetch(`${API_URL}/profile/change-password`, {
+      method: 'PUT',
+      headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const resData = await safeJson(res);
+    if (!res.ok) throw new Error(resData.error || 'Failed to change password');
+    return resData;
+  },
+
   getMyBookings: async () => {
     const res = await fetch(`${API_URL}/my-bookings`, {
       headers: { ...getHeaders(), 'Content-Type': 'application/json' },

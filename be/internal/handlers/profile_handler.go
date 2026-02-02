@@ -111,3 +111,43 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 		"penyewa": penyewa,
 	})
 }
+
+func (h *ProfileHandler) ChangePassword(c *gin.Context) {
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+
+	var userID uint
+	switch v := userIDRaw.(type) {
+	case float64:
+		userID = uint(v)
+	case uint:
+		userID = v
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user id type"})
+		return
+	}
+
+	var input struct {
+		OldPassword string `json:"old_password" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.service.ChangePassword(userID, input.OldPassword, input.NewPassword); err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "current password is incorrect" {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "password changed successfully"})
+}

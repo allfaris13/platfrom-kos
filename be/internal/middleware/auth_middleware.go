@@ -37,3 +37,30 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func RoleMiddleware(roles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userRole, exists := c.Get("role")
+		if !exists {
+			c.JSON(http.StatusForbidden, gin.H{"error": "User role not found"})
+			c.Abort()
+			return
+		}
+
+		allowed := false
+		for _, role := range roles {
+			if userRole == role {
+				allowed = true
+				break
+			}
+		}
+
+		if !allowed {
+			c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to access this resource"})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

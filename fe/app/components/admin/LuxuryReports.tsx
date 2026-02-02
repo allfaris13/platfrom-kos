@@ -23,8 +23,12 @@ interface DashboardStats {
   demographics: { name: string; value: number; color: string }[];
   type_breakdown: { type: string; revenue: number; count: number; occupied: number }[];
   total_revenue: number;
+  pending_revenue: number;
   pending_payments: number;
   active_tenants: number;
+  occupied_rooms: number;
+  available_rooms: number;
+  potential_revenue: number;
 }
 
 export function LuxuryReports() {
@@ -53,11 +57,10 @@ export function LuxuryReports() {
     void fetchData();
   }, []);
 
-  const confirmedPayments = payments.filter(p => p.status_pembayaran === 'Confirmed');
-  const totalRevenue = confirmedPayments.reduce((sum, p) => sum + p.jumlah_bayar, 0);
-  const pendingRevenue = payments
-    .filter(p => p.status_pembayaran === 'Pending')
-    .reduce((sum, p) => sum + p.jumlah_bayar, 0);
+  // Use backend-calculated values
+  const totalRevenue = stats?.total_revenue || 0;
+  const pendingRevenue = stats?.pending_revenue || 0;
+  const potentialRevenue = stats?.potential_revenue || 0;
 
   // Revenue by Room Type Data
   const revenueByType = stats?.type_breakdown || [];
@@ -397,7 +400,7 @@ export function LuxuryReports() {
                 <p className="font-bold text-white text-lg">Total Potential</p>
                 <p className="text-xs text-slate-400 mt-1">If fully occupied</p>
               </div>
-              <p className="text-2xl font-black text-blue-400 relative">{formatPrice(rooms.reduce((sum, r) => sum + (r.harga_per_bulan || 0), 0))}</p>
+              <p className="text-2xl font-black text-blue-400 relative">{formatPrice(potentialRevenue)}</p>
             </div>
           </div>
         </div>

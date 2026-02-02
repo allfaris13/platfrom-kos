@@ -8,6 +8,7 @@ import (
 	"koskosan-be/internal/repository"
 	"koskosan-be/internal/service"
 	"log"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -58,10 +59,12 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
 
 	// CORS Setup
+	allowedOrigins := strings.Split(cfg.AllowedOrigins, ",")
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, // Adjust for production
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -87,19 +90,27 @@ func main() {
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
-			protected.POST("/kamar", kamarHandler.CreateKamar)
-			protected.PUT("/kamar/:id", kamarHandler.UpdateKamar)
-			protected.DELETE("/kamar/:id", kamarHandler.DeleteKamar)
-			protected.POST("/galleries", galleryHandler.CreateGallery)
-			protected.DELETE("/galleries/:id", galleryHandler.DeleteGallery)
-			protected.GET("/dashboard", dashboardHandler.GetStats)
+			// Admin Only Routes
+			admin := protected.Group("/")
+			admin.Use(middleware.RoleMiddleware("admin"))
+			{
+				admin.POST("/kamar", kamarHandler.CreateKamar)
+				admin.PUT("/kamar/:id", kamarHandler.UpdateKamar)
+				admin.DELETE("/kamar/:id", kamarHandler.DeleteKamar)
+				admin.POST("/galleries", galleryHandler.CreateGallery)
+				admin.DELETE("/galleries/:id", galleryHandler.DeleteGallery)
+				admin.GET("/dashboard", dashboardHandler.GetStats)
+				admin.GET("/payments", paymentHandler.GetAllPayments)
+				admin.PUT("/payments/:id/confirm", paymentHandler.ConfirmPayment)
+				admin.GET("/tenants", tenantHandler.GetAllTenants)
+			}
+
+			// All Authenticated Users
 			protected.POST("/reviews", reviewHandler.CreateReview)
 			protected.GET("/profile", profileHandler.GetProfile)
 			protected.PUT("/profile", profileHandler.UpdateProfile)
+			protected.PUT("/profile/change-password", profileHandler.ChangePassword)
 			protected.GET("/my-bookings", bookingHandler.GetMyBookings)
-			protected.GET("/payments", paymentHandler.GetAllPayments)
-			protected.PUT("/payments/:id/confirm", paymentHandler.ConfirmPayment)
-			protected.GET("/tenants", tenantHandler.GetAllTenants)
 			// Add other protected routes here
 		}
 	}

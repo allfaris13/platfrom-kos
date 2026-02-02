@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
+import { api } from '@/app/services/api';
 
-// --- Data Kos-Kosan ---
-const initialKosData = [
+// --- Data Kos-Kosan Fallback ---
+const fallbackKosData = [
   { id: 1, title: "The Heritage Pavilion", category: "Classic Executive", year: "2022", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=800" },
   { id: 2, title: "Urban Minimalist Suite", category: "Modern Studio", year: "2023", imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=800" },
   { id: 3, title: "Skyline View Apartment", category: "Premium Loft", year: "2024", imageUrl: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?q=80&w=800" },
@@ -22,12 +24,33 @@ const moreKosItems = [
   { id: 10, title: "Glass House Penthouse", category: "Ultra Premium", year: "2025", imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800" },
 ];
 
+interface GalleryItem {
+    id: number | string;
+    title: string;
+    category: string;
+    year: string;
+    imageUrl: string;
+}
+
 export function Gallery() {
-  const [displayItems, setDisplayItems] = useState(initialKosData);
+  const { data: galleryData } = useSWR('api/galleries', api.getGalleries);
   const [isLoadedMore, setIsLoadedMore] = useState(false);
 
+  const displayItems = useMemo<GalleryItem[]>(() => {
+    if (!galleryData || galleryData.length === 0) return fallbackKosData;
+    
+    const mapped = (galleryData as Array<{ id: number|string; title?: string; category?: string; created_at?: string; image_url?: string }>).map((item) => ({
+      id: item.id,
+      title: item.title || "Elite Room",
+      category: item.category || "Premium",
+      year: item.created_at ? new Date(item.created_at).getFullYear().toString() : "2024",
+      imageUrl: item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `http://localhost:8080${item.image_url}`) : "https://via.placeholder.com/800"
+    }));
+
+    return isLoadedMore ? [...mapped, ...moreKosItems] : mapped;
+  }, [galleryData, isLoadedMore]);
+
   const handleLoadMore = () => {
-    setDisplayItems([...displayItems, ...moreKosItems]);
     setIsLoadedMore(true);
   };
 
@@ -92,7 +115,7 @@ export function Gallery() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-24">
             <AnimatePresence mode="popLayout">
-              {displayItems.map((item, index) => (
+              {displayItems.map((item: GalleryItem, index: number) => (
                 <motion.div
                   layout
                   key={item.id}

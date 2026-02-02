@@ -224,7 +224,7 @@ export default function App() {
               Back to Login
             </Button>
             <p className="text-blue-100 text-sm mt-4">
-              © 2026 Kos-kosan Management System. All rights reserved.
+              &copy; 2026 Kost Putra Rahmat ZAW. All rights reserved.
             </p>
           </div>
         </div>

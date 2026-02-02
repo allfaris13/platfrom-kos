@@ -26,6 +26,10 @@ func (m *MockUserRepository) Create(user *models.User) error {
 	return nil
 }
 
+func (m *MockUserRepository) Update(user *models.User) error {
+	return nil
+}
+
 func (m *MockUserRepository) FindByUsername(username string) (*models.User, error) {
 	return m.FindUserFn(username)
 }

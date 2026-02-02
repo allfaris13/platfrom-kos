@@ -43,17 +43,31 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick }: UserLogin
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <div className="hidden md:flex md:w-1/2 bg-stone-900 items-center justify-center p-12 text-white relative">
-        <ImageWithFallback 
-          src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1000"
-          alt="Login Background"
-          className="absolute inset-0 bg-cover bg-center opacity-40 w-full h-full object-cover"
-          priority
-        />
-        <div className="relative z-10 text-center max-w-md">
-          <Home className="w-16 h-16 mx-auto mb-6 text-amber-400" />
-          <h1 className="text-4xl font-bold mb-4">Welcome Tenant</h1>
-          <p className="text-xl text-stone-300">Log in to manage your bookings and find your perfect home.</p>
+      <div className="hidden md:flex md:w-1/2 bg-stone-900 items-center justify-center relative overflow-hidden">
+        {/* Full-bleed background image */}
+        <div className="absolute inset-0">
+          <ImageWithFallback 
+            src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2000"
+            alt="Premium Interior"
+            className="w-full h-full object-cover opacity-60"
+            priority
+          />
+          {/* Subtle gradient overlay for depth */}
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-transparent to-stone-900/30" />
+        </div>
+
+        <div className="relative z-10 text-center max-w-md p-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Home className="w-20 h-20 mx-auto mb-8 text-amber-500 shadow-sm" />
+          </motion.div>
+          <h1 className="text-5xl font-black mb-4 text-white tracking-tight">Welcome <span className="text-amber-500">Tenant</span></h1>
+          <p className="text-xl text-stone-200 font-medium leading-relaxed">
+            Log in to manage your bookings and experience world-class comfort.
+          </p>
         </div>
       </div>
 

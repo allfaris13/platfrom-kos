@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import useSWR, { mutate } from 'swr';
 import { Homepage } from './homepage';
 import { RoomDetail } from './RoomDetail';
 import { BookingFlow } from './booking-flow';
 import { BookingHistory } from './booking-history';
 import { ContactUs } from './contact-us';
 import { Gallery } from './Gallery';
+import { SmartCalendar } from './SmartCalendar';
 import { motion } from 'framer-motion';
-import { Home, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, XCircle, MessageCircle, Heart, Star, Image } from 'lucide-react';
+import { Home, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, XCircle, MessageCircle, Heart, Star, Image, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -30,9 +32,18 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  
+  // Change Password state
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
   useEffect(() => {
     const init = () => {
@@ -66,7 +77,8 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
       setIsLoggedIn(!!token);
     };
     
-    setTimeout(init, 0);
+    const timer = setTimeout(init, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Save state to localStorage whenever it changes, only on client
@@ -99,80 +111,54 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     localStorage.setItem('user_platform_wishlist', JSON.stringify(wishlist));
   }, [wishlist, isClient]);
 
-  // Fetch real profile data
-  useEffect(() => {
-    if (isClient && isLoggedIn && activeView === 'profile') {
-      fetchProfile();
+  // --- SWR Data Fetching ---
+  const { data: profileData, isLoading: isLoadingProfile } = useSWR(
+    isClient && isLoggedIn && activeView === 'profile' ? 'api/profile' : null,
+    api.getProfile
+  );
+
+  const { data: bookingsData } = useSWR(
+    isClient && isLoggedIn && activeView === 'profile' ? 'api/my-bookings' : null,
+    api.getMyBookings
+  );
+
+  const userData = useMemo(() => {
+    if (!profileData) {
+      return {
+        name: 'Guest', email: 'N/A', phone: 'N/A', address: 'N/A', nik: '', jenisKelamin: '',
+        joinDate: 'N/A', status: 'Inactive', totalBookings: 0, totalSpent: 0,
+        profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400',
+      };
     }
-  }, [isClient, isLoggedIn, activeView]);
 
-  const fetchProfile = async () => {
-    setIsLoadingProfile(true);
-    try {
-      const data = await api.getProfile();
-      let bookingsCount = 0;
-      let totalSpent = 0;
-      
-      try {
-        const bookingsData = await api.getMyBookings();
-        bookingsCount = bookingsData.length;
-        totalSpent = bookingsData.reduce((sum: number, b: { total_bayar: number }) => sum + b.total_bayar, 0);
-      } catch (err) {
-        console.error("Failed to fetch bookings count for profile", err);
-      }
+    const bCount = bookingsData?.length || 0;
+    const bSpent = bookingsData?.reduce((sum: number, b: { total_bayar?: number }) => sum + (b.total_bayar || 0), 0) || 0;
 
-      setUserData({
-        name: data.penyewa?.nama_lengkap || data.user?.username || 'Guest',
-        email: data.user?.email || 'N/A', 
-        phone: data.penyewa?.nomor_hp || 'N/A',
-        address: data.penyewa?.alamat_asal || 'N/A',
-        nik: data.penyewa?.nik || '',
-        jenisKelamin: data.penyewa?.jenis_kelamin || '',
-        joinDate: new Date(data.user?.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-        status: 'Active',
-        totalBookings: bookingsCount,
-        totalSpent: totalSpent,
-        profileImage: data.penyewa?.foto_profil 
-            ? (data.penyewa.foto_profil.startsWith('http') ? data.penyewa.foto_profil : `http://localhost:8080${data.penyewa.foto_profil}`)
-            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NzIyNDZ8MHwxfHNlYXJjaHwxfHx1c2VyJTIwYXZhdGFyfGVufDB8fHx8fDE3MDAwMDAwMDB|&ixlib=rb-4.0.3&q=80&w=400',
-      });
-      setEditData({
-          name: data.penyewa?.nama_lengkap || data.user?.username || '',
-          email: data.user?.email || '',
-          phone: data.penyewa?.nomor_hp || '',
-          address: data.penyewa?.alamat_asal || '',
-          nik: data.penyewa?.nik || '',
-          jenisKelamin: data.penyewa?.jenis_kelamin || '',
-          joinDate: '',
-          status: '',
-          totalBookings: bookingsCount,
-          totalSpent: totalSpent,
-          profileImage: '',
-      });
-    } catch (e) {
-      console.error("Failed to fetch profile", e);
-    } finally {
-      setIsLoadingProfile(false);
-    }
-  };
-
-  // Editable user data
-  const [userData, setUserData] = useState({
-    name: 'Loading...',
-    email: '',
-    phone: '',
-    address: '',
-    nik: '',
-    jenisKelamin: '',
-    joinDate: '',
-    status: '',
-    totalBookings: 0,
-    totalSpent: 0,
-    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NzIyNDZ8MHwxfHNlYXJjaHwxfHx1c2VyJTIwYXZhdGFyfGVufDB8fHx8fDE3MDAwMDAwMDB|&ixlib=rb-4.0.3&q=80&w=400',
-  });
+    return {
+      name: profileData.penyewa?.nama_lengkap || profileData.user?.username || 'Guest',
+      email: profileData.user?.email || 'N/A', 
+      phone: profileData.penyewa?.nomor_hp || 'N/A',
+      address: profileData.penyewa?.alamat_asal || 'N/A',
+      nik: profileData.penyewa?.nik || '',
+      jenisKelamin: profileData.penyewa?.jenis_kelamin || '',
+      joinDate: profileData.user?.created_at ? new Date(profileData.user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A',
+      status: 'Active',
+      totalBookings: bCount,
+      totalSpent: bSpent,
+      profileImage: profileData.penyewa?.foto_profil 
+          ? (profileData.penyewa.foto_profil.startsWith('http') ? profileData.penyewa.foto_profil : `http://localhost:8080${profileData.penyewa.foto_profil}`)
+          : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400',
+    };
+  }, [profileData, bookingsData]);
 
   const [editData, setEditData] = useState(userData);
 
+  // Sync editData when userData changes, but only if not currently editing
+  useEffect(() => {
+    if (!isEditingProfile) {
+      setEditData(userData);
+    }
+  }, [userData, isEditingProfile]);
 
   const toggleWishlist = (roomId: string) => {
     setWishlist(prev => 
@@ -204,14 +190,9 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         formData.append('foto_profil', selectedFile);
       }
 
-      const res = await api.updateProfile(formData);
+      await api.updateProfile(formData);
+      mutate('api/profile');
       
-      setUserData({
-          ...editData,
-          profileImage: res.penyewa?.foto_profil 
-            ? (res.penyewa.foto_profil.startsWith('http') ? res.penyewa.foto_profil : `http://localhost:8080${res.penyewa.foto_profil}`)
-            : editData.profileImage
-      });
       setIsEditingProfile(false);
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -238,16 +219,48 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsPasswordLoading(true);
+    try {
+      await api.changePassword({
+        old_password: passwordData.oldPassword,
+        new_password: passwordData.newPassword,
+      });
+      alert('Password updated successfully!');
+      setIsChangingPassword(false);
+      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setPasswordError(err.message);
+      } else {
+        setPasswordError('Failed to change password');
+      }
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
   const menuItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'gallery', label: 'Galery Koskosan', icon: Image },
+    { id: 'calendar', label: 'Smart Calendar', icon: CalendarIcon, hidden: !isLoggedIn },
     { id: 'wishlist', label: 'Wishlist', icon: Heart, hidden: !isLoggedIn },
     { id: 'history', label: 'My Bookings', icon: History, hidden: !isLoggedIn },
     { id: 'profile', label: 'Profile', icon: User, hidden: !isLoggedIn },
   ];
-
-
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-stone-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-['Poppins']">
@@ -261,8 +274,8 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 <Home className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white">LuxeStay</h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Premium Living</p>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tighter">Rahmat ZAW</h1>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black">Malang Prime Stay</p>
               </div>
             </div>
 
@@ -390,6 +403,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
           />
         )}
         {activeView === 'gallery' && <Gallery />}
+        {activeView === 'calendar' && isLoggedIn && <SmartCalendar />}
         {activeView === 'contact' && <ContactUs />}
         
         {/* Protected Views with Guest Teasers */}
@@ -683,6 +697,98 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
               </div>
             )}
 
+            {/* Change Password Modal */}
+            {isChangingPassword && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                <Card className="w-full max-w-md bg-white shadow-2xl border-0 overflow-hidden rounded-2xl">
+                  <div className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h2 className="text-2xl font-bold text-slate-900">Change Password</h2>
+                        <p className="text-slate-500 text-sm mt-1">Ensure your account stays secure</p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setIsChangingPassword(false);
+                          setPasswordError('');
+                          setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                        }}
+                        className="p-2 hover:bg-slate-100 rounded-lg transition"
+                      >
+                        <X className="w-5 h-5 text-slate-400" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                      {passwordError && (
+                        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-medium border border-red-100 flex items-center gap-2">
+                          <XCircle className="w-4 h-4" />
+                          {passwordError}
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold text-slate-700">Current Password</Label>
+                        <Input
+                          type="password"
+                          required
+                          value={passwordData.oldPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                          className="border-slate-200 bg-slate-50 focus:bg-white focus:ring-stone-900"
+                          placeholder="••••••••"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold text-slate-700">New Password</Label>
+                        <Input
+                          type="password"
+                          required
+                          value={passwordData.newPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                          className="border-slate-200 bg-slate-50 focus:bg-white focus:ring-stone-900"
+                          placeholder="••••••••"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold text-slate-700">Confirm New Password</Label>
+                        <Input
+                          type="password"
+                          required
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                          className="border-slate-200 bg-slate-50 focus:bg-white focus:ring-stone-900"
+                          placeholder="••••••••"
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                        <Button 
+                          type="submit"
+                          disabled={isPasswordLoading}
+                          className="flex-1 bg-stone-900 hover:bg-stone-800 text-white font-bold py-2 rounded-xl shadow-lg"
+                        >
+                          {isPasswordLoading ? 'Updating...' : 'Update Password'}
+                        </Button>
+                        <Button 
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIsChangingPassword(false);
+                            setPasswordError('');
+                          }}
+                          className="flex-1 border-slate-200"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </Card>
+              </div>
+            )}
+
             {/* Profile Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Personal Information */}
@@ -755,7 +861,11 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                   </div>
 
                   <div className="pt-2">
-                    <Button variant="outline" className="w-full font-semibold border-2 border-slate-300 hover:bg-slate-50 py-2">
+                    <Button 
+                      onClick={() => setIsChangingPassword(true)}
+                      variant="outline" 
+                      className="w-full font-semibold border-2 border-slate-300 hover:bg-slate-50 py-2"
+                    >
                       Change Password
                     </Button>
                   </div>
@@ -821,19 +931,19 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 <div className="w-10 h-10 bg-gradient-to-br from-stone-400 to-stone-600 rounded-lg flex items-center justify-center">
                   <Home className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="font-bold text-lg">LuxeStay</h3>
+                <h3 className="font-bold text-lg text-white">Rahmat ZAW</h3>
               </div>
-              <p className="text-slate-400 text-sm leading-relaxed">Premium boarding house and apartment management for modern living.</p>
+              <p className="text-slate-400 text-sm leading-relaxed">Hunian kost putra premium di kawasan Sigura-gura, Malang. Nyaman, aman, dan strategis.</p>
             </div>
 
             {/* Quick Links */}
             <div>
               <h4 className="font-semibold mb-4 text-white uppercase tracking-wide text-sm">Quick Links</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Contact</a></li>
+                <li><button onClick={() => setActiveView('home')} className="text-slate-400 hover:text-white transition-colors">Home</button></li>
+                <li><button onClick={() => setActiveView('gallery')} className="text-slate-400 hover:text-white transition-colors">Gallery</button></li>
+                <li><button onClick={() => setActiveView('contact')} className="text-slate-400 hover:text-white transition-colors">Contact</button></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors">FAQ</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Blog</a></li>
               </ul>
             </div>
 
@@ -843,8 +953,6 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
               <ul className="space-y-3 text-sm">
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Privacy Policy</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Cookie Policy</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Disclaimer</a></li>
               </ul>
             </div>
 
@@ -854,15 +962,15 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
               <ul className="space-y-3 text-sm text-slate-400">
                 <li className="flex items-start gap-2">
                   <Mail className="w-4 h-4 text-stone-400 mt-0.5 flex-shrink-0" />
-                  <span>info@luxestay.com</span>
+                  <span>support@rahmatzaw.com</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Phone className="w-4 h-4 text-stone-400 mt-0.5 flex-shrink-0" />
-                  <span>+1 (555) 123-4567</span>
+                  <span>+62 812-4911-926</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-stone-400 mt-0.5 flex-shrink-0" />
-                  <span>123 Premium Street, City Center</span>
+                  <span>Pondok Alam, Jl. Sigura - Gura No.21 Blok A2, Malang</span>
                 </li>
               </ul>
             </div>
@@ -874,7 +982,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
           {/* Footer Bottom */}
           <div className="flex flex-col md:flex-row items-center justify-between">
             <p className="text-slate-400 text-sm text-center md:text-left mb-4 md:mb-0">
-              &copy; 2026 LuxeStay. All rights reserved.
+              &copy; 2026 Kost Putra Rahmat ZAW. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <a href="#" className="text-slate-400 hover:text-white transition-colors">

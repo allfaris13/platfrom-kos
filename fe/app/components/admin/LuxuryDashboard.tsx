@@ -24,6 +24,9 @@ interface DashboardStatResponse {
   available_rooms: number;
   occupied_rooms: number;
   pending_payments: number;
+  pending_revenue: number;
+  rejected_payments: number;
+  potential_revenue: number;
   monthly_trend?: { month: string; revenue: number }[];
   type_breakdown?: { type: string; revenue: number; count: number; occupied: number }[];
   demographics?: { name: string; value: number; color: string }[];
@@ -70,6 +73,9 @@ export function LuxuryDashboard() {
     available_rooms: 0,
     occupied_rooms: 0,
     pending_payments: 0,
+    pending_revenue: 0,
+    rejected_payments: 0,
+    potential_revenue: 0,
     monthly_trend: [],
     type_breakdown: [],
     demographics: []

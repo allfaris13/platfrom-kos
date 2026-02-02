@@ -138,7 +138,7 @@ export function RoomDetail({ roomId, onBookNow, onBack, isLoggedIn, onLoginPromp
                     name: roomData.nomor_kamar,
                     type: roomData.tipe_kamar,
                     price: roomData.harga_per_bulan,
-                    location: 'Pekanbaru, Indonesia', // Default if missing
+                    location: 'Kota Malang, Jawa Timur', // Default if missing
                     description: roomData.description || 'No description available.',
                     bedrooms: 1,
                     bathrooms: 1,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -47,7 +47,7 @@ export function Login({ onLoginAsAdmin, onLoginAsUser, onLoginAsGuest }: LoginPr
   };
 
   // Animation Variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: { 
       opacity: 1, 
@@ -55,7 +55,7 @@ export function Login({ onLoginAsAdmin, onLoginAsUser, onLoginAsGuest }: LoginPr
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };
@@ -162,7 +162,7 @@ export function Login({ onLoginAsAdmin, onLoginAsUser, onLoginAsGuest }: LoginPr
                 <Checkbox
                   id="remember"
                   checked={rememberMe}
-                  onCheckedChange={(checked: any) => setRememberMe(checked)}
+                  onCheckedChange={(checked: boolean | "indeterminate") => setRememberMe(!!checked)}
                 />
                 <Label htmlFor="remember" className="text-sm text-slate-600 cursor-pointer">
                   Remember me

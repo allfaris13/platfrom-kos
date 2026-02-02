@@ -1,13 +1,17 @@
 package service
 
 import (
+	"errors"
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/repository"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type ProfileService interface {
 	GetProfile(userID uint) (*models.User, *models.Penyewa, error)
 	UpdateProfile(userID uint, input models.Penyewa) (*models.Penyewa, error)
+	ChangePassword(userID uint, oldPassword, newPassword string) error
 }
 
 type profileService struct {
@@ -54,4 +58,25 @@ func (s *profileService) UpdateProfile(userID uint, input models.Penyewa) (*mode
 	}
 
 	return penyewa, nil
+}
+
+func (s *profileService) ChangePassword(userID uint, oldPassword, newPassword string) error {
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// Verify old password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
+		return errors.New("current password is incorrect")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	user.Password = string(hashedPassword)
+	return s.userRepo.Update(user)
 }

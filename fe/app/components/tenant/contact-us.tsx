@@ -3,7 +3,13 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Facebook, Instagram, Twitter, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
-import { Card } from '@/app/components/ui/card';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/app/components/ui/select';
 import { toast, Toaster } from 'sonner';
 
 export function ContactUs() {
@@ -21,7 +27,7 @@ export function ContactUs() {
     return emailRegex.test(email);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -83,7 +89,7 @@ export function ContactUs() {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white"
             >
-              Hubungi Tim <span className="text-stone-600 dark:text-stone-400">LuxeStay</span>
+              Hubungi Tim <span className="text-stone-600 dark:text-stone-400">Rahmat ZAW</span>
             </motion.h2>
             <p className="mt-4 text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
               Punya pertanyaan mengenai fasilitas atau ingin melakukan kunjungan langsung? Kami siap membantu kenyamanan hunian Anda.
@@ -113,7 +119,7 @@ export function ContactUs() {
                       </div>
                       <div>
                         <p className="text-xs text-stone-400 uppercase font-bold">Telepon</p>
-                        <p className="font-medium">+62 812 3456 7890</p>
+                        <p className="font-medium">+62 812-4911-926</p>
                       </div>
                     </div>
 
@@ -123,7 +129,7 @@ export function ContactUs() {
                       </div>
                       <div>
                         <p className="text-xs text-stone-400 uppercase font-bold">Email</p>
-                        <p className="font-medium">support@luxestay.com</p>
+                        <p className="font-medium">support@rahmatzaw.com</p>
                       </div>
                     </div>
 
@@ -133,7 +139,7 @@ export function ContactUs() {
                       </div>
                       <div>
                         <p className="text-xs text-stone-400 uppercase font-bold">Lokasi</p>
-                        <p className="font-medium text-sm">Jl. Kemang Raya No. 10, Jakarta Selatan</p>
+                        <p className="font-medium text-sm">Pondok Alam, Jl. Sigura - Gura No.21 Blok A2, Malang</p>
                       </div>
                     </div>
                   </div>
@@ -184,18 +190,20 @@ export function ContactUs() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Tipe Pertanyaan</label>
-                  <select 
-                    name="subject"
+                  <Select 
                     value={formData.subject}
-                    onChange={handleChange}
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-stone-500 transition-all"
+                    onValueChange={(val) => setFormData(prev => ({ ...prev, subject: val }))}
                   >
-                    <option value="">Pilih tipe pertanyaan</option>
-                    <option value="ketersediaan">Tanya Ketersediaan Kamar</option>
-                    <option value="jadwal">Jadwal Survey Lokasi</option>
-                    <option value="komplain">Komplain Fasilitas</option>
-                    <option value="lainnya">Lainnya</option>
-                  </select>
+                    <SelectTrigger className="w-full h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                        <SelectValue placeholder="Pilih tipe pertanyaan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ketersediaan">Tanya Ketersediaan Kamar</SelectItem>
+                      <SelectItem value="jadwal">Jadwal Survey Lokasi</SelectItem>
+                      <SelectItem value="komplain">Komplain Fasilitas</SelectItem>
+                      <SelectItem value="lainnya">Lainnya</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
