@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 import { Separator } from '@/app/components/ui/separator';
 import { Label } from '@/app/components/ui/label';
+import { toast } from 'sonner';
 
 interface RoomDetailProps {
   roomId: string;
@@ -180,7 +181,7 @@ export function RoomDetail({ roomId, onBookNow, onBack, isLoggedIn, onLoginPromp
   const handleSubmitReview = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
-          alert("Please login as a tenant to write a review.");
+          toast.error("Please login as a tenant to write a review.");
           return;
       }
 
@@ -200,7 +201,7 @@ export function RoomDetail({ roomId, onBookNow, onBack, isLoggedIn, onLoginPromp
       } catch (e: unknown) {
           console.error("Failed to submit review", e);
           const message = e instanceof Error ? e.message : "Failed to submit review. Please try again.";
-          alert(message);
+          toast.error(message);
       } finally {
           setIsSubmittingReview(false);
       }

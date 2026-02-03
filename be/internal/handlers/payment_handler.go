@@ -44,3 +44,40 @@ func (h *PaymentHandler) ConfirmPayment(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "payment confirmed successfully"})
 }
+
+func (h *PaymentHandler) CreateSnapToken(c *gin.Context) {
+	var req struct {
+		PemesananID uint `json:"pemesanan_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		return
+	}
+
+	token, redirectURL, err := h.service.CreatePaymentSession(req.PemesananID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"token":        token,
+		"redirect_url": redirectURL,
+	})
+}
+
+func (h *PaymentHandler) HandleMidtransWebhook(c *gin.Context) {
+	var payload map[string]interface{}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+		return
+	}
+
+	if err := h.service.HandleWebhook(payload); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Webhook processed successfully"})
+}

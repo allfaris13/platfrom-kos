@@ -9,6 +9,7 @@ import (
 type PaymentRepository interface {
 	FindAll() ([]models.Pembayaran, error)
 	FindByID(id uint) (*models.Pembayaran, error)
+	FindByOrderID(orderID string) (*models.Pembayaran, error)
 	Create(payment *models.Pembayaran) error
 	Update(payment *models.Pembayaran) error
 }
@@ -30,6 +31,12 @@ func (r *paymentRepository) FindAll() ([]models.Pembayaran, error) {
 func (r *paymentRepository) FindByID(id uint) (*models.Pembayaran, error) {
 	var payment models.Pembayaran
 	err := r.db.Preload("Pemesanan.Penyewa").Preload("Pemesanan.Kamar").First(&payment, id).Error
+	return &payment, err
+}
+
+func (r *paymentRepository) FindByOrderID(orderID string) (*models.Pembayaran, error) {
+	var payment models.Pembayaran
+	err := r.db.Preload("Pemesanan.Penyewa").Preload("Pemesanan.Kamar").Where("order_id = ?", orderID).First(&payment).Error
 	return &payment, err
 }
 

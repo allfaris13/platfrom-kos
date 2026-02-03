@@ -258,18 +258,7 @@ export function Homepage({ onRoomClick, wishlist = [], onToggleWishlist, isLogge
         </div>
       </section>
 
-      {/* Conversion Banner Section */}
-      {!isLoggedIn && (
-        <section className="bg-amber-500 py-12">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="text-center md:text-left">
-              <h3 className="text-3xl font-bold text-slate-900 mb-2">Penawaran Eksklusif Member Baru</h3>
-              <p className="text-slate-800 font-medium">Dapatkan diskon sewa pertama 15% dengan mendaftar hari ini.</p>
-            </div>
-            <Button onClick={onLoginPrompt} className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-6 rounded-xl font-bold whitespace-nowrap shadow-xl">Ambil Promo</Button>
-          </div>
-        </section>
-      )}
+
 
       {/* 2. Featured/Search Results Section */}
       <section className="max-w-7xl mx-auto px-4 py-20 bg-slate-50 dark:bg-slate-900/50">

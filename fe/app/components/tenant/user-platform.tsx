@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
 import { Homepage } from './homepage';
 import { RoomDetail } from './RoomDetail';
@@ -9,6 +10,7 @@ import { Gallery } from './Gallery';
 import { SmartCalendar } from './SmartCalendar';
 import { motion } from 'framer-motion';
 import { Home, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, XCircle, MessageCircle, Heart, Star, Image, Calendar as CalendarIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -24,6 +26,7 @@ interface UserPlatformProps {
 }
 
 export function UserPlatform({ onLogout }: UserPlatformProps) {
+  const router = useRouter();
   // Initialize with server-safe defaults
   const [activeView, setActiveView] = useState('home');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -196,10 +199,10 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
       setIsEditingProfile(false);
       setSelectedFile(null);
       setPreviewUrl(null);
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
     } catch (e) {
       console.error("Failed to update profile", e);
-      alert("Failed to update profile. Please try again.");
+      toast.error("Failed to update profile. Please try again.");
     }
   };
 
@@ -239,14 +242,16 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         old_password: passwordData.oldPassword,
         new_password: passwordData.newPassword,
       });
-      alert('Password updated successfully!');
+      toast.success('Password updated successfully!');
       setIsChangingPassword(false);
       setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err: unknown) {
       if (err instanceof Error) {
         setPasswordError(err.message);
+        toast.error(err.message);
       } else {
         setPasswordError('Failed to change password');
+        toast.error('Failed to change password');
       }
     } finally {
       setIsPasswordLoading(false);
@@ -303,7 +308,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={onLogout}
+                  onClick={() => router.push('/login')}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-stone-900 text-white hover:bg-stone-800 transition-all duration-200 ml-2 shadow-lg"
                 >
                   <LogIn className="w-4 h-4" />
@@ -367,7 +372,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 
                 {!isLoggedIn && (
                   <button
-                    onClick={onLogout}
+                    onClick={() => router.push('/login')}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm bg-stone-900 text-white hover:bg-stone-800 transition-all shadow-lg"
                   >
                     <LogIn className="w-4 h-4" />
@@ -399,7 +404,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
             wishlist={wishlist} 
             onToggleWishlist={toggleWishlist}
             isLoggedIn={isLoggedIn}
-            onLoginPrompt={onLogout}
+            onLoginPrompt={() => router.push('/login')}
           />
         )}
         {activeView === 'gallery' && <Gallery />}
@@ -414,7 +419,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 <Heart className="w-20 h-20 text-amber-500 mx-auto mb-6 opacity-20" />
                 <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Simpan Kamar Favoritmu</h2>
                 <p className="text-slate-600 dark:text-slate-400 mb-8 text-lg max-w-md mx-auto">Login untuk mulai menyimpan kamar-kamar premium yang kamu sukai ke dalam wishlist personalmu.</p>
-                <Button onClick={onLogout} className="bg-stone-900 hover:bg-stone-800 text-white px-10 py-6 text-lg rounded-xl font-bold shadow-xl shadow-stone-900/20">Login Sekarang</Button>
+                <Button onClick={() => router.push('/login')} className="bg-stone-900 hover:bg-stone-800 text-white px-10 py-6 text-lg rounded-xl font-bold shadow-xl shadow-stone-900/20">Login Sekarang</Button>
               </div>
             </div>
           ) : (
@@ -491,7 +496,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
             onBookNow={navigateToBooking} 
             onBack={() => setActiveView('home')} 
             isLoggedIn={isLoggedIn}
-            onLoginPrompt={onLogout}
+            onLoginPrompt={() => router.push('/login')}
           />
         )}
         
@@ -502,7 +507,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 <CreditCard className="w-20 h-20 text-blue-500 mx-auto mb-6 opacity-20" />
                 <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Ready to Move In?</h2>
                 <p className="text-slate-600 dark:text-slate-400 mb-8 text-lg max-w-md mx-auto">Silakan login terlebih dahulu untuk melakukan pemesanan kamar premium ini secara aman.</p>
-                <Button onClick={onLogout} className="bg-stone-900 hover:bg-stone-800 text-white px-10 py-6 text-lg rounded-xl font-bold shadow-xl shadow-stone-900/20">Login to Book</Button>
+                <Button onClick={() => router.push('/login')} className="bg-stone-900 hover:bg-stone-800 text-white px-10 py-6 text-lg rounded-xl font-bold shadow-xl shadow-stone-900/20">Login to Book</Button>
               </div>
             </div>
           ) : (
@@ -517,7 +522,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                 <History className="w-20 h-20 text-indigo-500 mx-auto mb-6 opacity-20" />
                 <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Riwayat Pemesanan</h2>
                 <p className="text-slate-600 dark:text-slate-400 mb-8 text-lg max-w-md mx-auto">Pantau status transaksi dan riwayat sewa kamar kamu dengan login ke akun personal.</p>
-                <Button onClick={onLogout} className="bg-stone-900 hover:bg-stone-800 text-white px-10 py-6 text-lg rounded-xl font-bold shadow-xl shadow-stone-900/20">Login Sekarang</Button>
+                <Button onClick={() => router.push('/login')} className="bg-stone-900 hover:bg-stone-800 text-white px-10 py-6 text-lg rounded-xl font-bold shadow-xl shadow-stone-900/20">Login Sekarang</Button>
               </div>
             </div>
           ) : (

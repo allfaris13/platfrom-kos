@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/app/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 import { api } from '@/app/services/api';
+import { toast } from 'sonner';
 
 interface BackendRoom {
   id: number;
@@ -116,20 +117,22 @@ export function LuxuryRoomManagement() {
         await fetchRooms();
         setIsDialogOpen(false);
         resetForm();
+        toast.success(editingRoom ? "Room updated successfully!" : "Room created successfully!");
       } catch (e) {
         console.error(e);
-        alert(editingRoom ? "Failed to update room" : "Failed to create room");
+        toast.error(editingRoom ? "Failed to update room" : "Failed to create room");
       }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this room?')) {
+    if (window.confirm('Are you sure you want to delete this room?')) {
       try {
           await api.deleteRoom(id);
           await fetchRooms();
+          toast.success("Room deleted successfully!");
       } catch (e) {
           console.error(e);
-          alert("Failed to delete room");
+          toast.error("Failed to delete room");
       }
     }
   };
@@ -253,7 +256,7 @@ export function LuxuryRoomManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status" className="text-slate-300">Status</Label>
-                    <Select value={formData.status} onValueChange={(value: string) => setFormData({ ...formData, status: value })}>
+                    <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value as 'Tersedia' | 'Penuh' | 'Maintenance' })}>
                       <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                         <SelectValue />
                       </SelectTrigger>

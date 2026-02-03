@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import Image from 'next/image';
 import { Search, Plus, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
 import { api } from '@/app/services/api';
@@ -119,19 +120,18 @@ export function RoomManagement() {
       setIsDialogOpen(false);
       resetForm();
     } catch (e) {
-      console.error(e);
-      alert("Failed to save room");
+        toast.error("Failed to save room");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this room?')) {
+    if (window.confirm('Are you sure?')) {
       try {
           await api.deleteRoom(id);
           await fetchRooms();
+          toast.success("Room deleted");
       } catch (e) {
-          console.error(e);
-          alert("Failed to delete room");
+          toast.error("Failed to delete room");
       }
     }
   };

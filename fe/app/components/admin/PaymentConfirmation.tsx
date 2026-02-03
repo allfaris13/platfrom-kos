@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, X, Eye, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
 import {
@@ -69,10 +70,10 @@ export function PaymentConfirmation() {
   const handleConfirm = async (id: string) => {
     try {
       await api.confirmPayment(Number(id));
-      await fetchPayments();
+      fetchPayments();
+      toast.success("Payment confirmed");
     } catch (e) {
-      console.error(e);
-      alert("Failed to confirm payment");
+      toast.error("Failed to confirm payment");
     }
   };
 

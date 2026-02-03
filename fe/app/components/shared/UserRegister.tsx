@@ -8,6 +8,7 @@ import { Label } from '@/app/components/ui/label';
 import { UserPlus, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { api } from '@/app/services/api';
 import { ImageWithFallback } from './ImageWithFallback';
+import { toast } from 'sonner';
 
 interface UserRegisterProps {
   onRegisterSuccess: () => void;
@@ -20,7 +21,6 @@ export function UserRegister({ onRegisterSuccess, onBackToLogin }: UserRegisterP
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,10 +34,11 @@ export function UserRegister({ onRegisterSuccess, onBackToLogin }: UserRegisterP
     setIsLoading(true);
     try {
       await api.register({ username, password, role: 'tenant' });
-      setIsSuccess(true);
-      setTimeout(() => {
-        onRegisterSuccess();
-      }, 2000);
+      toast.success('Account created successfully!', {
+        description: 'Please login with your new credentials to continue.',
+        duration: 5000,
+      });
+      onRegisterSuccess();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -49,36 +50,25 @@ export function UserRegister({ onRegisterSuccess, onBackToLogin }: UserRegisterP
     }
   };
 
-  if (isSuccess) {
-    return (
-      <div className="flex h-screen bg-slate-50 items-center justify-center p-8">
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="bg-white p-12 rounded-3xl shadow-2xl text-center max-w-sm w-full border border-slate-100"
-        >
-          <div className="size-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-          </div>
-          <h2 className="text-3xl font-bold text-slate-900 mb-2">Account Created!</h2>
-          <p className="text-slate-600 mb-8">Registration successful. You are being redirected to login...</p>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <div className="hidden md:flex md:w-1/2 bg-stone-800 items-center justify-center p-12 text-white relative">
         <ImageWithFallback 
-          src="https://images.unsplash.com/photo-1554995207-c18c20360a59?q=80&w=1000"
+          src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2070&auto=format&fit=crop"
           alt="Registration Background"
-          className="absolute inset-0 bg-cover bg-center opacity-30 w-full h-full object-cover"
+          className="absolute inset-0 bg-cover bg-center opacity-40 w-full h-full object-cover"
         />
-        <div className="relative z-10 text-center max-w-md">
-          <UserPlus className="w-16 h-16 mx-auto mb-6 text-amber-400" />
-          <h1 className="text-4xl font-bold mb-4">Start Your Journey</h1>
-          <p className="text-xl text-stone-300">Join our premium community today. Find comfort, style, and convenience.</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent to-stone-900/40" />
+        <div className="relative z-10 text-center max-w-md px-6">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <UserPlus className="w-16 h-16 mx-auto mb-6 text-amber-400 drop-shadow-lg" />
+            <h1 className="text-4xl font-extrabold mb-4 tracking-tight drop-shadow-md">Start Your Journey</h1>
+            <p className="text-xl text-stone-200 font-medium">Join our premium community today. Find comfort, style, and convenience.</p>
+          </motion.div>
         </div>
       </div>
 

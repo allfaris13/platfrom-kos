@@ -38,9 +38,12 @@ func main() {
 	dashboardService := service.NewDashboardService(db)
 	reviewService := service.NewReviewService(reviewRepo)
 	profileService := service.NewProfileService(userRepo, penyewaRepo)
+	midtransService := service.NewMidtransService()
 	bookingService := service.NewBookingService(bookingRepo, penyewaRepo)
-	paymentService := service.NewPaymentService(paymentRepo, bookingRepo, kamarRepo)
+	paymentService := service.NewPaymentService(paymentRepo, bookingRepo, kamarRepo, midtransService)
 	tenantService := service.NewTenantService(penyewaRepo)
+	contactService := service.NewContactService()
+
 
 	// 5. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -52,6 +55,8 @@ func main() {
 	bookingHandler := handlers.NewBookingHandler(bookingService)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 	tenantHandler := handlers.NewTenantHandler(tenantService)
+	contactHandler := handlers.NewContactHandler(contactService)
+
 
 	// 6. Setup Router
 	if cfg.Port == "" {
@@ -85,6 +90,9 @@ func main() {
 		api.GET("/kamar/:id/reviews", reviewHandler.GetReviews)
 		api.GET("/reviews", reviewHandler.GetAllReviews) // New endpoint for homepage
 		api.GET("/galleries", galleryHandler.GetGalleries)
+		api.POST("/contact", contactHandler.HandleContactForm)
+		api.POST("/payments/webhook", paymentHandler.HandleMidtransWebhook)
+
 
 		// Protected Routes
 		protected := api.Group("/")
@@ -106,11 +114,13 @@ func main() {
 			}
 
 			// All Authenticated Users
+			protected.POST("/payments/snap-token", paymentHandler.CreateSnapToken)
 			protected.POST("/reviews", reviewHandler.CreateReview)
 			protected.GET("/profile", profileHandler.GetProfile)
 			protected.PUT("/profile", profileHandler.UpdateProfile)
 			protected.PUT("/profile/change-password", profileHandler.ChangePassword)
 			protected.GET("/my-bookings", bookingHandler.GetMyBookings)
+			protected.POST("/bookings", bookingHandler.CreateBooking)
 			// Add other protected routes here
 		}
 	}

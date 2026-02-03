@@ -1,8 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/repository"
+	"time"
 )
 
 type BookingResponse struct {
@@ -18,6 +20,7 @@ type BookingResponse struct {
 
 type BookingService interface {
 	GetUserBookings(userID uint) ([]BookingResponse, error)
+	CreateBooking(userID uint, kamarID uint, tanggalMulai string, durasiSewa int) (*models.Pemesanan, error)
 }
 
 type bookingService struct {
@@ -68,6 +71,40 @@ func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error)
 	if response == nil {
 		response = []BookingResponse{}
 	}
-
 	return response, nil
+}
+
+func (s *bookingService) CreateBooking(userID uint, kamarID uint, tanggalMulai string, durasiSewa int) (*models.Pemesanan, error) {
+	penyewa, err := s.penyewaRepo.FindByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check for active bookings
+	bookings, _ := s.repo.FindByPenyewaID(penyewa.ID)
+	for _, b := range bookings {
+		if b.StatusPemesanan == "Pending" || b.StatusPemesanan == "Confirmed" {
+			return nil, fmt.Errorf("Anda sudah memiliki pesanan aktif. Setiap penghuni maksimal hanya bisa memesan 1 kamar")
+		}
+	}
+
+	tm, err := time.Parse("2006-01-02", tanggalMulai)
+	if err != nil {
+		return nil, err
+	}
+
+	booking := models.Pemesanan{
+		PenyewaID:       penyewa.ID,
+		KamarID:         kamarID,
+		TanggalMulai:    tm,
+		DurasiSewa:      durasiSewa,
+		StatusPemesanan: "Pending",
+	}
+
+	if err := s.repo.Create(&booking); err != nil {
+		return nil, err
+	}
+
+	// Re-fetch to get associations if needed, or just return
+	return &booking, nil
 }

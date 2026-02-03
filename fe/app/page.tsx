@@ -35,7 +35,7 @@ const STORAGE_KEYS = {
 
 export default function App() {
   // Initialize with server-safe defaults to prevent hydration mismatch
-  const [viewMode, setViewMode] = useState<ViewMode>('login');
+  const [viewMode, setViewMode] = useState<ViewMode>('tenant');
   const [adminPage, setAdminPage] = useState<AdminPage>('dashboard');
   const [tenantPage, setTenantPage] = useState<TenantPage>('landing');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -128,112 +128,13 @@ export default function App() {
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
     });
+    localStorage.removeItem('token');
   };
 
-
-
-  // Default Login Screen (User/Tenant)
-  if (viewMode === 'login') {
-    return (
-      <UserLogin 
-        onLoginSuccess={() => {
-            setUserRole('tenant');
-            setViewMode('tenant');
-        }}
-        onBack={() => setViewMode('home')}
-        onRegisterClick={() => setViewMode('register')}
-      />
-    );
-  }
-
-  // User Registration Screen
-  if (viewMode === 'register') {
-      return (
-          <UserRegister 
-            onRegisterSuccess={() => setViewMode('login')}
-            onBackToLogin={() => setViewMode('login')}
-          />
-      );
-  }
-
-  // Home Selection Screen
-  if (viewMode === 'home') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 flex items-center justify-center p-4">
-        <div className="max-w-4xl w-full">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-white mb-4">
-              Kos-kosan Management System
-            </h1>
-            <p className="text-xl text-blue-100">
-              Complete boarding house management solution
-            </p>
-          </div>
-
-          <div className="flex justify-center">
-            {/* Tenant Portal */}
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden hover:scale-105 transition-transform max-w-md w-full">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 text-white">
-                <div className="size-16 bg-white/20 rounded-xl flex items-center justify-center mb-4">
-                  <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-semibold mb-2">Tenant Portal</h2>
-                <p className="text-blue-100">
-                  Browse rooms, book, and manage your rentals
-                </p>
-              </div>
-              <div className="p-8">
-                <ul className="space-y-3 mb-6 text-slate-600">
-                  <li className="flex items-center gap-2">
-                    <span className="size-1.5 bg-blue-600 rounded-full"></span>
-                    Search & Browse Rooms
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="size-1.5 bg-blue-600 rounded-full"></span>
-                    View Room Details
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="size-1.5 bg-blue-600 rounded-full"></span>
-                    Online Booking & Payment
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="size-1.5 bg-blue-600 rounded-full"></span>
-                    Rental History
-                  </li>
-                </ul>
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setViewMode('tenant')}
-                >
-                  Enter Tenant Portal
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <Button 
-              variant="ghost" 
-              className="text-blue-200 hover:text-white hover:bg-blue-600/20 mr-4"
-              onClick={() => setViewMode('login')}
-            >
-              Back to Login
-            </Button>
-            <p className="text-blue-100 text-sm mt-4">
-              &copy; 2026 Kost Putra Rahmat ZAW. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!isClient) return null;
 
   // Admin Portal
-  if (viewMode === 'admin') {
+  if (viewMode === 'admin' || userRole === 'admin') {
     return (
       <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
         <AdminSidebar 
@@ -244,17 +145,16 @@ export default function App() {
           <div className="p-4 bg-slate-900/50 border-b border-slate-800/50 flex items-center justify-between">
             <Button 
               variant="outline" 
-              onClick={() => setViewMode('home')}
+              onClick={() => setViewMode('tenant')}
               className="bg-slate-800/50 border-slate-700 text-white hover:bg-slate-800"
             >
-              Back to Home
+              Switch to User View
             </Button>
             <Button
               variant="destructive"
               onClick={() => {
                 clearStoredState();
-                setViewMode('login');
-                setUserRole(null);
+                window.location.href = '/login';
               }}
               className="bg-red-600 hover:bg-red-700"
             >
@@ -272,15 +172,14 @@ export default function App() {
     );
   }
 
-  // Tenant Portal
-  if (viewMode === 'tenant') {
-    return (
-      <UserPlatform 
-        onLogout={() => setViewMode('login')}
-      />
-    );
-  }
-
-  return null;
+  // Default: Tenant/Guest Portal
+  return (
+    <UserPlatform 
+       onLogout={() => {
+         clearStoredState();
+         window.location.reload();
+       }}
+    />
+  );
 }
 

@@ -19,6 +19,14 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/app/components/ui/select';
+import { api } from '@/app/services/api';
+import { toast } from 'sonner';
+
+declare global {
+  interface Window {
+    snap: any;
+  }
+}
 
 interface BookingFlowProps {
   roomId: string;
@@ -35,8 +43,9 @@ export function BookingFlow({ onBack }: BookingFlowProps) {
     phone: '',
     moveInDate: '',
     duration: '6',
-    paymentMethod: 'bank',
+    paymentMethod: 'midtrans',
   });
+  const [loading, setLoading] = useState(false);
 
   const steps = [
     { number: 1, title: 'Personal Info', description: 'Your details' },
@@ -48,13 +57,51 @@ export function BookingFlow({ onBack }: BookingFlowProps) {
     setFormData({ ...formData, [field]: value });
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (step < 3) {
       setStep(step + 1);
     } else {
-      const id = `#BK${Date.now().toString().slice(-6)}`;
-      setBookingId(id);
-      setBookingComplete(true);
+      setLoading(true);
+      try {
+        // 1. Create Booking Record
+        const booking = await api.createBooking({
+            kamar_id: parseInt(roomId),
+            tanggal_mulai: formData.moveInDate,
+            durasi_sewa: parseInt(formData.duration)
+        });
+
+        // 2. Create Snap Token
+        const snapData = await api.createSnapToken(booking.id);
+        
+        // 3. Trigger Midtrans Snap Popup
+        window.snap.pay(snapData.token, {
+          onSuccess: function(result: any) {
+            console.log('Payment Success:', result);
+            setBookingId(`#BK${booking.id}`);
+            setBookingComplete(true);
+            setLoading(false);
+          },
+          onPending: function(result: any) {
+            console.log('Payment Pending:', result);
+            toast.info('Pembayaran sedang diproses. Silakan selesaikan pembayaran Anda.');
+            setBookingId(`#BK${booking.id}`);
+            setBookingComplete(true);
+            setLoading(false);
+          },
+          onError: function(result: any) {
+            console.error('Payment Error:', result);
+            toast.error('Gagal memproses pembayaran. Silakan coba lagi.');
+            setLoading(false);
+          },
+          onClose: function() {
+            setLoading(false);
+          }
+        });
+
+      } catch (err: any) {
+        setLoading(false);
+        toast.error(err.message || 'Gagal membuat reservasi.');
+      }
     }
   };
 
@@ -278,79 +325,35 @@ export function BookingFlow({ onBack }: BookingFlowProps) {
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-bold text-foreground mb-1">Payment</h2>
-                    <p className="text-muted-foreground text-sm">Complete your booking payment</p>
+                    <p className="text-muted-foreground text-sm">Select payment method and complete your booking</p>
                   </div>
 
                   <div className="space-y-5">
-                    <div className="space-y-2">
-                      <Label>Payment Method *</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleInputChange('paymentMethod', 'bank')}
-                          className={`p-4 border-2 rounded-xl text-left transition-all flex items-center gap-4 ${
-                            formData.paymentMethod === 'bank'
-                              ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                              : 'border-border hover:border-muted-foreground/30'
-                          }`}
-                        >
-                          <div className={`p-2 rounded-full ${formData.paymentMethod === 'bank' ? 'bg-primary text-white' : 'bg-muted'}`}>
-                            <CreditCard className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm">Bank Transfer</p>
-                            <p className="text-xs text-muted-foreground">Direct transfer</p>
-                          </div>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleInputChange('paymentMethod', 'ewallet')}
-                          className={`p-4 border-2 rounded-xl text-left transition-all flex items-center gap-4 ${
-                            formData.paymentMethod === 'ewallet'
-                              ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                              : 'border-border hover:border-muted-foreground/30'
-                          }`}
-                        >
-                          <div className={`p-2 rounded-full ${formData.paymentMethod === 'ewallet' ? 'bg-primary text-white' : 'bg-muted'}`}>
-                            <CreditCard className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm">E-Wallet</p>
-                            <p className="text-xs text-muted-foreground">Digital payment</p>
-                          </div>
-                        </button>
+                    <div className="p-6 bg-primary/5 border-2 border-primary rounded-xl flex items-center gap-4">
+                      <div className="p-3 bg-primary text-white rounded-full">
+                        <CreditCard className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-lg">Secure Online Payment</p>
+                        <p className="text-sm text-muted-foreground">Transfer Bank, GoPay, ShopeePay, Kartu Kredit, dll.</p>
+                      </div>
+                      <div className="ml-auto">
+                        <CheckCircle2 className="w-6 h-6 text-primary" />
                       </div>
                     </div>
 
-                    {formData.paymentMethod === 'bank' && (
-                      <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-2">
-                        <h4 className="font-semibold text-sm text-foreground uppercase tracking-wider">Bank Details</h4>
+                    <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-2">
+                        <h4 className="font-semibold text-sm text-foreground uppercase tracking-wider">Order Summary</h4>
                         <div className="grid grid-cols-2 gap-y-1 text-sm">
-                          <span className="text-muted-foreground">Bank</span>
-                          <span className="font-medium text-right">Rahmat ZAW Bank</span>
-                          <span className="text-muted-foreground">Account Number</span>
-                          <span className="font-medium text-right">1234567890</span>
-                          <span className="text-muted-foreground">Amount</span>
-                          <span className="font-bold text-right text-primary">$2,400</span>
+                          <span className="text-muted-foreground">Monthly Rent</span>
+                          <span className="font-medium text-right">$1,200</span>
+                          <span className="text-muted-foreground">Duration</span>
+                          <span className="font-medium text-right">{formData.duration} months</span>
+                          <div className="pt-2 mt-2 border-t border-border col-span-2 flex justify-between">
+                            <span className="font-bold text-base">Total Payment</span>
+                            <span className="font-bold text-base text-primary">${(1200 * parseInt(formData.duration)).toLocaleString()}</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label>Upload Payment Receipt *</Label>
-                      <div className="mt-1 border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer bg-muted/20">
-                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm font-medium text-foreground">Click to upload or drag and drop</p>
-                        <p className="text-xs text-muted-foreground mt-1 text-balance">PNG, JPG, PDF up to 5MB</p>
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-900/50 flex gap-3 items-start">
-                      <span className="text-lg leading-none">⚠️</span>
-                      <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-                        Please upload a clear screenshot of your receipt. Our team will verify it within 24 hours.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -368,9 +371,12 @@ export function BookingFlow({ onBack }: BookingFlowProps) {
                 </Button>
                 <Button
                   onClick={nextStep}
+                  disabled={loading}
                   className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground py-6 rounded-xl shadow-md"
                 >
-                  {step === 3 ? 'Complete Booking' : 'Next Step'}
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : step === 3 ? 'Pay Now' : 'Next Step'}
                 </Button>
               </div>
             </Card>

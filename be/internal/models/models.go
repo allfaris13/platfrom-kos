@@ -90,7 +90,9 @@ type Pembayaran struct {
 	JumlahBayar      float64        `json:"jumlah_bayar"`
 	TanggalBayar     time.Time      `json:"tanggal_bayar"`
 	BuktiTransfer    string         `json:"bukti_transfer"`
-	StatusPembayaran string         `json:"status_pembayaran"` // enum
+	StatusPembayaran string         `json:"status_pembayaran"` // enum: Pending, Confirmed, Failed, Settled
+	OrderID          string         `json:"order_id"`
+	SnapToken        string         `json:"snap_token"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`

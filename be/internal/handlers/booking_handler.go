@@ -41,3 +41,27 @@ func (h *BookingHandler) GetMyBookings(c *gin.Context) {
 
 	c.JSON(http.StatusOK, bookings)
 }
+
+func (h *BookingHandler) CreateBooking(c *gin.Context) {
+	userIDRaw, _ := c.Get("user_id")
+	userID := uint(userIDRaw.(float64)) // Assuming middleware works correctly
+
+	var req struct {
+		KamarID      uint   `json:"kamar_id" binding:"required"`
+		TanggalMulai string `json:"tanggal_mulai" binding:"required"`
+		DurasiSewa   int    `json:"durasi_sewa" border:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		return
+	}
+
+	booking, err := h.service.CreateBooking(userID, req.KamarID, req.TanggalMulai, req.DurasiSewa)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, booking)
+}

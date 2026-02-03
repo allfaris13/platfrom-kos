@@ -1,22 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Facebook, Instagram, Twitter, CheckCircle2, Loader2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Facebook, Instagram, Twitter, CheckCircle2, Loader2, Navigation } from 'lucide-react';
+
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/app/components/ui/select';
 import { toast, Toaster } from 'sonner';
+import { api } from '@/app/services/api';
+
 
 export function ContactUs() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    subject: '',
     message: '',
   });
   const [loading, setLoading] = useState(false);
@@ -38,7 +34,8 @@ export function ContactUs() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
 
     if (!formData.name.trim()) {
@@ -57,16 +54,48 @@ export function ContactUs() {
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await api.sendContactForm(formData);
       setLoading(false);
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ name: '', email: '', message: '' });
       toast.success('Pesan berhasil terkirim!', {
         description: 'Terima kasih telah menghubungi kami. Tim kami akan segera merespons pesan Anda.',
         duration: 4000,
         icon: <CheckCircle2 className="w-5 h-5 text-green-500" />,
       });
-    }, 1500);
+    } catch (err: any) {
+      setLoading(false);
+      toast.error(err.message || 'Gagal mengirim pesan. Silakan coba lagi.');
+    }
   };
+
+  useEffect(() => {
+    // Check if Leaflet is available (loaded via CDN)
+    if (typeof window !== 'undefined' && (window as any).L) {
+      const L = (window as any).L;
+      
+      const coords: [number, number] = [-7.9548233, 112.6049854];
+      const map = L.map('map').setView(coords, 17);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      const marker = L.marker(coords).addTo(map);
+      marker.bindPopup(`
+        <div style="font-family: Poppins, sans-serif; padding: 5px;">
+          <h4 style="margin: 0 0 5px 0; font-weight: 700;">Kost Putra Rahmat ZAW</h4>
+          <p style="margin: 0; font-size: 12px; color: #666;">Pondok Alam, Jl. Sigura - Gura No.21 Blok A2, Malang</p>
+        </div>
+      `).openPopup();
+
+      // Clean up on unmount
+      return () => {
+        map.remove();
+      };
+    }
+  }, []);
+
 
   return (
     <>
@@ -188,23 +217,6 @@ export function ContactUs() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Tipe Pertanyaan</label>
-                  <Select 
-                    value={formData.subject}
-                    onValueChange={(val) => setFormData(prev => ({ ...prev, subject: val }))}
-                  >
-                    <SelectTrigger className="w-full h-12 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                        <SelectValue placeholder="Pilih tipe pertanyaan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ketersediaan">Tanya Ketersediaan Kamar</SelectItem>
-                      <SelectItem value="jadwal">Jadwal Survey Lokasi</SelectItem>
-                      <SelectItem value="komplain">Komplain Fasilitas</SelectItem>
-                      <SelectItem value="lainnya">Lainnya</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Pesan Anda</label>
@@ -253,6 +265,45 @@ export function ContactUs() {
             <div className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
               <span className="text-sm font-medium">24/7 Priority Support</span>
+            </div>
+          </motion.div>
+
+          {/* Map Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-20"
+          >
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-4 shadow-2xl shadow-slate-200 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden">
+              <div 
+                id="map" 
+                className="w-full h-[400px] rounded-[2rem] z-10"
+              />
+              <div className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950 rounded-2xl flex items-center justify-center shrink-0">
+                    <MapPin className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Lokasi Kost</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Pondok Alam, Jl. Sigura - Gura No.21 Blok A2, Malang</p>
+                  </div>
+                </div>
+                <Button 
+                  asChild
+                  className="bg-stone-900 hover:bg-stone-800 dark:bg-amber-600 dark:hover:bg-amber-700 text-white px-8 h-12 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition-all w-full md:w-auto"
+                >
+                  <a 
+                    href="https://maps.google.com/?cid=8216809800441744550&g_mp=CiVnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLkdldFBsYWNl" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <Navigation className="w-4 h-4" />
+                    Petunjuk Arah (Google Maps)
+                  </a>
+                </Button>
+              </div>
             </div>
           </motion.div>
 

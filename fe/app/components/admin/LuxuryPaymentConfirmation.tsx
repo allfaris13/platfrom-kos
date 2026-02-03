@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, X, Eye, Clock, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { api } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
+import { toast } from 'sonner';
 
 interface Payment {
   id: number;
@@ -57,14 +58,14 @@ export function LuxuryPaymentConfirmation() {
   useEffect(() => {
     fetchPayments();
   }, []);
-
   const handleConfirm = async (id: number) => {
     try {
       await api.confirmPayment(id);
       fetchPayments();
+      toast.success("Payment confirmed successfully!");
     } catch (e) {
       console.error(e);
-      alert("Failed to confirm payment");
+      toast.error("Failed to confirm payment");
     }
   };
 

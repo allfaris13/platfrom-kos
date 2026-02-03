@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
 
 const safeJson = async (res: Response) => {
   const contentType = res.headers.get("content-type");
@@ -239,6 +239,45 @@ export const api = {
       headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     });
     if (!res.ok) throw new Error('Failed to fetch tenants');
+    return safeJson(res);
+  },
+
+  sendContactForm: async (data: { name: string; email: string; message: string }) => {
+    const res = await fetch(`${API_URL}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const errData = await safeJson(res);
+        throw new Error(errData.error || 'Failed to send message');
+    }
+    return safeJson(res);
+  },
+
+  createBooking: async (data: { kamar_id: number; tanggal_mulai: string; durasi_sewa: number }) => {
+    const res = await fetch(`${API_URL}/bookings`, {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const errData = await safeJson(res);
+        throw new Error(errData.error || 'Failed to create booking');
+    }
+    return safeJson(res);
+  },
+
+  createSnapToken: async (pemesananId: number) => {
+    const res = await fetch(`${API_URL}/payments/snap-token`, {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pemesanan_id: pemesananId }),
+    });
+    if (!res.ok) {
+        const errData = await safeJson(res);
+        throw new Error(errData.error || 'Failed to create payment session');
+    }
     return safeJson(res);
   }
 };
