@@ -63,8 +63,15 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const data = await api.getMyBookings();
-        const mapped = data.map((b: { id: number; kamar: KamarData; tanggal_mulai: string; durasi_sewa: number; status_bayar: string; total_bayar: number }) => {
+        const data = (await api.getMyBookings()) as Array<{ 
+          id: number; 
+          kamar: KamarData; 
+          tanggal_mulai: string; 
+          durasi_sewa: number; 
+          status_bayar: string; 
+          total_bayar: number 
+        }>;
+        const mapped = data.map((b) => {
           const moveIn = new Date(b.tanggal_mulai);
           const moveOut = new Date(moveIn);
           moveOut.setMonth(moveOut.getMonth() + b.durasi_sewa);

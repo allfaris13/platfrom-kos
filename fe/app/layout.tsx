@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
-
+import { Toaster } from "sonner";
 import { AppProvider } from "./context";
 import { ThemeProvider } from "./context/ThemeContext";
 import { SWRProvider } from "@/app/components/providers/swr-provider";
-import { Toaster } from "sonner";
+import { GoogleAuthProvider } from "@/app/components/providers/google-auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,7 +44,9 @@ export default function RootLayout({
         <ThemeProvider>
           <AppProvider>
             <SWRProvider>
-              {children}
+              <GoogleAuthProvider>
+                {children}
+              </GoogleAuthProvider>
             </SWRProvider>
             <Toaster position="top-center" richColors />
           </AppProvider>

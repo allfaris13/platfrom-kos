@@ -62,3 +62,27 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		"user":    user,
 	})
 }
+
+func (h *AuthHandler) GoogleLogin(c *gin.Context) {
+	var input struct {
+		Email    string `json:"email"`
+		Username string `json:"username"`
+		Picture  string `json:"picture"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, user, err := h.service.GoogleLogin(input.Email, input.Username, input.Picture)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+		"user":  user,
+	})
+}

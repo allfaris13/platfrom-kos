@@ -1,9 +1,11 @@
-// Standard API Response Format yang dikirim backend
+// 1. Definisikan Interface & Error Class
 interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   message?: string;
   errors?: string[];
+  token?: string; 
+  user?: any;
 }
 
 interface ApiError extends Error {
@@ -11,9 +13,6 @@ interface ApiError extends Error {
   errors?: string[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
-
-// Create custom error class
 class ApiErrorClass extends Error implements ApiError {
   status: number;
   errors?: string[];
@@ -22,134 +21,109 @@ class ApiErrorClass extends Error implements ApiError {
     super(message);
     this.status = status;
     this.errors = errors;
-    Object.setPrototypeOf(this, ApiErrorClass.prototype);
+    this.name = 'ApiErrorClass';
   }
 }
 
-// Parse standard API response
-const parseApiResponse = async <T = any>(res: Response): Promise<T> => {
-  const contentType = res.headers.get('content-type');
-  
-  if (!contentType || !contentType.includes('application/json')) {
-    if (res.status === 401) {
-      // Token invalid/expired, clear auth
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('user');
-        localStorage.removeItem('app_view_mode');
-      }
-      throw new ApiErrorClass('Unauthorized: Please login again', 401);
-    }
-    throw new ApiErrorClass(`Server error ${res.status}: ${res.statusText}`, res.status);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
+
+// 2. Helper Functions
+const getHeaders = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
-
-  const responseData: ApiResponse<T> = await res.json();
-
-  // Check if response has success flag
-  if (responseData.success === false) {
-    const errorMessage = responseData.message || 'An error occurred';
-    throw new ApiErrorClass(errorMessage, res.status, responseData.errors);
-  }
-
-  if (!res.ok && responseData.success !== true) {
-    const errorMessage = responseData.message || `Request failed with status ${res.status}`;
-    throw new ApiErrorClass(errorMessage, res.status, responseData.errors);
-  }
-
-  // Return data dari response
-  return responseData.data || responseData;
+  return headers;
 };
 
-// HTTP methods wrapper dengan proper error handling
-const apiCall = async <T = any>(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-  endpoint: string,
-  body?: FormData | Record<string, any> | null,
-  customHeaders?: Record<string, string>
-): Promise<T> => {
-  const url = `${API_URL}${endpoint}`;
-  const options: RequestInit = {
-    method,
-    credentials: 'include', // Include cookies in requests
-    headers: {
-      ...customHeaders,
-    },
-  };
+const safeJson = async (res: Response) => {
+  const text = await res.text();
 
-  // Handle body
-  if (body) {
-    if (body instanceof FormData) {
-      options.body = body;
-      // Don't set Content-Type for FormData, browser will set it with boundary
-    } else {
-      options.body = JSON.stringify(body);
-      if (!options.headers) options.headers = {};
-      (options.headers as Record<string, string>)['Content-Type'] = 'application/json';
+  if (!res.ok) {
+    let errorMessage = `Server error ${res.status}`;
+    try {
+      const errorData = JSON.parse(text);
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      if (res.status === 404) errorMessage = "API Endpoint not found (404).";
     }
+    throw new ApiErrorClass(errorMessage, res.status);
   }
 
   try {
-    const res = await fetch(url, options);
-    return await parseApiResponse<T>(res);
-  } catch (error) {
-    if (error instanceof ApiErrorClass) {
-      throw error;
-    }
-    // Network error atau parsing error
-    const message = error instanceof Error ? error.message : 'Unknown error occurred';
-    throw new ApiErrorClass(message, 0);
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error('Invalid server response format');
   }
 };
 
-// API endpoints
+const apiCall = async <T>(method: string, endpoint: string, body?: any): Promise<T> => {
+  const headers = getHeaders();
+  const config: RequestInit = { method, headers };
+
+  if (body) {
+    if (body instanceof FormData) {
+      // Jika FormData, biarkan browser set boundary secara otomatis
+      delete (config.headers as any)['Content-Type'];
+      config.body = body;
+    } else {
+      config.body = JSON.stringify(body);
+    }
+  }
+
+  const res = await fetch(`${API_URL}${endpoint}`, config);
+  return safeJson(res);
+};
+
+// 3. Objek API Utama (Satu fungsi untuk satu kegunaan)
 export const api = {
-  // ============ AUTH ============
+  // --- AUTH ---
   login: async (credentials: { username: string; password: string }) => {
-    const response = await apiCall<{
-      access_token: string;
-      user: { id: number; username: string; email: string; role: string };
-    }>('POST', '/auth/login', credentials);
-    
-    // Token sekarang di httpOnly cookie, hanya save user data
-    if (typeof window !== 'undefined' && response.user) {
-      localStorage.setItem('user', JSON.stringify(response.user));
+    const data = await apiCall<ApiResponse>('POST', '/auth/login', credentials);
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
     }
-    return response;
+    return data;
   },
 
-  register: async (data: {
-    username: string;
-    email: string;
-    password: string;
-    nama_lengkap: string;
-    no_telepon: string;
-  }) => {
-    return apiCall('POST', '/auth/register', data);
-  },
-
-  logout: async () => {
-    // Clear local user data
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('user');
-      localStorage.removeItem('app_view_mode');
+  googleLogin: async (code: string) => {
+    // Mengirim code dari Google ke backend
+    const data = await apiCall<ApiResponse>('GET', `/auth/google/callback?code=${code}`);
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
     }
-    // Backend akan clear cookie automatically
-    return { success: true };
+    return data;
   },
 
-  // ============ PROFILE ============
+  register: async (userData: any) => {
+    return apiCall('POST', '/auth/register', userData);
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('app_view_mode');
+  },
+
+  // --- PROFILE ---
   getProfile: async () => {
     return apiCall('GET', '/profile');
   },
 
-  updateProfile: async (data: Record<string, any>) => {
+  updateProfile: async (data: any) => {
     return apiCall('PUT', '/profile', data);
   },
 
-  changePassword: async (data: { old_password: string; new_password: string }) => {
+  changePassword: async (data: any) => {
     return apiCall('PUT', '/profile/change-password', data);
   },
 
-  // ============ ROOMS ============
+  // --- KAMAR / ROOMS ---
   getRooms: async () => {
     return apiCall('GET', '/kamar');
   },
@@ -170,7 +144,24 @@ export const api = {
     return apiCall('DELETE', `/kamar/${id}`);
   },
 
-  // ============ GALLERY ============
+  // --- BOOKINGS & REVIEWS ---
+  getMyBookings: async () => {
+    return apiCall('GET', '/my-bookings');
+  },
+
+  createBooking: async (bookingData: any) => {
+    return apiCall('POST', '/bookings', bookingData);
+  },
+
+  createSnapToken: async (paymentData: any) => {
+    return apiCall('POST', '/payments/snap-token', paymentData);
+  },
+
+  createReview: async (review: any) => {
+    return apiCall('POST', '/reviews', review);
+  },
+
+  // --- GALLERIES ---
   getGalleries: async () => {
     return apiCall('GET', '/galleries');
   },
@@ -183,71 +174,32 @@ export const api = {
     return apiCall('DELETE', `/galleries/${id}`);
   },
 
-  // ============ BOOKINGS ============
-  getMyBookings: async () => {
-    return apiCall('GET', '/bookings');
+  getAllReviews: async () => {
+  return apiCall('GET', '/reviews');
   },
 
-  createBooking: async (data: {
-    kamar_id: number;
-    tanggal_mulai: string;
-    durasi_sewa: number;
-  }) => {
-    return apiCall('POST', '/bookings', data);
-  },
-
-  // ============ PAYMENTS ============
-  createSnapToken: async (pemesananId: number) => {
-    return apiCall('POST', '/payments/snap-token', { pemesanan_id: pemesananId });
-  },
-
-  confirmCashPayment: async (bookingId: number) => {
-    return apiCall('POST', `/payments/confirm-cash/${bookingId}`);
-  },
-
-  // ============ REVIEWS ============
   getReviews: async (roomId: string) => {
-    return apiCall('GET', `/kamar/${roomId}/reviews`);
+    return apiCall('GET', `/rooms/${roomId}/reviews`);
   },
 
-  createReview: async (data: {
-    kamar_id: number;
-    rating: number;
-    comment: string;
-  }) => {
-    return apiCall('POST', '/reviews', data);
-  },
-
-  // ============ DASHBOARD ============
-  getDashboardStats: async () => {
-    return apiCall('GET', '/dashboard');
-  },
-
-  // ============ ADMIN - PAYMENTS ============
-  getAllPayments: async () => {
-    return apiCall('GET', '/payments');
-  },
-
-  confirmPayment: async (paymentId: string) => {
-    return apiCall('PUT', `/payments/${paymentId}/confirm`);
-  },
-
-  // ============ ADMIN - TENANTS ============
+  // --- ADMIN (Menghilangkan error LuxuryPaymentConfirmation) ---
   getAllTenants: async () => {
     return apiCall('GET', '/tenants');
   },
 
-  // ============ CONTACT ============
-  submitContactForm: async (data: {
-    name: string;
-    email: string;
-    subject: string;
-    message: string;
-  }) => {
+  getAllPayments: async () => {
+    return apiCall('GET', '/admin/payments');
+  },
+
+  confirmPayment: async (paymentId: string) => {
+    return apiCall('POST', `/admin/payments/${paymentId}/confirm`);
+  },
+
+  // --- OTHERS ---
+  sendContactForm: async (data: any) => {
     return apiCall('POST', '/contact', data);
   },
 
-  // ============ HEALTH CHECK ============
   healthCheck: async () => {
     return apiCall('GET', '/health');
   },

@@ -8,16 +8,15 @@ import { Label } from '@/app/components/ui/label';
 import { Home, ArrowLeft } from 'lucide-react';
 import { api } from '@/app/services/api';
 import { ImageWithFallback } from './ImageWithFallback';
+import { GoogleButton } from '../tenant/GoogleButton';
 
 interface UserLoginProps {
-  // ... existing props ...
   onLoginSuccess: () => void;
   onBack: () => void;
   onRegisterClick: () => void;
 }
 
 export function UserLogin({ onLoginSuccess, onBack, onRegisterClick }: UserLoginProps) {
-  // ... existing state ...
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -123,6 +122,15 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick }: UserLogin
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
+
+          <GoogleButton
+            isLoading={isLoading}
+            onSuccess={(data) => {
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('user', JSON.stringify(data.user));
+              onLoginSuccess();
+            }}
+          />
 
           <p className="mt-8 text-center text-slate-600">
             Don&apos;t have an account?{' '}

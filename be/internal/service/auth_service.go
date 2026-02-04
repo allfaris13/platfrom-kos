@@ -14,6 +14,7 @@ import (
 type AuthService interface {
 	Login(username, password string) (string, *models.User, error)
 	Register(username, password, role string) (*models.User, error)
+	GoogleLogin(email, username, picture string) (string, *models.User, error)
 }
 
 type authService struct {
@@ -85,4 +86,47 @@ func (s *authService) Register(username, password, role string) (*models.User, e
 	}
 
 	return user, nil
+}
+
+//auth untuk google login (function nya)
+
+func (s *authService) GoogleLogin(email, username, picture string) (string, *models.User, error) {
+    // 1. Cari user berdasarkan email (karena kita pakai email sebagai username unik)
+    user, err := s.repo.FindByUsername(email)
+    
+    if err != nil {
+        // 2. Jika user tidak ditemukan, buat User baru
+        user = &models.User{
+            Username: email,
+            Password: "google-auth-placeholder-" + time.Now().String(), // Password dummy yang aman
+            Role:     "tenant",
+        }
+        if err := s.repo.Create(user); err != nil {
+            return "", nil, err
+        }
+
+        // 3. Buat profile Penyewa
+        // SESUAIKAN: Cek file internal/models/penyewa.go. 
+        // Jika error "unknown field Nama", ganti 'Nama' di bawah dengan 'NamaLengkap'
+        penyewa := &models.Penyewa{
+            UserID:       user.ID,
+            NamaLengkap:  username, // Ubah ke NamaLengkap jika di modelnya begitu
+        }
+        s.penyewaRepo.Create(penyewa)
+    }
+
+    // 4. Generate JWT Token
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+        "user_id":  user.ID,
+        "username": user.Username,
+        "role":     user.Role,
+        "exp":      time.Now().Add(time.Hour * 24).Unix(),
+    })
+
+    tokenString, err := token.SignedString([]byte(s.config.JWTSecret))
+    if err != nil {
+        return "", nil, err
+    }
+
+    return tokenString, user, nil
 }

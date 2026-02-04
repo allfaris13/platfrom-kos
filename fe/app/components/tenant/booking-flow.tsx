@@ -35,7 +35,7 @@ interface BookingFlowProps {
   onBack: () => void;
 }
 
-export function BookingFlow({ onBack }: BookingFlowProps) {
+export function BookingFlow({ roomId, onBack }: BookingFlowProps) {
   const [step, setStep] = useState(1);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingId, setBookingId] = useState("");

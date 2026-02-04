@@ -75,6 +75,7 @@ func (r *Routes) registerPublicRoutes(api *gin.RouterGroup) {
 	{
 		auth.POST("/login", r.authHandler.Login)
 		auth.POST("/register", r.authHandler.Register)
+		auth.POST("/google-login", r.authHandler.GoogleLogin)
 	}
 
 	// Kamar/Room browsing

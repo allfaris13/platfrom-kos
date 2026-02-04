@@ -149,44 +149,42 @@ export function RoomDetail({
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setRealRoom(null); // CRITICAL: Reset state so old room doesn't show during fetch
       try {
         const [roomData, reviewsData] = await Promise.all([
-          api.getRoomById(roomId),
-          api.getReviews(roomId).catch(() => []), // Graceful if no reviews
+          api.getRoomById(roomId).catch(() => null) as Promise<any>,
+          api.getReviews(roomId).catch(() => []) as Promise<any[]>
         ]);
 
         if (roomData) {
           const mapped: RoomData = {
             name: roomData.nomor_kamar,
             type: roomData.tipe_kamar,
-            price: roomData.harga_per_bulan,
-            location: "Kota Malang, Jawa Timur", // Default if missing
-            description: roomData.description || "No description available.",
+            price: Number(roomData.harga_per_bulan) || 0,
+            location: 'Kota Malang, Jawa Timur',
+            description: roomData.description || 'Hunian nyaman dengan fasilitas lengkap di pusat kota Malang.',
             bedrooms: 1,
             bathrooms: 1,
-            size: "24m²",
-            facilities: (roomData.fasilitas || "")
-              .split(",")
-              .map((f: string) => ({
-                name: f.trim(),
-                icon: facilityIcons[f.trim()] || Check,
-              })),
-            features: (roomData.fasilitas || "")
-              .split(",")
-              .map((f: string) => f.trim()),
+            size: '24m²',
+            facilities: (roomData.fasilitas || "WiFi, AC").split(',').map((f: string) => ({
+              name: f.trim(),
+              icon: facilityIcons[f.trim()] || Check
+            })),
+            features: (roomData.fasilitas || "WiFi, AC").split(',').map((f: string) => f.trim()),
             images: [
-              roomData.image_url
-                ? roomData.image_url.startsWith("http")
-                  ? roomData.image_url
-                  : `http://localhost:8080${roomData.image_url}`
-                : "https://via.placeholder.com/1080",
-              "https://images.unsplash.com/photo-1662454419736-de132ff75638?q=80&w=1080", // Fallback secondary images
-              "https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1080",
-            ],
+              roomData.image_url ? (roomData.image_url.startsWith('http') ? roomData.image_url : `http://localhost:8080${roomData.image_url}`) : 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080',
+              'https://images.unsplash.com/photo-1662454419736-de132ff75638?q=80&w=1080',
+              'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1080'
+            ]
           };
           setRealRoom(mapped);
+        } else if (roomId.startsWith('mock-')) {
+          // Handle mock data lookup for a seamless experience
+          const mockId = roomId.replace('mock-', '');
+          const mockDetail = roomDetails[mockId] || roomDetails['1'];
+          setRealRoom(mockDetail);
         }
-        setReviews(reviewsData);
+        setReviews(reviewsData as Review[]);
       } catch (e) {
         console.error("Failed to fetch room detail", e);
       } finally {
@@ -225,7 +223,7 @@ export function RoomDetail({
       });
       // Refresh reviews
       const data = await api.getReviews(String(kID));
-      setReviews(data);
+      setReviews(data as Review[]);
       setNewReview({ rating: 5, comment: "" });
     } catch (e: unknown) {
       console.error("Failed to submit review", e);

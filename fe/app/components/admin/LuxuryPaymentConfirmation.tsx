@@ -33,27 +33,34 @@ export function LuxuryPaymentConfirmation() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null);
 
-  const fetchPayments = async () => {
-    setIsLoading(true);
-    try {
-      const data = await api.getAllPayments();
-      const mapped = data.map((p: BackendPayment) => ({
-        id: p.id,
-        tenantName: p.pemesanan?.penyewa?.nama_lengkap || 'Guest',
-        roomName: p.pemesanan?.kamar?.nomor_kamar || 'Kamar',
-        amount: p.jumlah_bayar,
-        date: new Date(p.tanggal_bayar).toLocaleDateString('id-ID'),
-        method: 'Transfer Bank',
-        status: p.status_pembayaran as Payment['status'],
-        receiptUrl: p.bukti_transfer ? (p.bukti_transfer.startsWith('http') ? p.bukti_transfer : `http://localhost:8080${p.bukti_transfer}`) : '',
-      }));
-      setPayments(mapped);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+ const fetchPayments = async () => {
+  setIsLoading(true);
+  try {
+    // Berikan tipe data [any] atau [ApiResponse] agar .map bisa digunakan
+    const response = await api.getAllPayments() as any; 
+    
+    // Pastikan kita mengakses properti yang tepat (data.data atau langsung response)
+    // Tergantung bagaimana backendmu mengembalikan array-nya
+    const paymentData = Array.isArray(response) ? response : (response.data || []);
+
+    const mapped = paymentData.map((p: BackendPayment) => ({
+      id: p.id,
+      tenantName: p.pemesanan?.penyewa?.nama_lengkap || 'Guest',
+      roomName: p.pemesanan?.kamar?.nomor_kamar || 'Kamar',
+      amount: p.jumlah_bayar,
+      date: new Date(p.tanggal_bayar).toLocaleDateString('id-ID'),
+      method: 'Transfer Bank',
+      status: p.status_pembayaran as Payment['status'],
+      receiptUrl: p.bukti_transfer ? (p.bukti_transfer.startsWith('http') ? p.bukti_transfer : `http://localhost:8081${p.bukti_transfer}`) : '',
+    }));
+    
+    setPayments(mapped);
+  } catch (e) {
+    console.error("Fetch error:", e);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchPayments();

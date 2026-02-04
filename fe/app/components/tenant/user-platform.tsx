@@ -20,6 +20,7 @@ import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { api } from '@/app/services/api';
 import { LogIn } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface UserPlatformProps {
   onLogout?: () => void;
@@ -115,12 +116,12 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   const fetchProfile = async () => {
     setIsLoadingProfile(true);
     try {
-      const data = await api.getProfile();
+      const data = (await api.getProfile()) as any;
       let bookingsCount = 0;
       let totalSpent = 0;
 
       try {
-        const bookingsData = await api.getMyBookings();
+        const bookingsData = (await api.getMyBookings()) as Array<{ total_bayar: number }>;
         bookingsCount = bookingsData.length;
         totalSpent = bookingsData.reduce((sum: number, b: { total_bayar: number }) => sum + b.total_bayar, 0);
       } catch (err) {
@@ -209,7 +210,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         formData.append('foto_profil', selectedFile);
       }
 
-      const res = await api.updateProfile(formData);
+      const res = (await api.updateProfile(formData)) as any;
 
       setUserData({
         ...editData,

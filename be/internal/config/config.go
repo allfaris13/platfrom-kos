@@ -16,6 +16,11 @@ type Config struct {
 	JWTSecret      string
 	Port           string
 	AllowedOrigins string
+	
+	// Google OAuth
+	GoogleClientID     string
+	GoogleClientSecret string
+	GoogleRedirectURL  string
 }
 
 func LoadConfig() *Config {
@@ -33,6 +38,10 @@ func LoadConfig() *Config {
 		JWTSecret:      getEnv("JWT_SECRET", "secret"),
 		Port:           getEnv("PORT", "8080"),
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
+		
+		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", ""),
 	}
 }
 

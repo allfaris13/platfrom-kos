@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -47,7 +46,7 @@ export function PaymentConfirmation() {
   const fetchPayments = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getAllPayments();
+      const data = (await api.getAllPayments()) as BackendPayment[];
       const mapped = data.map((p: BackendPayment) => ({
         id: String(p.id),
         tenantName: p.pemesanan?.penyewa?.nama_lengkap || 'Guest',
@@ -72,7 +71,7 @@ export function PaymentConfirmation() {
 
   const handleConfirm = async (id: string) => {
     try {
-      await api.confirmPayment(Number(id));
+      await api.confirmPayment(id);
       fetchPayments();
       toast.success("Payment confirmed");
     } catch (e) {

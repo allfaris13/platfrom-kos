@@ -8,6 +8,7 @@ import {
   useMotionValue,
   useSpring,
   AnimatePresence,
+  Variants,
 } from "framer-motion";
 import {
   Card,
@@ -37,8 +38,10 @@ import {
   ChevronRight,
   Sparkles,
   ArrowRight,
-} from "lucide-react";
-import { api } from "@/app/services/api";
+  X,
+  RotateCcw
+} from 'lucide-react';
+import { api } from '@/app/services/api';
 import {
   Select,
   SelectContent,
@@ -79,12 +82,19 @@ function Counter({
 }
 
 // --- Animation Variants ---
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { 
+      duration: 0.6, 
+      ease: "easeOut" as const
+    } 
+  },
 };
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
 };
@@ -103,12 +113,9 @@ interface Room {
   status?: string;
 }
 
-const facilityIcons: { [key: string]: LucideIcon } = {
-  WiFi: Wifi,
-  AC: Wind,
-  TV: Tv,
-  "Coffee Maker": Coffee,
-};
+const featuredRooms: Room[] = [];
+
+const facilityIcons: { [key: string]: LucideIcon } = { WiFi: Wifi, AC: Wind, TV: Tv, 'Coffee Maker': Coffee };
 
 const defaultReviews = [
   {
@@ -173,7 +180,6 @@ export function Homepage({
   const realRooms = useMemo(() => {
     if (!roomsData || !Array.isArray(roomsData)) return [];
     return roomsData.map((r: any) => {
-      // Clean price string if it's formatted like "1.000.000"
       const rawPrice = r.harga_per_bulan;
       const numericPrice =
         typeof rawPrice === "number"
@@ -181,9 +187,9 @@ export function Homepage({
           : Number(String(rawPrice || "").replace(/[^0-9]/g, "")) || 0;
 
       return {
-        id: `real-${r.id}`,
-        name: r.nomor_kamar || "Kamar Tanpa Nama",
-        type: r.tipe_kamar || "Standard",
+        id: String(r.id), // ID must be the actual numeric string for detail page
+        name: r.nomor_kamar || 'Kamar Tanpa Nama',
+        type: r.tipe_kamar || 'Standard',
         price: numericPrice,
         image: r.image_url
           ? r.image_url.startsWith("http")
@@ -221,30 +227,32 @@ export function Homepage({
   }, [reviewsDataApi]);
 
   const displayRooms = useMemo(() => {
-    // Hanya gunakan data dari backend (realRooms)
-    return realRooms.filter((room: Room) => {
-      // Filter Location
-      const matchesLocation =
-        !searchLocation ||
-        room.name.toLowerCase().includes(searchLocation.toLowerCase());
+    // ONLY show real rooms from the backend
+    const all = [...realRooms];
 
-      // Filter Type
-      let matchesType = true;
-      if (selectedType !== "all") {
-        matchesType = room.type === selectedType;
-      } else {
-        matchesType = true;
+    return all.filter((room: Room) => {
+      // 1. Search Filter
+      const searchLower = (searchLocation || '').trim().toLowerCase();
+      if (searchLower && !room.name.toLowerCase().includes(searchLower)) return false;
+
+      // 2. Type Filter
+      if (selectedType !== 'all') {
+        const filterType = selectedType.toLowerCase();
+        const roomType = (room.type || '').toLowerCase();
+        if (!roomType.includes(filterType)) return false;
       }
 
-      // Filter Price
-      let matchesPrice = true;
-      if (selectedPrice === "1jt") matchesPrice = room.price === 1000000;
-      else if (selectedPrice === "800rb") matchesPrice = room.price === 800000;
+      // 3. Price Filter
+      const p = room.price;
+      if (selectedPrice === '500k' && p > 500000) return false;
+      if (selectedPrice === '1m' && (p <= 500000 || p > 1000000)) return false;
+      if (selectedPrice === 'gt1m' && p <= 1000000) return false;
 
-      // Status - Only filter out if it's explicitly 'Tidak Tersedia'
-      const matchesStatus = room.status !== "Tidak Tersedia";
+      // 4. Status Filter
+      const status = (room.status || '').toLowerCase();
+      if (status === 'tidak tersedia' || status === 'penuh') return false;
 
-      return matchesLocation && matchesType && matchesPrice && matchesStatus;
+      return true;
     });
   }, [realRooms, searchLocation, selectedType, selectedPrice]);
 
@@ -258,23 +266,21 @@ export function Homepage({
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors overflow-x-hidden font-sans">
-      {/* 1. Hero Section (Force Side-by-Side on Mobile) */}
-      <section className="relative px-4 pt-16 pb-12 lg:pt-32 lg:pb-32 overflow-hidden bg-white dark:bg-slate-950">
-        <div className="max-w-7xl mx-auto grid grid-cols-12 items-center gap-6 lg:gap-16">
+
+      {/* 1. Hero Section */}
+      <section className="relative px-4 pt-12 pb-10 lg:pt-32 lg:pb-32 overflow-hidden bg-white dark:bg-slate-950">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 items-center gap-8 lg:gap-16">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            className="col-span-12 lg:col-span-7 text-left"
+            className="md:col-span-7 text-left order-2 md:order-1"
           >
-            <Badge
-              variant="outline"
-              className="mb-4 lg:mb-6 px-3 lg:px-4 py-1 lg:py-1.5 text-amber-600 border-amber-200 bg-amber-50 rounded-full font-bold uppercase tracking-wider text-[10px] lg:text-xs"
-            >
+            <Badge variant="outline" className="mb-4 lg:mb-6 px-3 lg:px-4 py-1 lg:py-1.5 text-amber-600 border-amber-200 bg-amber-50 rounded-full font-bold uppercase tracking-wider text-[9px] lg:text-xs">
               🏠 Best Boarding House in Malang
             </Badge>
-            <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-[1.1] mb-4 lg:mb-6 text-slate-900 dark:text-white">
-              Find Your Dream <br />
+            <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-[1.15] mb-4 lg:mb-6 text-slate-900 dark:text-white">
+              Find Your Dream <br className="hidden md:block" />
               <span className="text-amber-500">Home With Ease.</span>
             </h1>
             <p className="text-sm md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 mb-6 lg:mb-10 max-w-xl leading-relaxed">
@@ -282,20 +288,8 @@ export function Homepage({
               Rahmat ZAW.
             </p>
             <div className="flex flex-row gap-3 lg:gap-4">
-              <Button
-                onClick={() =>
-                  window.scrollTo({ top: 800, behavior: "smooth" })
-                }
-                className="bg-slate-900 hover:bg-slate-800 text-white px-4 lg:px-8 py-3 lg:py-6 rounded-xl lg:rounded-2xl text-sm lg:text-lg font-bold shadow-xl"
-              >
-                Explore
-              </Button>
-              <Button
-                variant="ghost"
-                className="px-4 lg:px-8 py-3 lg:py-6 rounded-xl lg:rounded-2xl text-sm lg:text-lg font-bold border-2 border-slate-200"
-              >
-                Learn
-              </Button>
+              <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">Explore</Button>
+              <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200">Learn</Button>
             </div>
           </motion.div>
 
@@ -303,39 +297,47 @@ export function Homepage({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="col-span-12 lg:col-span-5 relative"
+            className="md:col-span-5 relative order-1 md:order-2"
           >
-            <div className="relative z-10 rounded-[2rem] lg:rounded-[3rem] overflow-hidden shadow-2xl border-[6px] lg:border-[12px] border-white dark:border-slate-800">
+            <div className="relative z-10 rounded-[1.5rem] lg:rounded-[3rem] overflow-hidden shadow-2xl border-[4px] lg:border-[12px] border-white dark:border-slate-800">
               <ImageWithFallback
                 src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080"
                 alt="Main Interior"
-                className="w-full aspect-[4/3] object-cover"
+                className="w-full aspect-[4/3] md:aspect-square lg:aspect-[4/3] object-cover"
               />
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* 2. Search & Filter Section (2x2 Grid on Mobile) */}
-      <section className="relative z-20 -mt-6 lg:-mt-10 px-4">
+      {/* 2. Search & Filter Section */}
+      <section className="relative z-20 -mt-8 md:-mt-10 px-4">
         <div className="max-w-5xl mx-auto">
-          <Card className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-white/20 shadow-2xl rounded-[1.5rem] lg:rounded-[2.5rem] p-3 lg:p-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center">
-              <div className="col-span-2 relative">
+          <Card className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 shadow-2xl rounded-[1.5rem] lg:rounded-[2.5rem] p-4 lg:p-6">
+            <div className="flex flex-col md:grid md:grid-cols-4 gap-4 items-center">
+              <div className="w-full md:col-span-2 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                   placeholder="Cari kamar..."
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
-                  className="pl-10 h-10 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-xs lg:text-base"
+                  className="pl-10 h-12 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base pr-10"
                 />
+                {searchLocation && (
+                  <button
+                    onClick={() => setSearchLocation('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              <div className="col-span-1">
+              <div className="w-full md:col-span-1">
                 <Select value={selectedPrice} onValueChange={setSelectedPrice}>
-                  <SelectTrigger className="h-10 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-[10px] lg:text-base">
+                  <SelectTrigger className="h-12 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base focus:ring-amber-500">
                     <SelectValue placeholder="Harga" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-slate-100 shadow-xl">
                     <SelectItem value="all">Semua Harga</SelectItem>
                     <SelectItem value="1jt">
                       Rp 1.000.000 (Kamar Mandi Dalam)
@@ -346,15 +348,31 @@ export function Homepage({
                   </SelectContent>
                 </Select>
               </div>
-              <Button
-                onClick={() => {
-                  const el = document.getElementById("featured-rooms");
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="col-span-1 h-10 lg:h-14 bg-slate-900 hover:bg-slate-800 text-white rounded-xl lg:rounded-2xl font-bold text-[10px] lg:text-base transition-transform hover:scale-105"
-              >
-                Cari
-              </Button>
+              <div className="w-full md:col-span-1 flex gap-2">
+                <Button
+                  onClick={() => {
+                    const el = document.getElementById('featured-rooms');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="flex-1 h-12 lg:h-14 bg-slate-900 hover:bg-slate-800 text-white rounded-xl lg:rounded-2xl font-bold text-sm lg:text-base transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-slate-900/10"
+                >
+                  Cari
+                </Button>
+                {(searchLocation || selectedPrice !== 'all' || selectedType !== 'all') && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchLocation('');
+                      setSelectedPrice('all');
+                      setSelectedType('all');
+                    }}
+                    className="h-12 lg:h-14 border-2 border-slate-100 rounded-xl lg:rounded-2xl px-4 group hover:bg-slate-50"
+                    title="Reset Filter"
+                  >
+                    <RotateCcw className="w-4 h-4 text-slate-500 group-hover:rotate-180 transition-transform duration-500" />
+                  </Button>
+                )}
+              </div>
             </div>
           </Card>
         </div>
@@ -396,8 +414,7 @@ export function Homepage({
           <motion.div
             variants={staggerContainer}
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+            animate="visible"
             className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-8 min-h-[400px]"
           >
             <AnimatePresence mode="popLayout">
@@ -441,7 +458,7 @@ export function Homepage({
                       </CardHeader>
                       <CardContent className="px-3 lg:px-6 py-0 flex-1">
                         <div className="flex flex-wrap gap-1 lg:gap-2 mb-3">
-                          {room.facilities.slice(0, 3).map((f, i) => (
+                          {room.facilities.slice(0, 3).map((f: string, i: number) => (
                             <span
                               key={i}
                               className="text-[7px] lg:text-[10px] bg-slate-50 dark:bg-slate-800 px-1.5 lg:px-2 py-0.5 rounded text-slate-400 border border-slate-100 dark:border-slate-700"
@@ -469,8 +486,7 @@ export function Homepage({
                             onRoomClick(room.id);
                           }}
                         >
-                          Detail{" "}
-                          <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
+                          Pilih Kamar <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
                         </Button>
                       </CardFooter>
                     </Card>
@@ -508,18 +524,16 @@ export function Homepage({
         </div>
       </section>
 
-      {/* 4. User Guide Section (Side-by-side on all screens) */}
-      <section className="px-4 py-16 lg:py-24 bg-white dark:bg-slate-900 overflow-hidden">
-        <div className="max-w-7xl mx-auto grid grid-cols-12 items-center gap-4 lg:gap-20">
-          <div className="col-span-7 lg:col-span-6 w-full">
-            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 mb-4 lg:mb-6 px-3 lg:px-4 py-1 rounded-full font-bold text-[8px] lg:text-[10px]">
-              SIMPLE STEPS
-            </Badge>
-            <h2 className="text-xl md:text-3xl lg:text-6xl font-extrabold leading-tight mb-6 lg:mb-10 text-slate-900 dark:text-white">
+      {/* 4. User Guide Section */}
+      <section className="px-4 py-20 lg:py-32 bg-white dark:bg-slate-900 overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 items-center gap-10 lg:gap-20">
+          <div className="col-span-1 md:col-span-7 lg:col-span-6 w-full">
+            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 mb-6 px-4 py-1.5 rounded-full font-bold text-[10px] lg:text-xs">SIMPLE STEPS</Badge>
+            <h2 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-tight mb-8 lg:mb-12 text-slate-900 dark:text-white">
               User guide for <br />
               <span className="text-amber-500">first timer</span>
             </h2>
-            <div className="grid grid-cols-1 gap-3 lg:gap-6">
+            <div className="grid grid-cols-1 gap-4 lg:gap-8">
               {[
                 {
                   step: "01",
@@ -550,36 +564,27 @@ export function Homepage({
                   key={idx}
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
-                  className="flex gap-3 lg:gap-6 p-2 lg:p-6 rounded-xl lg:rounded-[2rem] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group border border-slate-50 lg:border-transparent lg:hover:border-slate-100"
+                  className="flex gap-4 lg:gap-8 p-4 lg:p-8 rounded-[1.5rem] lg:rounded-[2.5rem] bg-white dark:bg-slate-800/20 border border-slate-50 dark:border-slate-800 hover:border-amber-200 transition-all group"
                 >
-                  <div
-                    className={`w-8 h-8 lg:w-14 lg:h-14 shrink-0 rounded-lg lg:rounded-2xl ${item.color} text-white flex items-center justify-center font-black text-[10px] lg:text-xl shadow-lg`}
-                  >
+                  <div className={`w-10 h-10 lg:w-16 lg:h-16 shrink-0 rounded-xl lg:rounded-3xl ${item.color} text-white flex items-center justify-center font-black text-sm lg:text-2xl shadow-xl`}>
                     {item.step}
                   </div>
                   <div className="flex flex-col justify-center">
-                    <h3 className="text-[10px] lg:text-2xl font-bold text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors leading-tight">
-                      {item.title}
-                    </h3>
-                    <p className="hidden lg:block text-slate-500 dark:text-slate-400 leading-relaxed text-xs lg:text-base">
-                      {item.desc}
-                    </p>
+                    <h3 className="text-base lg:text-3xl font-bold text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors leading-tight mb-1">{item.title}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-xs lg:text-lg">{item.desc}</p>
                   </div>
                 </motion.div>
               ))}
             </div>
           </div>
-          <div className="col-span-5 lg:col-span-6 relative flex items-center justify-center">
-            <div className="relative z-10 bg-slate-100 dark:bg-slate-800 rounded-[1.5rem] lg:rounded-[4rem] p-2 lg:p-8 aspect-square w-full">
-              <ImageWithFallback
-                src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000"
-                alt="Guide illustration"
-                className="w-full h-full object-cover rounded-[1.2rem] lg:rounded-[3.5rem] shadow-2xl"
-              />
+          <div className="col-span-1 md:col-span-5 lg:col-span-6 relative flex items-center justify-center">
+            <div className="relative z-10 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] lg:rounded-[5rem] p-3 lg:p-12 aspect-square w-full max-w-lg">
+              <ImageWithFallback src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000" alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
             </div>
-            {/* Decorative blob for mobile */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-amber-500/10 rounded-full blur-[40px] lg:blur-[100px] -z-10" />
+            {/* Decorative blob */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-amber-500/5 rounded-full blur-[60px] lg:blur-[120px] -z-10" />
           </div>
         </div>
       </section>

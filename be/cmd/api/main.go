@@ -6,7 +6,6 @@ import (
 	"koskosan-be/internal/handlers"
 	"koskosan-be/internal/middleware"
 	"koskosan-be/internal/repository"
-	"koskosan-be/internal/routes"
 	"koskosan-be/internal/service"
 	"koskosan-be/internal/utils"
 	"log"
@@ -85,16 +84,51 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	// Health Check Route
-	r.GET("/health", handlers.HealthCheck)
+	// API Routes
+	// Serve static files
+	r.Static("/uploads", "./uploads")
 
-	// 7. Register all routes
-	routeHandler := routes.NewRoutes(
-		authHandler, kamarHandler, galleryHandler, dashboardHandler,
-		reviewHandler, profileHandler, bookingHandler, paymentHandler,
-		tenantHandler, contactHandler,
-	)
-	routeHandler.Register(r, cfg)
+	api := r.Group("/api")
+	{
+		// Public Routes
+		api.POST("/login", authHandler.Login)
+		api.POST("/google-login", authHandler.GoogleLogin)
+		api.POST("/register", authHandler.Register)
+		api.GET("/kamar", kamarHandler.GetKamars)
+		api.GET("/kamar/:id", kamarHandler.GetKamarByID)
+		api.GET("/kamar/:id/reviews", reviewHandler.GetReviews)
+		api.GET("/reviews", reviewHandler.GetAllReviews) // New endpoint for homepage
+		api.GET("/galleries", galleryHandler.GetGalleries)
+		api.POST("/contact", contactHandler.HandleContactForm)
+
+		// Protected Routes
+		protected := api.Group("/")
+		protected.Use(middleware.AuthMiddleware())
+		{
+			// Admin Only Routes
+			admin := protected.Group("/")
+			admin.Use(middleware.RoleMiddleware("admin"))
+			{
+				admin.POST("/kamar", kamarHandler.CreateKamar)
+				admin.PUT("/kamar/:id", kamarHandler.UpdateKamar)
+				admin.DELETE("/kamar/:id", kamarHandler.DeleteKamar)
+				admin.POST("/galleries", galleryHandler.CreateGallery)
+				admin.DELETE("/galleries/:id", galleryHandler.DeleteGallery)
+				admin.GET("/dashboard", dashboardHandler.GetStats)
+				admin.GET("/payments", paymentHandler.GetAllPayments)
+				admin.POST("/payments/:id/confirm", paymentHandler.ConfirmPayment)
+				admin.GET("/tenants", tenantHandler.GetAllTenants)
+			}
+
+			// All Authenticated Users
+			protected.POST("/reviews", reviewHandler.CreateReview)
+			protected.GET("/profile", profileHandler.GetProfile)
+			protected.PUT("/profile", profileHandler.UpdateProfile)
+			protected.PUT("/profile/change-password", profileHandler.ChangePassword)
+			protected.GET("/my-bookings", bookingHandler.GetMyBookings)
+			// Add other protected routes here
+		}
+	}
 
 	log.Printf("Server running on http://localhost:%s", cfg.Port)
 	utils.GlobalLogger.Info("Server started on port %s", cfg.Port)

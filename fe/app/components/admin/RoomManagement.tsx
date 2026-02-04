@@ -57,7 +57,7 @@ export function RoomManagement() {
   const fetchRooms = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getRooms();
+      const data = (await api.getRooms()) as BackendRoom[];
       const mapped: Room[] = data.map((r: BackendRoom) => ({
         id: String(r.id),
         name: r.nomor_kamar,

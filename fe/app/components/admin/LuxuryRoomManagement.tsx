@@ -50,13 +50,13 @@ export function LuxuryRoomManagement() {
   const fetchRooms = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getRooms();
+      const data = (await api.getRooms()) as BackendRoom[];
       const mapped: Room[] = data.map((r: BackendRoom) => ({
         id: String(r.id),
         name: r.nomor_kamar,
         type: r.tipe_kamar,
         price: r.harga_per_bulan,
-        status: r.status,
+        status: r.status as "Tersedia" | "Penuh" | "Maintenance",
         capacity: r.capacity || 1,
         floor: r.floor || 1,
         description: r.description || '',
