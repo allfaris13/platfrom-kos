@@ -188,7 +188,7 @@ const apiCall = async <T>(method: string, endpoint: string, body?: any): Promise
 export const api = {
   // --- AUTH ---
   login: async (credentials: { username: string; password: string }, rememberMe: boolean = true) => {
-    const data = await apiCall<LoginResponse>('POST', '/login', credentials);
+    const data = await apiCall<LoginResponse>('POST', '/auth/login', credentials);
     if (data.token) {
       if (rememberMe) {
         localStorage.setItem('token', data.token);
@@ -214,7 +214,7 @@ export const api = {
   register: async (userData: any) => {
     // userData already includes birthdate from UserRegister.tsx
     // Returns created User object or message? Typically user object.
-    return apiCall<User>('POST', '/register', userData);
+    return apiCall<User>('POST', '/auth/register', userData);
   },
   
   forgotPassword: async (email: string) => {

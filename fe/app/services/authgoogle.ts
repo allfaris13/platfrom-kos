@@ -31,7 +31,7 @@ export const handleGoogleLogin = async (credential: string) => {
     // In a high-security app, you'd send ONLY the credential token and verify it in Go
     // But for this implementation, we send the info to our new Go endpoint
     try {
-        const res = await fetch('http://localhost:8081/api/google-login', {
+        const res = await fetch('http://localhost:8081/api/auth/google-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
