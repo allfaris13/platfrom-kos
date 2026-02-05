@@ -3,6 +3,7 @@ import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
 import { ImageWithFallback } from "@/app/components/shared/ImageWithFallback";
+import { SkeletonDetail } from "@/app/components/ui/loading-screen";
 import { motion } from "framer-motion";
 import { Textarea } from "@/app/components/ui/textarea";
 import {
@@ -197,12 +198,7 @@ export function RoomDetail({
   const room = realRoom || roomDetails["1"];
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div className="size-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-        <p className="text-slate-500 italic">Fetching room details...</p>
-      </div>
-    );
+    return <SkeletonDetail />;
   }
 
   const handleSubmitReview = async () => {

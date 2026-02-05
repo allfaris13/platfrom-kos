@@ -275,7 +275,7 @@ export const api = {
 
   // --- BOOKINGS & REVIEWS ---
   getMyBookings: async () => {
-    return apiCall<Booking[]>('GET', '/my-bookings');
+    return apiCall<Booking[]>('GET', '/bookings');
   },
 
   createBooking: async (bookingData: Partial<Booking>) => {

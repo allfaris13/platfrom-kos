@@ -22,6 +22,7 @@ import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Badge } from "@/app/components/ui/badge";
 import { ImageWithFallback } from "@/app/components/shared/ImageWithFallback";
+import { SkeletonGrid } from "@/app/components/ui/loading-screen";
 import {
   MapPin,
   Wifi,
@@ -418,7 +419,11 @@ export function Homepage({
             className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-8 min-h-[400px]"
           >
             <AnimatePresence mode="popLayout">
-              {displayRooms.length > 0 ? (
+              {isLoadingRooms ? (
+                <div className="col-span-full">
+                  <SkeletonGrid count={6} />
+                </div>
+              ) : displayRooms.length > 0 ? (
                 displayRooms.map((room) => (
                   <motion.div
                     key={room.id}

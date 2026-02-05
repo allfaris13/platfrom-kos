@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
+import { SkeletonGrid } from '@/app/components/ui/loading-screen';
 import { api } from '@/app/services/api';
 
 // --- Data Kos-Kosan Fallback ---
@@ -33,7 +34,7 @@ interface GalleryItem {
 }
 
 export function Gallery() {
-  const { data: galleryData } = useSWR('api/galleries', api.getGalleries);
+  const { data: galleryData, isLoading } = useSWR('api/galleries', api.getGalleries);
   const [isLoadedMore, setIsLoadedMore] = useState(false);
 
   const displayItems = useMemo<GalleryItem[]>(() => {
@@ -113,6 +114,9 @@ export function Gallery() {
             </button>
           </div>
 
+          {isLoading ? (
+            <SkeletonGrid count={8} />
+          ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-12 md:gap-x-12 md:gap-y-24">
             <AnimatePresence mode="popLayout">
               {displayItems.map((item: GalleryItem, index: number) => (
@@ -148,6 +152,7 @@ export function Gallery() {
               ))}
             </AnimatePresence>
           </div>
+          )}
         </div>
 
         {/* --- LOAD MORE SECTION --- */}
