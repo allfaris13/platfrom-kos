@@ -257,7 +257,6 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     { id: 'home', label: 'Home', icon: Home },
     { id: 'gallery', label: 'Galery Koskosan', icon: Image },
     { id: 'calendar', label: 'Smart Calendar', icon: CalendarIcon, hidden: !isLoggedIn },
-    { id: 'wishlist', label: 'Wishlist', icon: Heart, hidden: !isLoggedIn },
     { id: 'history', label: 'My Bookings', icon: History, hidden: !isLoggedIn },
     { id: 'profile', label: 'Profile', icon: User, hidden: !isLoggedIn },
   ];
