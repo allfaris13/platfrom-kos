@@ -255,8 +255,9 @@ func (s *paymentService) CreatePaymentReminder(pembayaranID uint, jumlahBayar fl
 		IsSent:          false,
 	}
 
-	// Note: Implementasi repository method CreateReminder sesuai kebutuhan
-	_ = reminder
+	if err := s.db.Create(&reminder).Error; err != nil {
+		return err
+	}
 
 	return nil
 }

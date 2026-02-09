@@ -49,7 +49,7 @@ func InitDB(cfg *config.Config) {
 		&models.Penyewa{},
 		&models.Pemesanan{},
 		&models.Pembayaran{},
-		&models.Laporan{},
+
 		&models.Gallery{},
 		&models.Review{},
 	)

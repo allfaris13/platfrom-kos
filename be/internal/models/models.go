@@ -124,12 +124,4 @@ type PaymentReminder struct {
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-type Laporan struct {
-	ID                  uint           `gorm:"primaryKey" json:"id"`
-	Periode             string         `json:"periode"`
-	TotalPemasukan      float64        `json:"total_pemasukan"`
-	JumlahPenghuniAktif int            `json:"jumlah_penghuni_aktif"`
-	CreatedAt           time.Time      `json:"created_at"`
-	UpdatedAt           time.Time      `json:"updated_at"`
-	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
-}
+

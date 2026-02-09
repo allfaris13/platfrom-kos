@@ -104,19 +104,37 @@ func main() {
 	// API Routes
 	appRoutes.Register(r, cfg)
 
-	// 7. Start Background Worker for Auto-Cancellation
+	// 7. Start Background Workers
 	go func() {
-		utils.GlobalLogger.Info("Starting auto-cancellation background worker...")
-		// Run once on startup
+		utils.GlobalLogger.Info("Starting background workers...")
+		
+		// Reminder Service Worker
+		reminderService := service.NewReminderService(paymentRepo, db)
+		
+		// Run initial checks
 		if err := bookingService.AutoCancelExpiredBookings(); err != nil {
 			utils.GlobalLogger.Error("Failed to auto-cancel bookings: %v", err)
 		}
+		
+		// Tickers
+		cancelTicker := time.NewTicker(1 * time.Hour)
+		dailyTicker := time.NewTicker(24 * time.Hour) // For daily reminders
+		reminderTicker := time.NewTicker(4 * time.Hour) // Check pending reminders every 4 hours
 
-		// Run every 1 hour
-		ticker := time.NewTicker(1 * time.Hour)
-		for range ticker.C {
-			if err := bookingService.AutoCancelExpiredBookings(); err != nil {
-				utils.GlobalLogger.Error("Failed to auto-cancel bookings: %v", err)
+		for {
+			select {
+			case <-cancelTicker.C:
+				if err := bookingService.AutoCancelExpiredBookings(); err != nil {
+					utils.GlobalLogger.Error("Failed to auto-cancel bookings: %v", err)
+				}
+			case <-dailyTicker.C:
+				if err := reminderService.CreateMonthlyReminders(); err != nil {
+					utils.GlobalLogger.Error("Failed to create monthly reminders: %v", err)
+				}
+			case <-reminderTicker.C:
+				if _, err := reminderService.SendPendingReminders(); err != nil {
+					utils.GlobalLogger.Error("Failed to send pending reminders: %v", err)
+				}
 			}
 		}
 	}()

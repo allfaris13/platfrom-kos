@@ -58,6 +58,7 @@ interface RoomData {
   bedrooms: number;
   bathrooms: number;
   size: string;
+  floor: number;
   facilities: {
     name: string;
     icon: React.ComponentType<{ className?: string }>;
@@ -78,6 +79,7 @@ const roomDetails: { [key: string]: RoomData } = {
     bedrooms: 1,
     bathrooms: 1,
     size: "45m²",
+    floor: 2,
     facilities: [
       { name: "High-Speed WiFi", icon: Wifi },
       { name: "Full Kitchen", icon: Utensils },
@@ -167,6 +169,7 @@ export function RoomDetail({
             bedrooms: roomData.bedrooms || 1,
             bathrooms: roomData.bathrooms || 1,
             size: roomData.size || '24m²',
+            floor: roomData.floor || 1,
             facilities: (roomData.fasilitas || "WiFi, AC").split(',').map((f: string) => ({
               name: f.trim(),
               icon: facilityIcons[f.trim()] || Check
@@ -421,6 +424,43 @@ export function RoomDetail({
                         </p>
                         <p className="font-bold text-slate-900 dark:text-slate-100">
                           {room.bedrooms}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                      <Utensils className="w-5 h-5 text-stone-900 dark:text-stone-100" /> {/* Using Utensils as placeholder if Bath icon missing, or use custom SVG */}
+                      {/* Better: Use 'Bath' if available or simple check */}
+                      <div>
+                         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                          Bathrooms
+                        </p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">
+                          {room.bathrooms}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                      <MapPin className="w-5 h-5 text-stone-900 dark:text-stone-100" /> {/* Placeholder for Size/Maximize if not imported */}
+                       <div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                          Size
+                        </p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">
+                          {room.size}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                       <ArrowLeft className="w-5 h-5 text-stone-900 dark:text-stone-100 rotate-90" /> {/* Placeholder for Floor/Layers */}
+                       <div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                          Floor
+                        </p>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">
+                          {room.floor || 1}
                         </p>
                       </div>
                     </div>
