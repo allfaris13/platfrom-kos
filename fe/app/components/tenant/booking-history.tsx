@@ -3,13 +3,13 @@ import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { ExtendBooking } from './extend-booking';
 import { CancelBooking } from './cancel-booking';
 import { Calendar as CalendarUI } from '@/app/components/ui/calendar';
-import { 
-  Calendar, 
-  MapPin, 
+import {
+  Calendar,
+  MapPin,
   Eye,
   Clock,
   Search,
@@ -21,13 +21,16 @@ import {
   Info,
   ChevronDown,
   Home,
-  Wallet
+  Wallet,
+  Upload
 } from 'lucide-react';
-import { api, PaymentReminder } from '@/app/services/api';
-import { useEffect } from 'react';
+import { api, PaymentReminder, Payment } from '@/app/services/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs-component";
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+
+import { UploadProofModal } from './upload-proof-modal';
+import { BookingDetailsModal } from './booking-details-modal';
 
 interface Booking {
   id: string;
@@ -41,6 +44,13 @@ interface Booking {
   totalPaid: number;
   duration: string;
   rawStatus: string;
+  pendingPaymentId?: number;
+  payments?: Payment[]; // Add payments field
+}
+
+interface PaymentData {
+  id: number;
+  status_pembayaran: string;
 }
 
 interface KamarData {
@@ -62,51 +72,66 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const [calendarExpanded, setCalendarExpanded] = useState(false);
   const [reminders, setReminders] = useState<PaymentReminder[]>([]);
   const [isLoadingReminders, setIsLoadingReminders] = useState(false);
   const router = useRouter();
+  const [viewDetailsModalOpen, setViewDetailsModalOpen] = useState(false);
+
+  const fetchBookings = useCallback(async () => {
+    try {
+      // setIsLoading(true); // Don't trigger loading on refresh to avoid flickering too much, or keep it?
+      // Let's keep it for now but maybe cleaner if we have a separate refresher.
+      // actually for initial load we need it.
+      // actually for initial load we need it.
+      const data = (await api.getMyBookings()) as unknown as Array<{ 
+        id: number; 
+        kamar: KamarData; 
+        tanggal_mulai: string; 
+        durasi_sewa: number; 
+        status_bayar: string; 
+        total_bayar: number;
+        pembayaran: Payment[];
+      }>;
+      const mapped = data.map((b) => {
+        const moveIn = new Date(b.tanggal_mulai);
+        const moveOut = new Date(moveIn);
+        moveOut.setMonth(moveOut.getMonth() + b.durasi_sewa);
+
+        // Find pending payment
+        const pendingPayment = b.pembayaran?.find(p => p.status_pembayaran === 'Pending');
+
+        return {
+          id: b.id.toString(),
+          roomName: b.kamar.nomor_kamar + " - " + b.kamar.tipe_kamar,
+          roomImage: b.kamar.image_url.startsWith('http') ? b.kamar.image_url : `http://localhost:8081${b.kamar.image_url}`,
+          location: `Floor ${b.kamar.floor}`,
+          status: b.status_pemesanan === 'Confirmed' ? 'Confirmed' : (b.status_pemesanan === 'Pending' ? 'Pending' : (b.status_pemesanan === 'Cancelled' ? 'Cancelled' : 'Completed')),
+          moveInDate: b.tanggal_mulai,
+          moveOutDate: moveOut.toISOString().split('T')[0],
+          monthlyRent: b.kamar.harga_per_bulan,
+          totalPaid: b.total_bayar,
+          duration: `${b.durasi_sewa} Months`,
+          rawStatus: b.status_bayar,
+          pendingPaymentId: pendingPayment?.id,
+          payments: b.pembayaran || [] // Map API 'pembayaran' to local 'payments'
+        };
+      });
+      setBookings(mapped);
+    } catch (err) {
+      console.error("Failed to fetch bookings", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const data = (await api.getMyBookings()) as Array<{ 
-          id: number; 
-          kamar: KamarData; 
-          tanggal_mulai: string; 
-          durasi_sewa: number; 
-          status_bayar: string; 
-          total_bayar: number 
-        }>;
-        const mapped = data.map((b) => {
-          const moveIn = new Date(b.tanggal_mulai);
-          const moveOut = new Date(moveIn);
-          moveOut.setMonth(moveOut.getMonth() + b.durasi_sewa);
-
-          return {
-            id: b.id.toString(),
-            roomName: b.kamar.nomor_kamar + " - " + b.kamar.tipe_kamar,
-            roomImage: b.kamar.image_url.startsWith('http') ? b.kamar.image_url : `http://localhost:8081${b.kamar.image_url}`,
-            location: `Floor ${b.kamar.floor}`,
-            status: b.status_bayar === 'Confirmed' ? 'Confirmed' : (b.status_bayar === 'Pending' ? 'Pending' : 'Completed'),
-            moveInDate: b.tanggal_mulai,
-            moveOutDate: moveOut.toISOString().split('T')[0],
-            monthlyRent: b.kamar.harga_per_bulan,
-            totalPaid: b.total_bayar,
-            duration: `${b.durasi_sewa} Months`,
-            rawStatus: b.status_bayar
-          };
-        });
-        setBookings(mapped);
-      } catch (err) {
-        console.error("Failed to fetch bookings", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    fetchBookings();
 
     const fetchReminders = async () => {
       setIsLoadingReminders(true);
@@ -121,9 +146,8 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
       }
     };
 
-    fetchBookings();
     fetchReminders();
-  }, []);
+  }, [fetchBookings]);
 
   // Process bookings for calendar with start/end/due dates
   const processedBookings = useMemo(() => {
@@ -225,27 +249,27 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
           transition={{ staggerChildren: 0.1, delayChildren: 0.2 }}
         >
           {[
-            { 
-              label: 'Total Rooms', 
-              value: bookings.length.toString(), 
+            {
+              label: 'Total Rooms',
+              value: bookings.length.toString(),
               icon: <Home className="w-6 h-6" />,
               delay: 0
             },
-            { 
-              label: 'Completed Bills', 
-              value: bookings.filter(b => b.rawStatus === 'Confirmed').length.toString(), 
+            {
+              label: 'Completed Bills',
+              value: bookings.filter(b => b.rawStatus === 'Confirmed').length.toString(),
               icon: <CheckCircle2 className="w-6 h-6" />,
               delay: 0.1
             },
-            { 
-              label: 'Pending Bills', 
-              value: bookings.filter(b => b.rawStatus === 'Pending').length.toString(), 
+            {
+              label: 'Pending Bills',
+              value: bookings.filter(b => b.rawStatus === 'Pending').length.toString(),
               icon: <Clock className="w-6 h-6" />,
               delay: 0.2
             },
-            { 
-              label: 'Total Expenses', 
-              value: `Rp ${bookings.reduce((sum, b) => sum + b.totalPaid, 0).toLocaleString()}`, 
+            {
+              label: 'Total Expenses',
+              value: `Rp ${bookings.reduce((sum, b) => sum + b.totalPaid, 0).toLocaleString()}`,
               icon: <Wallet className="w-6 h-6" />,
               delay: 0.3
             },
@@ -305,7 +329,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
           className="mb-8"
         >
           <Card className="border-0 dark:border dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900 overflow-hidden">
-            <div 
+            <div
               className="p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               onClick={() => setCalendarExpanded(!calendarExpanded)}
             >
@@ -384,7 +408,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                             >
                               <Card className="border-0 shadow-lg bg-white dark:bg-slate-900 rounded-xl overflow-hidden">
                                 <div className="relative h-32">
-                                  <ImageWithFallback 
+                                  <ImageWithFallback
                                     src={activeBooking.roomImage}
                                     alt="Room"
                                     className="w-full h-full object-cover"
@@ -423,7 +447,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                                     </p>
                                   </div>
 
-                                  <Button 
+                                  <Button
                                     onClick={() => handleExtendClick(activeBooking)}
                                     className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-2 text-sm rounded-lg shadow-lg transition-all"
                                   >
@@ -456,9 +480,9 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
             </AnimatePresence>
           </Card>
         </motion.div>
-        
+
         {/* Bookings List */}
-        <motion.div 
+        <motion.div
           className="space-y-5 mt-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -576,35 +600,63 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           <Button
                             variant="outline"
-                            onClick={() => onViewRoom(booking.id)}
+                            onClick={() => {
+                                setSelectedBooking(booking);
+                                setViewDetailsModalOpen(true);
+                            }}
                             className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold shadow-md hover:shadow-lg transition-all dark:text-white"
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </Button>
                         </motion.div>
-                        {booking.status === 'Confirmed' && (
-                          <>
-                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                              <Button
-                                onClick={() => handleExtendClick(booking)}
-                                className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 hover:from-stone-600 hover:to-stone-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
-                              >
-                                <TrendingUp className="w-4 h-4 mr-2" />
-                                Extend Booking
-                              </Button>
-                            </motion.div>
-                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                              <Button
-                                onClick={() => handleCancelClick(booking)}
-                                variant="outline"
-                                className="border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 font-semibold shadow-md hover:shadow-lg transition-all"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Cancel
-                              </Button>
-                            </motion.div>
-                          </>
+                        
+                        {/* Action Buttons - Only show if NOT Cancelled/Completed */}
+                        {booking.status !== 'Cancelled' && booking.status !== 'Completed' && (
+                            <>
+                                {/* Extend Button - Visible for Confirmed and Active */}
+                                {(booking.status === 'Confirmed' || booking.status === 'Pending') && (
+                                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                      <Button
+                                        onClick={() => handleExtendClick(booking)}
+                                        className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 hover:from-stone-600 hover:to-stone-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+                                      >
+                                        <TrendingUp className="w-4 h-4 mr-2" />
+                                        Extend
+                                      </Button>
+                                    </motion.div>
+                                )}
+
+                                {/* Cancel Button */}
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                  <Button
+                                    onClick={() => handleCancelClick(booking)}
+                                    variant="outline"
+                                    className="border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 font-semibold shadow-md hover:shadow-lg transition-all"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Cancel
+                                  </Button>
+                                </motion.div>
+
+                                {/* Upload Proof Button for Pending Bookings */}
+                                {booking.status === 'Pending' && booking.pendingPaymentId && (
+                                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                      <Button
+                                        onClick={() => {
+                                          if (booking.pendingPaymentId) {
+                                            setSelectedPaymentId(booking.pendingPaymentId);
+                                            setUploadModalOpen(true);
+                                          }
+                                        }}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+                                      >
+                                        <Upload className="w-4 h-4 mr-2" />
+                                        Upload Proof
+                                      </Button>
+                                   </motion.div>
+                                )}
+                            </>
                         )}
                       </div>
                     </div>
@@ -694,7 +746,14 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
                                Rp {reminder.jumlah_bayar.toLocaleString()}
                              </p>
                              {reminder.status_reminder !== 'Paid' && (
-                               <Button size="sm" onClick={() => router.push('/dashboard/payment?reminder_id=' + reminder.id)} className="bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-500/20">
+                               <Button 
+                                 size="sm" 
+                                 onClick={() => {
+                                   setSelectedPaymentId(reminder.pembayaran_id);
+                                   setUploadModalOpen(true);
+                                 }} 
+                                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-500/20"
+                               >
                                  Pay Now
                                </Button>
                              )}
@@ -712,7 +771,14 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
 
       </div>
 
-      {/* Modals remain same, they should handle dark mode internally via their components */}
+      {selectedBooking && (
+        <BookingDetailsModal
+          isOpen={viewDetailsModalOpen}
+          onClose={() => setViewDetailsModalOpen(false)}
+          booking={selectedBooking}
+        />
+      )}
+
       {selectedBooking && (
         <ExtendBooking
           isOpen={extendModalOpen}
@@ -724,6 +790,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
             pricePerMonth: selectedBooking.monthlyRent,
             image: selectedBooking.roomImage,
           }}
+          onSuccess={fetchBookings}
         />
       )}
 
@@ -741,6 +808,16 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
             duration: selectedBooking.duration,
             status: selectedBooking.status as 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled',
           }}
+          onSuccess={fetchBookings}
+        />
+      )}
+
+      {selectedPaymentId && (
+        <UploadProofModal
+          isOpen={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+          paymentId={selectedPaymentId}
+          onSuccess={fetchBookings}
         />
       )}
     </div>

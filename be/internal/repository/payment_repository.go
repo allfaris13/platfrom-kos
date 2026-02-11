@@ -11,7 +11,9 @@ type PaymentRepository interface {
 	FindByID(id uint) (*models.Pembayaran, error)
 	FindByOrderID(orderID string) (*models.Pembayaran, error)
 	Create(payment *models.Pembayaran) error
+	CreateReminder(reminder *models.PaymentReminder) error
 	Update(payment *models.Pembayaran) error
+	DeleteByBookingID(bookingID uint) error
 	WithTx(tx *gorm.DB) PaymentRepository
 }
 
@@ -49,6 +51,14 @@ func (r *paymentRepository) Update(payment *models.Pembayaran) error {
 	return r.db.Save(payment).Error
 }
 
+func (r *paymentRepository) CreateReminder(reminder *models.PaymentReminder) error {
+	return r.db.Create(reminder).Error
+}
+
 func (r *paymentRepository) WithTx(tx *gorm.DB) PaymentRepository {
 	return &paymentRepository{db: tx}
+}
+
+func (r *paymentRepository) DeleteByBookingID(bookingID uint) error {
+	return r.db.Where("pemesanan_id = ?", bookingID).Delete(&models.Pembayaran{}).Error
 }

@@ -212,7 +212,7 @@ func TestCreateBooking_UserAlreadyHasActiveBooking(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.Nil(t, booking)
-	assert.Contains(t, err.Error(), "maksimal hanya bisa memesan 1 kamar")
+	assert.Contains(t, err.Error(), "pesanan aktif")
 	mockBookingRepo.AssertExpectations(t)
 	mockPenyewaRepo.AssertExpectations(t)
 }
@@ -263,37 +263,53 @@ func TestCreateBooking_InvalidDateFormat(t *testing.T) {
 // =============================================================================
 
 func TestCreateBooking_DifferentStatuses(t *testing.T) {
+	futureDate := time.Now().AddDate(0, 1, 0) // Next month
+	pastDate := time.Now().AddDate(0, -2, 0)  // 2 months ago
+
 	tests := []struct {
 		name                  string
-		existingBookingStatus string
+		existingBooking       models.Pemesanan
 		shouldAllowNewBooking bool
 		errorContains         string
 	}{
 		{
 			name:                  "no existing bookings",
-			existingBookingStatus: "",
+			existingBooking:       models.Pemesanan{}, // Zero value, status ""
 			shouldAllowNewBooking: true,
 		},
 		{
 			name:                  "existing Pending booking (active)",
-			existingBookingStatus: "Pending",
+			existingBooking:       models.Pemesanan{StatusPemesanan: "Pending"},
 			shouldAllowNewBooking: false,
-			errorContains:         "maksimal",
+			errorContains:         "pesanan aktif",
 		},
 		{
-			name:                  "existing Confirmed booking (active)",
-			existingBookingStatus: "Confirmed",
+			name: "existing Confirmed booking (active lease)",
+			existingBooking: models.Pemesanan{
+				StatusPemesanan: "Confirmed",
+				TanggalMulai:    futureDate,
+				DurasiSewa:      1,
+			},
 			shouldAllowNewBooking: false,
-			errorContains:         "maksimal",
+			errorContains:         "masa sewa",
+		},
+		{
+			name: "existing Confirmed booking (expired lease)",
+			existingBooking: models.Pemesanan{
+				StatusPemesanan: "Confirmed",
+				TanggalMulai:    pastDate,
+				DurasiSewa:      1,
+			},
+			shouldAllowNewBooking: true,
 		},
 		{
 			name:                  "existing Completed booking",
-			existingBookingStatus: "Completed",
+			existingBooking:       models.Pemesanan{StatusPemesanan: "Completed"},
 			shouldAllowNewBooking: true,
 		},
 		{
 			name:                  "existing Canceled booking",
-			existingBookingStatus: "Canceled",
+			existingBooking:       models.Pemesanan{StatusPemesanan: "Canceled"},
 			shouldAllowNewBooking: true,
 		},
 	}
@@ -307,8 +323,8 @@ func TestCreateBooking_DifferentStatuses(t *testing.T) {
 			penyewa.ID = 1
 
 			var existingBookings []models.Pemesanan
-			if tt.existingBookingStatus != "" {
-				existingBookings = []models.Pemesanan{{StatusPemesanan: tt.existingBookingStatus}}
+			if tt.existingBooking.StatusPemesanan != "" {
+				existingBookings = []models.Pemesanan{tt.existingBooking}
 			}
 
 			mockPenyewaRepo.On("FindByUserID", uint(1)).Return(penyewa, nil)

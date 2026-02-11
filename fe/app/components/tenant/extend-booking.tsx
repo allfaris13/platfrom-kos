@@ -6,6 +6,7 @@ import { Card } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { toast } from 'sonner';
 import { useApp } from '@/app/context';
+import { api } from '@/app/services/api';
 
 interface ExtendBookingProps {
   isOpen: boolean;
@@ -17,12 +18,13 @@ interface ExtendBookingProps {
     pricePerMonth: number;
     image: string;
   };
+  onSuccess?: () => void;
 }
 
-export function ExtendBooking({ isOpen, onClose, bookingData }: ExtendBookingProps) {
+export function ExtendBooking({ isOpen, onClose, bookingData, onSuccess }: ExtendBookingProps) {
   const [duration, setDuration] = useState(1); // dalam bulan
   const [loading, setLoading] = useState(false);
-  const { extendBooking } = useApp();
+  // const { extendBooking } = useApp(); // Deprecated: using direct API
   const totalCost = duration * bookingData.pricePerMonth;
 
   // Logika hitung tanggal baru (sederhana)
@@ -32,27 +34,26 @@ export function ExtendBooking({ isOpen, onClose, bookingData }: ExtendBookingPro
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
-  const handleConfirmExtend = () => {
+  const handleConfirmExtend = async () => {
     setLoading(true);
-    setTimeout(() => {
-      const newDate = new Date(bookingData.currentEndDate);
-      newDate.setMonth(newDate.getMonth() + duration);
-      
-      // Gunakan global state untuk extend booking
-      extendBooking({
-        bookingId: bookingData.id,
-        additionalMonths: duration,
-        newEndDate: newDate.toISOString().split('T')[0],
-        additionalCost: totalCost,
-      });
+    try {
+      await api.extendBooking(bookingData.id, duration); // Call API Directly
 
-      setLoading(false);
-      toast.success('Perpanjangan sewa berhasil!', {
-        description: `Sewa diperpanjang hingga ${calculateNewDate(bookingData.currentEndDate, duration)}. Total pembayaran: $${totalCost}. Data otomatis tersimpan dan admin dapat melihatnya.`,
-        duration: 4000,
+      toast.success('Permintaan perpanjangan sewa berhasil dibuat!', {
+        description: `Tagihan baru sebesar Rp ${totalCost.toLocaleString()} telah dibuat. Silakan cek menu "My Bills" untuk melakukan pembayaran.`,
+        duration: 5000,
       });
+      
+      onSuccess?.();
       onClose();
-    }, 1500);
+    } catch (error) {
+      console.error("Failed to extend booking", error);
+      toast.error("Gagal memperpanjang sewa", {
+        description: "Terjadi kesalahan saat memproses permintaan anda."
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

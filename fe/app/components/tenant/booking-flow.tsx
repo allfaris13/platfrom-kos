@@ -77,15 +77,16 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
     moveInDate: initialData?.moveInDate || "",
     duration: initialData?.duration || "6", // Default fallback if not provided
     guests: initialData?.guests || "1",
-    paymentMethod: "midtrans", // 'midtrans' atau 'cash'
     paymentType: "full", // 'full' atau 'dp' (down payment)
+    paymentMethod: "transfer", // 'transfer' | 'cash'
   });
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   const steps = [
     { number: 1, title: "Personal Info", description: "Your details" },
     { number: 2, title: "Booking Details", description: "Move-in & duration" },
-    { number: 3, title: "Payment", description: "Complete payment" },
+    { number: 3, title: "Payment", description: "Confirm & Pay" },
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -168,6 +169,12 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
     if (step < 3) {
       setStep(step + 1);
     } else {
+       // Step 3 Validation: Must have proof file for Manual Transfer ONLY
+       if (formData.paymentMethod === 'transfer' && !proofFile) {
+           toast.error("Please upload payment proof before completing booking.");
+           return;
+       }
+
       setLoading(true);
       try {
         // 1. Create Booking Record
@@ -177,66 +184,30 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
           durasi_sewa: parseInt(formData.duration),
         }) as BookingResponse;
 
-        // 2. Create Snap Token dengan payment type dan method
-        const snapData = await api.createSnapToken({
+        // 2. Create Payment Session (Manual)
+        const paymentRes = await api.createPayment({
           pemesanan_id: booking.id,
-          payment_type: formData.paymentType, // 'full' atau 'dp'
-          payment_method: formData.paymentMethod, // 'midtrans' atau 'cash'
-        }) as SnapResponse;
-
-        // 3. Handle berbagai metode pembayaran
-        if (formData.paymentMethod === "cash") {
-          // Untuk cash payment, langsung tampilkan notifikasi
-          toast.success("Pembayaran Cash berhasil dibuat!", {
-            description:
-              "Silakan hubungi admin untuk mengkonfirmasi pembayaran. Instruksi pembayaran sudah dikirim ke email Anda.",
-            duration: 5000,
-          });
-          setBookingId(`#BK${booking.id}`);
-          setBookingComplete(true);
-          setLoading(false);
-        } else {
-          // Untuk Midtrans payment
-          if (typeof window.snap === "undefined") {
-            toast.error("Sistem pembayaran belum siap. Silakan refresh halaman.");
-            setLoading(false);
-            return;
-          }
-
-          window.snap.pay(snapData.token, {
-            onSuccess: async function (result: any) {
-              console.log("Payment Success:", result);
-              try {
-                  // Verify payment with backend to update room status immediately
-                  await api.verifyPayment(result.order_id);
-              } catch (e) {
-                  console.error("Verification failed", e);
-              }
-              setBookingId(`#BK${booking.id}`);
-              setBookingComplete(true);
-              setLoading(false);
-            },
-            onPending: function (result: any) {
-              console.log("Payment Pending:", result);
-              toast.info(
-                "Pembayaran sedang diproses. Silakan selesaikan pembayaran Anda."
-              );
-              setBookingId(`#BK${booking.id}`);
-              setBookingComplete(true);
-              setLoading(false);
-            },
-            onError: function (result: any) {
-              console.error("Payment Error:", result);
-              toast.error("Gagal memproses pembayaran. Silakan coba lagi.");
-              setLoading(false);
-            },
-            onClose: function () {
-              setLoading(false);
-            },
-          });
+          payment_type: formData.paymentType as 'full' | 'dp',
+        });
+        
+        // 3. Upload Proof Immediately (Only if Transfer)
+        if (formData.paymentMethod === 'transfer' && proofFile) {
+             await api.uploadPaymentProof(paymentRes.payment.id, proofFile);
         }
+
+        // 4. Success
+        setBookingId(`#BK${booking.id}`);
+        setBookingComplete(true);
+        setLoading(false);
+        toast.success("Booking berhasil dibuat!", {
+          description: formData.paymentMethod === 'transfer' 
+            ? "Bukti pembayaran berhasil diupload. Menunggu konfirmasi admin."
+            : "Silakan lakukan pembayaran tunai di lokasi.",
+        });
+
       } catch (err: any) {
         setLoading(false);
+        console.error(err);
         toast.error(err.message || "Gagal membuat reservasi.");
       }
     }
@@ -267,38 +238,44 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
               Booking Confirmed!
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              Permintaan booking Anda berhasil dikirim. Kami akan meninjau pembayaran dan mengirim email konfirmasi dalam 24 jam.
+              Terima kasih! Silakan selesaikan pembayaran Anda ke rekening berikut:
             </p>
-            <div className="space-y-3 p-6 bg-muted/50 rounded-lg mb-8 border border-border">
+            
+            <div className="bg-primary/5 p-6 rounded-lg mb-8 border border-primary/20">
+                <h3 className="font-bold text-xl mb-2">BCA 1234567890</h3>
+                <p className="text-muted-foreground">a.n. Koskosan Official</p>
+                <div className="mt-4 p-3 bg-background rounded border border-border text-sm">
+                    Total: <span className="font-bold">Check details above</span>
+                </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-6">
+                Setelah transfer, silakan upload bukti pembayaran di halaman "My Bookings".
+            </p>
+
+            <div className="space-y-3 p-6 bg-muted/50 rounded-lg mb-8 border border-border text-left">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Booking ID:</span>
                 <span className="font-medium text-foreground">{bookingId}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Name:</span>
-                <span className="font-medium text-foreground">
-                  {formData.fullName}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Email:</span>
-                <span className="font-medium text-foreground">
-                  {formData.email}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Move-in Date:</span>
-                <span className="font-medium text-foreground">
-                  {formData.moveInDate}
-                </span>
-              </div>
+               {/* ... other details ... */}
             </div>
-            <Button
-              onClick={onBack}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              Back to Homepage
-            </Button>
+            
+            <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => window.location.href = "/tenant/bookings"}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  Go to My Bookings
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={onBack}
+                  className="w-full"
+                >
+                  Back to Homepage
+                </Button>
+            </div>
           </Card>
         </motion.div>
       </div>
@@ -456,45 +433,24 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
 
                     {/* Guests Input (Read-only or Editable) */}
                     {/* Since we don't have a guests field in the original form, adding it now */}
-                     <div className="space-y-2">
-                      <Label htmlFor="guests">Number of Guests</Label>
-                      <Select
-                        value={formData.guests}
-                        onValueChange={(val) =>
-                          handleInputChange("guests", val)
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select guests" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3].map((g) => (
-                            <SelectItem key={g} value={String(g)}>
-                              {g} Guest{g > 1 ? "s" : ""}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Rental Duration *</Label>
-                      <Select
-                        value={formData.duration}
-                        onValueChange={(val) =>
-                          handleInputChange("duration", val)
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="3">3 months</SelectItem>
-                          <SelectItem value="6">6 months</SelectItem>
-                          <SelectItem value="12">12 months</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                     <div className="grid gap-2">
+                  <Label htmlFor="guests">Number of Guests</Label>
+                  <Select
+                    value={formData.guests}
+                    onValueChange={(value) => handleInputChange("guests", value)}
+                  >
+                    <SelectTrigger id="guests" className="bg-background border-input">
+                      <SelectValue placeholder="Select guests" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: room?.capacity || 1 }, (_, i) => i + 1).map((g) => (
+                        <SelectItem key={g} value={String(g)}>
+                          {g} Guest{g > 1 ? "s" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
                     <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900">
                       <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2 text-sm">
@@ -614,92 +570,79 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
                       </div>
                     </div>
 
-                    {/* Payment Method Selection */}
-                    <div>
-                      <Label className="text-base font-semibold mb-3 block">
-                        Payment Method
-                      </Label>
-                      <div className="grid gap-3">
-                        {/* Midtrans Option */}
-                        <motion.div
-                          whileHover={{ scale: 1.01 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() =>
-                            handleInputChange("paymentMethod", "midtrans")
-                          }
-                          className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                            formData.paymentMethod === "midtrans"
-                              ? "border-primary bg-primary/5"
-                              : "border-border bg-muted/50 hover:border-primary/50"
+                    {/* Manual Payment Info */}
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
+                      <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2">
+                         <CreditCard className="w-4 h-4" /> Bank Transfer Manual
+                      </h4>
+                      
+                      {/* Payment Method Selection */}
+                      <div className="flex gap-4 mb-4">
+                        <div 
+                          className={`flex-1 p-4 border rounded-lg cursor-pointer transition-all ${
+                            formData.paymentMethod === 'transfer' 
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                              : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
                           }`}
+                          onClick={() => handleInputChange('paymentMethod', 'transfer')}
                         >
-                          <div className="flex items-start gap-3">
-                             <div
-                              className={`w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${
-                                formData.paymentMethod === "midtrans"
-                                  ? "border-primary bg-primary"
-                                  : "border-muted-foreground"
-                              }`}
-                            >
-                              {formData.paymentMethod === "midtrans" && (
-                                <Check className="w-3 h-3 text-white" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-semibold text-sm">
-                                Online Payment
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Transfer Bank, GoPay, ShopeePay, Dana, Kartu
-                                Kredit, dll
-                              </p>
-                            </div>
-                            <div className="p-2 bg-blue-100 dark:bg-blue-950 rounded">
-                              <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            </div>
+                          <div className="flex items-center gap-2 mb-2">
+                             <CreditCard className={`w-5 h-5 ${formData.paymentMethod === 'transfer' ? 'text-blue-500' : 'text-gray-500'}`} />
+                             <span className="font-semibold">Transfer Bank</span>
                           </div>
-                        </motion.div>
+                          <p className="text-xs text-muted-foreground">Transfer ke rekening BCA dan upload bukti.</p>
+                        </div>
 
-                        {/* Cash Option */}
-                        <motion.div
-                          whileHover={{ scale: 1.01 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() =>
-                            handleInputChange("paymentMethod", "cash")
-                          }
-                          className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                            formData.paymentMethod === "cash"
-                              ? "border-primary bg-primary/5"
-                              : "border-border bg-muted/50 hover:border-primary/50"
+                        <div 
+                          className={`flex-1 p-4 border rounded-lg cursor-pointer transition-all ${
+                            formData.paymentMethod === 'cash' 
+                              ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+                              : 'border-gray-200 dark:border-gray-700 hover:border-green-300'
                           }`}
+                          onClick={() => handleInputChange('paymentMethod', 'cash')}
                         >
-                          <div className="flex items-start gap-3">
-                            <div
-                              className={`w-5 h-5 rounded-full border-2 mt-1 flex items-center justify-center ${
-                                formData.paymentMethod === "cash"
-                                  ? "border-primary bg-primary"
-                                  : "border-muted-foreground"
-                              }`}
-                            >
-                              {formData.paymentMethod === "cash" && (
-                                <Check className="w-3 h-3 text-white" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-semibold text-sm">
-                                Cash Payment
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Pembayaran tunai langsung ke admin (hubungi
-                                untuk detail)
-                              </p>
-                            </div>
-                            <div className="p-2 bg-green-100 dark:bg-green-950 rounded">
-                              <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
-                            </div>
+                          <div className="flex items-center gap-2 mb-2">
+                             <DollarSign className={`w-5 h-5 ${formData.paymentMethod === 'cash' ? 'text-green-500' : 'text-gray-500'}`} />
+                             <span className="font-semibold">Bayar Tunai</span>
                           </div>
-                        </motion.div>
+                          <p className="text-xs text-muted-foreground">Bayar tunai saat check-in di lokasi kos.</p>
+                        </div>
                       </div>
+
+                      {formData.paymentMethod === 'transfer' ? (
+                          <>
+                            <p className="text-sm text-blue-800 dark:text-blue-300 mb-4">
+                                Pembayaran dilakukan via transfer bank manual ke:
+                                <br />
+                                <strong>BCA 1234567890 a.n. Koskosan</strong>
+                            </p>
+                            
+                            {/* File Upload Input */}
+                            <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                                <Label className="mb-2 block text-sm font-semibold">Upload Bukti Transfer *</Label>
+                                <Input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                            setProofFile(e.target.files[0]);
+                                        }
+                                    }}
+                                />
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Format: JPG, PNG, PDF. Max 5MB. Wajib diupload sebelum menyelesaikan pesanan.
+                                </p>
+                            </div>
+                          </>
+                      ) : (
+                          <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-lg border border-green-100 dark:border-green-900">
+                              <p className="text-sm text-green-800 dark:text-green-300">
+                                  Silakan lakukan pembayaran tunai kepada pengelola kos saat Anda tiba di lokasi.
+                                  <br/>
+                                  Harap siapkan uang pas jika memungkinkan.
+                              </p>
+                          </div>
+                      )}
                     </div>
 
                     {/* Order Summary */}
@@ -778,17 +721,6 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
                          {/* Note about deposit if needed, or keeping it strictly rent based for simplicity if confirmed */}
                       </div>
                     </div>
-
-                    {/* Info Box */}
-                    {formData.paymentMethod === "cash" && (
-                      <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-900">
-                        <p className="text-sm text-amber-900 dark:text-amber-200">
-                          <strong>⚠️ Catatan:</strong> Setelah submit, Anda akan
-                          menerima instruksi pembayaran dan kontak admin via
-                          email untuk mengkonfirmasi pembayaran cash Anda.
-                        </p>
-                      </div>
-                    )}
 
                     {formData.paymentType === "dp" && (
                       <div className="p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">

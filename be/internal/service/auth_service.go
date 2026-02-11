@@ -6,6 +6,7 @@ import (
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/repository"
 	"koskosan-be/internal/utils"
+	"log"
 	"time"
 
 	github_uuid "github.com/google/uuid"
@@ -91,8 +92,7 @@ func (s *authService) Register(username, password, role, email, phone, address, 
 			NIK:          nik,
 		}
 		if err := s.penyewaRepo.Create(penyewa); err != nil {
-			// Note: We might want to handle this failure, maybe delete the user or just log it
-			// For now we just log it or ignore
+			log.Printf("Failed to create penyewa profile for user %s: %v", username, err)
 		}
 	}
 

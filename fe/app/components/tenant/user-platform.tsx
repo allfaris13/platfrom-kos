@@ -139,13 +139,25 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
       const data = (await api.getProfile()) as any;
       let bookingsCount = 0;
       let totalSpent = 0;
+      let currentRoomNumber = '-';
 
       try {
-        const bookingsData = (await api.getMyBookings()) as Array<{ total_bayar: number }>;
+        const bookingsData = (await api.getMyBookings()) as any[]; // Type assertion for flexibility
         bookingsCount = bookingsData.length;
-        totalSpent = bookingsData.reduce((sum: number, b: { total_bayar: number }) => sum + b.total_bayar, 0);
+        totalSpent = bookingsData.reduce((sum: number, b: any) => sum + (b.total_bayar || 0), 0);
+
+        // Find active/confirmed booking to display room number
+        // Priority: Active > Confirmed > Pending
+        const activeBooking = bookingsData.find((b: any) => b.status_pemesanan === 'Active') 
+                           || bookingsData.find((b: any) => b.status_pemesanan === 'Confirmed')
+                           || bookingsData.find((b: any) => b.status_pemesanan === 'Pending');
+
+        if (activeBooking && activeBooking.kamar) {
+            currentRoomNumber = activeBooking.kamar.nomor_kamar;
+        }
+
       } catch (err) {
-        console.error("Failed to fetch bookings count for profile", err);
+        console.error("Failed to fetch bookings details for profile", err);
       }
 
       setUserData({
@@ -159,6 +171,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         status: 'Active',
         totalBookings: bookingsCount,
         totalSpent: totalSpent,
+        roomNumber: currentRoomNumber,
         isGoogleUser: data.is_google_user,
         profileImage: data.penyewa?.foto_profil
           ? (data.penyewa.foto_profil.startsWith('http') ? data.penyewa.foto_profil : `http://localhost:8081${data.penyewa.foto_profil}`)
@@ -199,6 +212,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     status: '',
     totalBookings: 0,
     totalSpent: 0,
+    roomNumber: '-',
     isGoogleUser: false,
     profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NzIyNDZ8MHwxfHNlYXJjaHwxfHx1c2VyJTIwYXZhdGFyfGVufDB8fHx8fDE3MDAwMDAwMDB|&ixlib=rb-4.0.3&q=80&w=400',
   });
@@ -649,7 +663,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-white/10 pt-6">
                             <div className="bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center md:items-start transition-colors hover:bg-white/10">
                               <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Nomor Kamar</p>
-                              <p className="text-2xl font-bold text-white tracking-tight leading-none">{userData.totalBookings > 0 ? '#' + userData.totalBookings : '-'}</p>
+                              <p className="text-2xl font-bold text-white tracking-tight leading-none">{userData.roomNumber}</p>
                             </div>
                             <div className="bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center md:items-start transition-colors hover:bg-white/10">
                               <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Total Pengeluaran</p>

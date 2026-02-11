@@ -22,16 +22,19 @@ type BookingService interface {
 	GetUserBookings(userID uint) ([]BookingResponse, error)
 	CreateBooking(userID uint, kamarID uint, tanggalMulai string, durasiSewa int) (*models.Pemesanan, error)
 	CancelBooking(id uint) error
+	ExtendBooking(bookingID uint, months int) (*models.Pembayaran, error)
 	AutoCancelExpiredBookings() error
 }
 
 type bookingService struct {
 	repo        repository.BookingRepository
 	penyewaRepo repository.PenyewaRepository
+	kamarRepo   repository.KamarRepository
+	paymentRepo repository.PaymentRepository
 }
 
-func NewBookingService(repo repository.BookingRepository, penyewaRepo repository.PenyewaRepository) BookingService {
-	return &bookingService{repo, penyewaRepo}
+func NewBookingService(repo repository.BookingRepository, penyewaRepo repository.PenyewaRepository, kamarRepo repository.KamarRepository, paymentRepo repository.PaymentRepository) BookingService {
+	return &bookingService{repo, penyewaRepo, kamarRepo, paymentRepo}
 }
 
 func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error) {
@@ -90,8 +93,20 @@ func (s *bookingService) CreateBooking(userID uint, kamarID uint, tanggalMulai s
 	// Check for active bookings
 	bookings, _ := s.repo.FindByPenyewaID(penyewa.ID)
 	for _, b := range bookings {
-		if b.StatusPemesanan == "Pending" || b.StatusPemesanan == "Confirmed" {
-			return nil, fmt.Errorf("Anda sudah memiliki pesanan aktif. Setiap penghuni maksimal hanya bisa memesan 1 kamar")
+		// 1. Check for Pending bookings
+		if b.StatusPemesanan == "Pending" {
+			return nil, fmt.Errorf("anda sudah memiliki pesanan aktif (Pending). Selesaikan pembayaran atau batalkan pesanan sebelumnya")
+		}
+
+		// 2. Check for Active Confirmed bookings (Lease period check)
+		if b.StatusPemesanan == "Confirmed" {
+			// Calculate lease end date: StartDate + Duration (months)
+			endDate := b.TanggalMulai.AddDate(0, b.DurasiSewa, 0)
+			
+			// If today is before end date, lease is still active
+			if time.Now().Before(endDate) {
+				return nil, fmt.Errorf("masa sewa anda masih aktif hingga %s. Tidak bisa memesan kamar lain", endDate.Format("02 January 2006"))
+			}
 		}
 	}
 
@@ -132,7 +147,67 @@ func (s *bookingService) CancelBooking(id uint) error {
 		return err
 	}
 
+	// NEW: Update Room Status back to Available (Tersedia)
+	// Fetch the booking again with Kamar loaded or just use KamarID if available options
+	// Since we have 'booking', we can use booking.KamarID
+	if err := s.kamarRepo.UpdateStatus(booking.KamarID, "Tersedia"); err != nil {
+		return fmt.Errorf("failed to reset room status: %v", err)
+	}
+
+	// NEW: Delete associated pending payment so it disappears from Admin Dashboard
+	if err := s.paymentRepo.DeleteByBookingID(id); err != nil {
+		// Log error but generally don't fail the whole cancellation if this fails? 
+		// Or maybe we should? Let's treat it as important.
+		return fmt.Errorf("failed to remove pending payment: %v", err)
+	}
+
 	return nil
+}
+
+// ExtendBooking creates a new payment for extending the lease
+func (s *bookingService) ExtendBooking(bookingID uint, months int) (*models.Pembayaran, error) {
+	booking, err := s.repo.FindByID(bookingID)
+	if err != nil {
+		return nil, err
+	}
+
+	if booking.StatusPemesanan != "Confirmed" {
+		return nil, fmt.Errorf("hanya booking yang sudah dikonfirmasi yang bisa diperpanjang")
+	}
+
+	// Calculate amount
+	amount := booking.Kamar.HargaPerBulan * float64(months)
+
+	// Create new payment record
+	payment := models.Pembayaran{
+		PemesananID:      booking.ID,
+		JumlahBayar:      amount,
+		TanggalBayar:     time.Now(),
+		StatusPembayaran: "Pending",
+		MetodePembayaran: "manual",   // Default to manual
+		TipePembayaran:   "extend",   // New type for extension
+		JumlahDP:         0,
+	}
+	
+	if err := s.paymentRepo.Create(&payment); err != nil {
+		return nil, err
+	}
+	
+	// Create Payment Reminder so it shows up in "My Bills"
+	reminder := models.PaymentReminder{
+		PembayaranID:    payment.ID,
+		JumlahBayar:     payment.JumlahBayar,
+		TanggalReminder: time.Now().AddDate(0, 0, 3), // Due in 3 days
+		StatusReminder:  "Pending",
+		IsSent:          false,
+	}
+	
+	if err := s.paymentRepo.CreateReminder(&reminder); err != nil {
+		fmt.Printf("Failed to create reminder for payment %d: %v\n", payment.ID, err)
+		// Non-critical error, payment still created
+	}
+	
+	return &payment, nil
 }
 
 func (s *bookingService) AutoCancelExpiredBookings() error {
@@ -150,7 +225,11 @@ func (s *bookingService) AutoCancelExpiredBookings() error {
 			fmt.Printf("Failed to auto-cancel booking %d: %v\n", b.ID, err)
 			continue
 		}
-		// Optional: We could send an email notification here
+		
+		// Update room to available
+		if err := s.kamarRepo.UpdateStatus(b.KamarID, "Tersedia"); err != nil {
+             fmt.Printf("Failed to update room status for auto-cancelled booking %d: %v\n", b.ID, err)
+        }
 	}
 	
 	if len(expiredBookings) > 0 {

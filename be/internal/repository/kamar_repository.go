@@ -11,6 +11,7 @@ type KamarRepository interface {
 	FindByID(id uint) (*models.Kamar, error)
 	Create(kamar *models.Kamar) error
 	Update(kamar *models.Kamar) error
+	UpdateStatus(id uint, status string) error
 	Delete(id uint) error
 	WithTx(tx *gorm.DB) KamarRepository
 }
@@ -41,6 +42,10 @@ func (r *kamarRepository) Create(kamar *models.Kamar) error {
 
 func (r *kamarRepository) Update(kamar *models.Kamar) error {
 	return r.db.Save(kamar).Error
+}
+
+func (r *kamarRepository) UpdateStatus(id uint, status string) error {
+	return r.db.Model(&models.Kamar{}).Where("id = ?", id).Update("status", status).Error
 }
 
 func (r *kamarRepository) Delete(id uint) error {

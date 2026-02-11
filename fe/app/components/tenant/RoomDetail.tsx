@@ -59,6 +59,7 @@ interface RoomData {
   bathrooms: number;
   size: string;
   floor: number;
+  capacity: number; // Added capacity
   facilities: {
     name: string;
     icon: React.ComponentType<{ className?: string }>;
@@ -80,6 +81,7 @@ const roomDetails: { [key: string]: RoomData } = {
     bathrooms: 1,
     size: "45m²",
     floor: 2,
+    capacity: 2, // Default mock capacity
     facilities: [
       { name: "High-Speed WiFi", icon: Wifi },
       { name: "Full Kitchen", icon: Utensils },
@@ -170,6 +172,7 @@ export function RoomDetail({
             bathrooms: roomData.bathrooms || 1,
             size: roomData.size || '24m²',
             floor: roomData.floor || 1,
+            capacity: roomData.capacity || 1, // Map capacity from API
             facilities: (roomData.fasilitas || "WiFi, AC").split(',').map((f: string) => ({
               name: f.trim(),
               icon: facilityIcons[f.trim()] || Check
@@ -748,7 +751,7 @@ export function RoomDetail({
                         <SelectValue placeholder="Guests" />
                       </SelectTrigger>
                       <SelectContent>
-                        {[1, 2, 3].map((g) => (
+                        {Array.from({ length: room.capacity || 1 }, (_, i) => i + 1).map((g) => (
                           <SelectItem key={g} value={String(g)}>
                             {g} Guest{g > 1 ? "s" : ""}
                           </SelectItem>

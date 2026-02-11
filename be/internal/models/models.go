@@ -79,9 +79,9 @@ type Penyewa struct {
 type Pemesanan struct {
 	ID              uint             `gorm:"primaryKey" json:"id"`
 	PenyewaID       uint             `json:"penyewa_id"`
-	Penyewa         Penyewa          `gorm:"foreignKey:PenyewaID" json:"-"`
+	Penyewa         Penyewa          `gorm:"foreignKey:PenyewaID" json:"penyewa"`
 	KamarID         uint             `json:"kamar_id"`
-	Kamar           Kamar            `gorm:"foreignKey:KamarID" json:"-"`
+	Kamar           Kamar            `gorm:"foreignKey:KamarID" json:"kamar"`
 	TanggalMulai    time.Time        `json:"tanggal_mulai"`
 	DurasiSewa      int              `json:"durasi_sewa"`
 	StatusPemesanan string           `json:"status_pemesanan"` // enum
@@ -94,7 +94,7 @@ type Pemesanan struct {
 type Pembayaran struct {
 	ID               uint           `gorm:"primaryKey" json:"id"`
 	PemesananID      uint           `json:"pemesanan_id"`
-	Pemesanan        Pemesanan      `gorm:"foreignKey:PemesananID" json:"-"`
+	Pemesanan        Pemesanan      `gorm:"foreignKey:PemesananID" json:"pemesanan"`
 	JumlahBayar      float64        `json:"jumlah_bayar"`
 	TanggalBayar     time.Time      `json:"tanggal_bayar"`
 	BuktiTransfer    string         `json:"bukti_transfer"`

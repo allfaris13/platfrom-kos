@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/service"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -45,11 +47,10 @@ func (h *PaymentHandler) ConfirmPayment(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "payment confirmed successfully"})
 }
 
-func (h *PaymentHandler) CreateSnapToken(c *gin.Context) {
+func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 	var req struct {
-		PemesananID   uint   `json:"pemesanan_id" binding:"required"`
-		PaymentType   string `json:"payment_type" binding:"required"` // "full" atau "dp"
-		PaymentMethod string `json:"payment_method" binding:"required"` // "midtrans" atau "cash"
+		PemesananID uint   `json:"pemesanan_id" binding:"required"`
+		PaymentType string `json:"payment_type" binding:"required"` // "full" atau "dp"
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -63,40 +64,63 @@ func (h *PaymentHandler) CreateSnapToken(c *gin.Context) {
 		return
 	}
 
-	// Validate payment method
-	if req.PaymentMethod != "midtrans" && req.PaymentMethod != "cash" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payment method. Must be 'midtrans' or 'cash'"})
-		return
-	}
-
-	token, redirectURL, err := h.service.CreatePaymentSession(req.PemesananID, req.PaymentType, req.PaymentMethod)
+	payment, err := h.service.CreatePaymentSession(req.PemesananID, req.PaymentType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"token":        token,
-		"redirect_url": redirectURL,
-		"payment_type": req.PaymentType,
-		"payment_method": req.PaymentMethod,
+		"message": "Payment created successfully",
+		"payment": payment,
 	})
 }
 
-func (h *PaymentHandler) HandleMidtransWebhook(c *gin.Context) {
-	var payload map[string]interface{}
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payload"})
+func (h *PaymentHandler) UploadPaymentProof(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payment ID"})
 		return
 	}
 
-	if err := h.service.HandleWebhook(payload); err != nil {
+	// Handle file upload
+	file, err := c.FormFile("proof")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Proof file is required"})
+		return
+	}
+
+	// Generate filename
+	filename := fmt.Sprintf("proof_%d_%s", id, file.Filename)
+	filepath := "uploads/proofs/" + filename
+
+	// Ensure directory exists
+	if err := os.MkdirAll("uploads/proofs", os.ModePerm); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
+		return
+	}
+
+	// Save file
+	if err := c.SaveUploadedFile(file, filepath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+
+	// Update record with file path (relative for URL access)
+	proofURL := "/uploads/proofs/" + filename
+
+	if err := h.service.UploadPaymentProof(uint(id), proofURL); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Webhook processed successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Payment proof uploaded successfully",
+		"url": proofURL,
+	})
 }
+
 // ConfirmCashPayment untuk mengkonfirmasi pembayaran cash
 func (h *PaymentHandler) ConfirmCashPayment(c *gin.Context) {
 	idStr := c.Param("id")
@@ -120,25 +144,7 @@ func (h *PaymentHandler) ConfirmCashPayment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Cash payment confirmed successfully"})
-}
-
-func (h *PaymentHandler) VerifyPayment(c *gin.Context) {
-	var input struct {
-		OrderID string `json:"order_id" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.service.VerifyPayment(input.OrderID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Payment verified successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Payment confirmed successfully"})
 }
 
 func (h *PaymentHandler) GetReminders(c *gin.Context) {

@@ -4,6 +4,7 @@ import {
   Home,
   CreditCard,
   ArrowUpRight,
+  LogOut,
 } from "lucide-react";
 import {
   LineChart,
@@ -69,6 +70,7 @@ export function LuxuryDashboard() {
     monthly_trend: [],
     type_breakdown: [],
     demographics: [],
+    recent_checkouts: [],
   });
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -389,7 +391,7 @@ export function LuxuryDashboard() {
       </div>
 
       {/* Recent Activity & Quick Stats */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Recent Registrations */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">
@@ -433,6 +435,47 @@ export function LuxuryDashboard() {
             ) : (
               <p className="text-slate-500 text-center py-4">
                 Tidak ada pendaftaran ditemukan
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Checkouts */}
+        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">
+            Riwayat Check-out
+          </h3>
+          <div className="space-y-3">
+            {stats.recent_checkouts && stats.recent_checkouts.length > 0 ? (
+              stats.recent_checkouts.map((checkout, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-4 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl hover:bg-slate-800/50 transition-all duration-200"
+                >
+                  <div className="size-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/20">
+                    <LogOut className="text-white size-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-white truncate">
+                      {checkout.room_name} 
+                    </p>
+                    <p className="text-sm text-slate-400 truncate">
+                      {checkout.tenant_name}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                     <p className="text-xs text-slate-400">
+                        {new Date(checkout.checkout_date).toLocaleDateString()}
+                     </p>
+                     <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
+                        {checkout.reason}
+                     </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-slate-500 text-center py-4">
+                Belum ada data check-out terbaru
               </p>
             )}
           </div>

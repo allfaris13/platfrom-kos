@@ -5,6 +5,7 @@ import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { toast } from 'sonner';
 import { useApp } from '@/app/context';
+import { api } from '@/app/services/api';
 
 interface CancelBookingProps {
   isOpen: boolean;
@@ -19,34 +20,42 @@ interface CancelBookingProps {
     duration: string;
     status: 'Confirmed' | 'Pending' | 'Completed' | 'Cancelled';
   };
+  onSuccess?: () => void;
 }
 
 const REFUND_PENALTY = 100; // 100% potongan (No Refund)
 
-export function CancelBooking({ isOpen, onClose, bookingData }: CancelBookingProps) {
+export function CancelBooking({ isOpen, onClose, bookingData, onSuccess }: CancelBookingProps) {
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const { cancelBooking } = useApp();
+  // const { cancelBooking } = useApp(); // Deprecated
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (!confirmed) {
       toast.error('Silakan centang kotak persetujuan terlebih dahulu');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      // Gunakan global state untuk cancel booking
-      cancelBooking(bookingData.id);
+    try {
+      await api.cancelBooking(bookingData.id);
       
-      setLoading(false);
-      setConfirmed(false);
       toast.success('Booking berhasil dibatalkan', {
         description: `Booking telah dibatalkan sesuai kebijakan (No Refund). Status booking kini Cancelled.`,
         duration: 4000,
       });
+      
+      onSuccess?.();
+      setConfirmed(false);
       onClose();
-    }, 1500);
+    } catch (error) {
+      console.error("Failed to cancel booking", error);
+      toast.error("Gagal membatalkan booking", {
+        description: "Terjadi kesalahan saat memproses permintaan anda."
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -275,13 +275,23 @@ export function LuxuryPaymentConfirmation() {
 
               <div>
                 <p className="text-xs md:text-sm text-slate-400 mb-3">Receipt Preview</p>
-                <div className="bg-slate-800/30 rounded-xl p-8 md:p-12 text-center border-2 border-dashed border-slate-700">
-                  <div className="size-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
-                    <svg className="size-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-slate-500">Image: {viewingPayment.receiptUrl}</p>
+                <div className="bg-slate-800/30 rounded-xl p-4 md:p-6 text-center border-2 border-dashed border-slate-700">
+                  {viewingPayment.receiptUrl ? (
+                    <div className="relative w-full h-64 md:h-96">
+                       <img 
+                          src={viewingPayment.receiptUrl} 
+                          alt="Receipt" 
+                          className="w-full h-full object-contain rounded-lg"
+                       />
+                    </div>
+                  ) : (
+                    <div className="py-8">
+                      <div className="size-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
+                        <AlertCircle className="size-8 text-amber-500" />
+                      </div>
+                      <p className="text-sm text-slate-500">No receipt uploaded</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

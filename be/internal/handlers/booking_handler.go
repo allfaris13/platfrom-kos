@@ -63,7 +63,7 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 	var req struct {
 		KamarID      uint   `json:"kamar_id" binding:"required"`
 		TanggalMulai string `json:"tanggal_mulai" binding:"required"`
-		DurasiSewa   int    `json:"durasi_sewa" border:"required"`
+		DurasiSewa   int    `json:"durasi_sewa" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -73,6 +73,15 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 
 	booking, err := h.service.CreateBooking(userID, req.KamarID, req.TanggalMulai, req.DurasiSewa)
 	if err != nil {
+		if err.Error() == "record not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Profile or Room not found. Please complete your profile first."})
+			return
+		}
+		// Check for specific logic errors
+		if err.Error() == "anda sudah memiliki pesanan aktif (Pending). Selesaikan pembayaran atau batalkan pesanan sebelumnya" {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -94,4 +103,30 @@ func (h *BookingHandler) CancelBooking(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Booking cancelled successfully"})
+}
+
+func (h *BookingHandler) ExtendBooking(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid booking ID"})
+		return
+	}
+
+	var req struct {
+		Months int `json:"months" binding:"required,min=1"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
+		return
+	}
+
+	payment, err := h.service.ExtendBooking(uint(id), req.Months)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, payment)
 }

@@ -97,8 +97,8 @@ func (r *Routes) registerPublicRoutes(api *gin.RouterGroup) {
 	// Contact form
 	api.POST("/contact", r.contactHandler.HandleContactForm)
 
-	// Payment webhook (untuk Midtrans callback)
-	api.POST("/payments/webhook", r.paymentHandler.HandleMidtransWebhook)
+	// Payment webhook (untuk Midtrans callback) - REMOVED
+	// api.POST("/payments/webhook", r.paymentHandler.HandleMidtransWebhook)
 }
 
 // Protected routes (auth required)
@@ -116,12 +116,15 @@ func (r *Routes) registerProtectedRoutes(protected *gin.RouterGroup) {
 	{
 		bookings.GET("", r.bookingHandler.GetMyBookings) // GET /api/bookings
 		bookings.POST("", r.bookingHandler.CreateBooking) // POST /api/bookings
+		bookings.POST("/:id/cancel", r.bookingHandler.CancelBooking) // POST /api/bookings/:id/cancel
+		bookings.POST("/:id/extend", r.bookingHandler.ExtendBooking) // POST /api/bookings/:id/extend
 	}
 
 	// Payments
 	payments := protected.Group("/payments")
 	{
-		payments.POST("/snap-token", r.paymentHandler.CreateSnapToken)      // POST /api/payments/snap-token
+		payments.POST("", r.paymentHandler.CreatePayment)                  // POST /api/payments
+		payments.POST("/:id/proof", r.paymentHandler.UploadPaymentProof)   // POST /api/payments/:id/proof
 		payments.POST("/confirm-cash/:id", r.paymentHandler.ConfirmCashPayment) // POST /api/payments/confirm-cash/:id
 		payments.GET("/reminders", r.paymentHandler.GetReminders)             // GET /api/payments/reminders
 	}

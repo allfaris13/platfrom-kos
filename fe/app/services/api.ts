@@ -115,6 +115,12 @@ export interface DashboardStats {
   monthly_trend: { month: string; revenue: number }[];
   type_breakdown: { type: string; revenue: number; count: number; occupied: number }[];
   demographics: { name: string; value: number; color: string }[];
+  recent_checkouts: {
+    room_name: string;
+    tenant_name: string;
+    checkout_date: string;
+    reason: string;
+  }[];
 }
 
 export interface LoginResponse {
@@ -302,8 +308,41 @@ export const api = {
     return apiCall<Booking>('POST', '/bookings', bookingData);
   },
 
-  createSnapToken: async (paymentData: { pemesanan_id: number; payment_type: string; payment_method: string }) => {
-    return apiCall<{ token: string; redirect_url: string }>('POST', '/payments/snap-token', paymentData);
+  cancelBooking: async (id: string) => {
+    return apiCall<MessageResponse>('POST', `/bookings/${id}/cancel`);
+  },
+
+  extendBooking: async (id: string, months: number) => {
+    return apiCall<Payment>('POST', `/bookings/${id}/extend`, { months });
+  },
+
+  // --- PAYMENTS (Manual Transfer) ---
+  createPayment: async (data: { pemesanan_id: number; payment_type: 'full' | 'dp' }) => {
+    return apiCall<{ message: string; payment: Payment }>('POST', '/payments', data);
+  },
+
+  uploadPaymentProof: async (paymentId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('proof', file);
+
+    const response = await fetch(`${API_URL}/payments/${paymentId}/proof`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiErrorClass(errorData.error || 'Failed to upload proof', response.status);
+    }
+
+    return response.json();
+  },
+
+  getPaymentReminders: async () => {
+    return apiCall<PaymentReminder[]>('GET', '/payments/reminders');
   },
 
   createReview: async (review: Partial<Review>) => {
@@ -341,7 +380,8 @@ export const api = {
   },
 
   confirmPayment: async (paymentId: string) => {
-    return apiCall<MessageResponse>('POST', `/payments/${paymentId}/confirm`);
+    // Admin confirmation
+    return apiCall<MessageResponse>('PUT', `/payments/${paymentId}/confirm`);
   },
   
 

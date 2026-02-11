@@ -288,7 +288,7 @@ export function Homepage({
                   👋 Welcome Back
                 </Badge>
                 <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-[1.15] mb-4 lg:mb-6 text-slate-900 dark:text-white">
-                  Hi, <span className="text-amber-500">{userName || 'User'}!</span> <br />
+                  Hi, <span className="text-amber-500 inline-block max-w-[200px] md:max-w-[400px] lg:max-w-[600px] truncate align-bottom">{userName || 'User'}!</span> <br />
                   <span className="text-slate-900 dark:text-white text-2xl md:text-4xl lg:text-5xl font-bold">Ready to relax?</span>
                 </h1>
                 <p className="text-sm md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 mb-6 lg:mb-10 max-w-xl leading-relaxed">

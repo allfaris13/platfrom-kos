@@ -34,9 +34,17 @@ type DashboardStats struct {
 	PendingRevenue   float64       `json:"pending_revenue"`
 	RejectedPayments int64         `json:"rejected_payments"`
 	PotentialRevenue float64       `json:"potential_revenue"`
-	MonthlyTrend     []MonthlyData `json:"monthly_trend"`
-	TypeBreakdown    []TypeRevenue `json:"type_breakdown"`
-	Demographics     []Demographic `json:"demographics"`
+	MonthlyTrend     []MonthlyData    `json:"monthly_trend"`
+	TypeBreakdown    []TypeRevenue    `json:"type_breakdown"`
+	Demographics     []Demographic    `json:"demographics"`
+	RecentCheckouts  []RecentCheckout `json:"recent_checkouts"`
+}
+
+type RecentCheckout struct {
+	RoomName     string    `json:"room_name"`
+	TenantName   string    `json:"tenant_name"`
+	CheckoutDate time.Time `json:"checkout_date"`
+	Reason       string    `json:"reason"`
 }
 
 type DashboardService interface {
@@ -276,6 +284,26 @@ func (s *dashboardService) GetStats() (*DashboardStats, error) {
 		{Name: "26-35", Value: ageGroups["26-35"], Color: "#3b82f6"},
 		{Name: "36-45", Value: ageGroups["36-45"], Color: "#10b981"},
 		{Name: "45+", Value: ageGroups["45+"], Color: "#8b5cf6"},
+	}
+
+	// 10. Recent Checkouts (Cancelled bookings)
+	// We count 'Cancelled' bookings as checkouts.
+	// We could also include 'Confirmed' bookings where end_date < now if we can calculate it easily in SQL.
+	// For now, let's just show explicit cancellations as they are "newly checked-out".
+	var cancelledBookings []models.Pemesanan
+	s.db.Preload("Kamar").Preload("Penyewa").
+		Where("status_pemesanan = ?", "Cancelled").
+		Order("updated_at DESC").
+		Limit(5).
+		Find(&cancelledBookings)
+
+	for _, b := range cancelledBookings {
+		stats.RecentCheckouts = append(stats.RecentCheckouts, RecentCheckout{
+			RoomName:     b.Kamar.NomorKamar + " - " + b.Kamar.TipeKamar,
+			TenantName:   b.Penyewa.NamaLengkap,
+			CheckoutDate: b.UpdatedAt,
+			Reason:       "Cancelled",
+		})
 	}
 
 	return &stats, nil

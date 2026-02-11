@@ -40,7 +40,7 @@ export function AdminSidebar({ currentPage, onNavigate }: AdminSidebarProps) {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
-                LuxStay
+                Rahmat ZAW
               </h1>
               <p className="text-xs text-slate-500 font-medium">Premium Management</p>
             </div>
