@@ -118,12 +118,12 @@ export interface DashboardStats {
 }
 
 export interface LoginResponse {
-    token: string;
-    user: User;
+  token: string;
+  user: User;
 }
 
 export interface MessageResponse {
-    message: string;
+  message: string;
 }
 
 interface ApiError extends Error {
@@ -143,7 +143,7 @@ class ApiErrorClass extends Error implements ApiError {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 // 2. Helper Functions
 // 2. Helper Functions
@@ -152,7 +152,7 @@ const getHeaders = () => {
   if (!token && typeof window !== 'undefined') {
     token = sessionStorage.getItem('token');
   }
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -181,7 +181,7 @@ const safeJson = async (res: Response) => {
   } catch (e) {
     // If empty response (e.g. 200 OK but no body), return empty object?
     // But safeJson usually expects JSON. If text is empty and status ok, maybe return null?
-    if (!text) return {}; 
+    if (!text) return {};
     throw new Error('Invalid server response format');
   }
 };
@@ -236,7 +236,7 @@ export const api = {
     // Returns created User object or message? Typically user object.
     return apiCall<User>('POST', '/auth/register', userData);
   },
-  
+
   forgotPassword: async (email: string) => {
     return apiCall<MessageResponse>('POST', '/auth/forgot-password', { email });
   },
@@ -249,7 +249,7 @@ export const api = {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('app_view_mode');
-    
+
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
     // Consider calling a backend logout endpoint if dealing with server-side sessions/cookies blacklist
@@ -343,7 +343,7 @@ export const api = {
   confirmPayment: async (paymentId: string) => {
     return apiCall<MessageResponse>('POST', `/payments/${paymentId}/confirm`);
   },
-  
+
 
   verifyPayment: async (orderId: string) => {
     // Returns { message: "Payment verified successfully" }

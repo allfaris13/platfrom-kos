@@ -77,7 +77,7 @@ export function RoomManagement() {
         bedrooms: r.bedrooms || 1,
         bathrooms: r.bathrooms || 1,
         description: r.description || '',
-        image: r.image_url ? (r.image_url.startsWith('http') ? r.image_url : `http://localhost:8081${r.image_url}`) : 'https://via.placeholder.com/300',
+        image: r.image_url ? (r.image_url.startsWith('http') ? r.image_url : `http://localhost:8080${r.image_url}`) : 'https://via.placeholder.com/300',
         facilities: r.fasilitas ? r.fasilitas.split(',').map((f: string) => f.trim()) : []
       }));
       setRooms(mapped);

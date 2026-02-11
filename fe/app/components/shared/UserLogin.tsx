@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
@@ -9,6 +9,7 @@ import { Home, ArrowLeft } from 'lucide-react';
 import { api } from '@/app/services/api';
 import { ImageWithFallback } from './ImageWithFallback';
 import { GoogleButton } from '../tenant/GoogleButton';
+import { IMAGES } from '@/app/services/image';
 
 interface UserLoginProps {
   onLoginSuccess: () => void;
@@ -17,12 +18,59 @@ interface UserLoginProps {
   onForgotPassword: () => void;
 }
 
+function useCountUp(end: number, duration: number = 3500, delay: number = 800, decimals: number = 0) {
+  const [display, setDisplay] = useState(decimals > 0 ? '0.' + '0'.repeat(decimals) : '0');
+  const [hasStarted, setHasStarted] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  const startAnimation = useCallback(() => {
+    if (hasStarted) return;
+    setHasStarted(true);
+
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // easeOutExpo for a smooth deceleration
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const currentValue = eased * end;
+
+      if (decimals > 0) {
+        setDisplay(currentValue.toFixed(decimals));
+      } else {
+        setDisplay(Math.floor(currentValue).toLocaleString());
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setDisplay(decimals > 0 ? end.toFixed(decimals) : end.toLocaleString());
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [end, duration, hasStarted, decimals]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startAnimation();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [delay, startAnimation]);
+
+  return { display, ref };
+}
+
 export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPassword }: UserLoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const { display: activeTenantsDisplay } = useCountUp(500, 3500, 1000);
+  const { display: ratingDisplay } = useCountUp(4.9, 3500, 1200, 1);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +102,7 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
           className="absolute inset-0 z-0"
         >
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2000"
+            src={IMAGES.LOGIN_BG}
             alt="Premium Interior"
             className="w-full h-full object-cover opacity-50"
             priority
@@ -86,16 +134,28 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
 
             <div className="flex items-center justify-center gap-6 pt-6 border-t border-white/10">
               <div className="text-center">
-                <p className="text-xl md:text-2xl font-bold text-white">500+</p>
+                <motion.p
+                  className="text-xl md:text-2xl font-bold text-white tabular-nums"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1, duration: 0.5 }}
+                >
+                  {activeTenantsDisplay}+
+                </motion.p>
                 <p className="text-stone-400 text-[10px] md:text-sm uppercase tracking-wider font-semibold">
                   Penyewa Aktif
                 </p>
               </div>
               <div className="w-px h-8 md:h-10 bg-white/20" />
               <div className="text-center">
-                <p className="text-xl md:text-2xl font-bold text-white">
-                  4.9/5
-                </p>
+                <motion.p
+                  className="text-xl md:text-2xl font-bold text-white tabular-nums"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.2, duration: 0.5 }}
+                >
+                  {ratingDisplay}/5
+                </motion.p>
                 <p className="text-stone-400 text-[10px] md:text-sm uppercase tracking-wider font-semibold">
                   Rating Pengguna
                 </p>
@@ -125,10 +185,10 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
           className="w-full max-w-sm"
         >
           <Button
-             variant="ghost"
-             onClick={onBack}
-             className="mb-10 p-0 hover:bg-transparent text-slate-500 hover:text-stone-900 transition-colors group"
-           >
+            variant="ghost"
+            onClick={onBack}
+            className="mb-10 p-0 hover:bg-transparent text-slate-500 hover:text-stone-900 transition-colors group"
+          >
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Back
           </Button>
 

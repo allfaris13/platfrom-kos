@@ -1,130 +1,124 @@
-import { motion } from 'framer-motion';
-import { Loader2, Home } from 'lucide-react';
+"use client";
 
-interface LoadingScreenProps {
-  message?: string;
-  fullScreen?: boolean;
-}
+import { motion } from "framer-motion";
+import { Home } from "lucide-react";
 
-export function LoadingScreen({ message = 'Loading...', fullScreen = true }: LoadingScreenProps) {
-  const containerClass = fullScreen
-    ? 'fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-50 via-slate-100 to-stone-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'
-    : 'flex items-center justify-center py-20';
+export function LoadingScreen() {
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950">
+            <div className="relative flex flex-col items-center">
+                {/* Animated Rings */}
+                <motion.div
+                    animate={{
+                        rotate: 360,
+                        scale: [1, 1.1, 1],
+                    }}
+                    transition={{
+                        rotate: { duration: 3, repeat: Infinity, ease: "linear" },
+                        scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                    className="w-24 h-24 border-t-2 border-r-2 border-amber-500 rounded-full"
+                />
 
-  return (
-    <div className={containerClass}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        className="flex flex-col items-center gap-6"
-      >
-        {/* Logo Animation */}
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-          className="w-16 h-16 bg-gradient-to-br from-stone-700 via-stone-800 to-stone-900 rounded-2xl flex items-center justify-center shadow-2xl"
-        >
-          <Home className="w-8 h-8 text-white" />
-        </motion.div>
+                <motion.div
+                    animate={{
+                        rotate: -360,
+                    }}
+                    transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "linear"
+                    }}
+                    className="absolute inset-0 w-24 h-24 border-b-2 border-l-2 border-white/20 rounded-full scale-75"
+                />
 
-        {/* Loading Spinner */}
-        <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 text-stone-700 dark:text-stone-300 animate-spin" />
-          <p className="text-lg font-semibold text-slate-700 dark:text-slate-300">
-            {message}
-          </p>
-        </div>
+                {/* Center Logo */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute inset-0 flex items-center justify-center"
+                >
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                        <Home className="w-6 h-6 text-white" />
+                    </div>
+                </motion.div>
 
-        {/* Loading Dots */}
-        <div className="flex gap-2">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5],
-              }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                delay: i * 0.2,
-              }}
-              className="w-2 h-2 bg-stone-700 dark:bg-stone-300 rounded-full"
-            />
-          ))}
-        </div>
-      </motion.div>
-    </div>
-  );
-}
+                {/* Text */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-12 text-center"
+                >
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent tracking-widest uppercase">
+                        LuxStay
+                    </h2>
+                    <p className="text-[10px] text-slate-500 uppercase font-medium tracking-[0.3em] mt-2">
+                        Preparing your premium stay
+                    </p>
 
-// Skeleton Loader Components
-export function SkeletonCard() {
-  return (
-    <div className="animate-pulse bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-800">
-      <div className="h-48 bg-slate-200 dark:bg-slate-800 rounded-xl mb-4" />
-      <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-3/4 mb-3" />
-      <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/2 mb-2" />
-      <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-2/3" />
-    </div>
-  );
-}
-
-export function SkeletonList({ count = 3 }: { count?: number }) {
-  return (
-    <div className="space-y-4">
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="animate-pulse bg-white dark:bg-slate-900 rounded-xl p-6 shadow border border-slate-200 dark:border-slate-800"
-        >
-          <div className="flex gap-4">
-            <div className="w-20 h-20 bg-slate-200 dark:bg-slate-800 rounded-lg flex-shrink-0" />
-            <div className="flex-1 space-y-3">
-              <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded w-3/4" />
-              <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/2" />
-              <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-2/3" />
+                    {/* Progress Bar */}
+                    <div className="w-48 h-1 bg-white/5 rounded-full mt-6 overflow-hidden">
+                        <motion.div
+                            initial={{ x: "-100%" }}
+                            animate={{ x: "100%" }}
+                            transition={{
+                                duration: 1.5,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            className="w-1/2 h-full bg-gradient-to-r from-transparent via-amber-500 to-transparent"
+                        />
+                    </div>
+                </motion.div>
             </div>
-          </div>
         </div>
-      ))}
-    </div>
-  );
-}
-
-export function SkeletonGrid({ count = 6 }: { count?: number }) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {Array.from({ length: count }).map((_, i) => (
-        <SkeletonCard key={i} />
-      ))}
-    </div>
-  );
+    );
 }
 
 export function SkeletonDetail() {
-  return (
-    <div className="animate-pulse max-w-6xl mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="h-96 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-        <div className="space-y-6">
-          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded w-3/4" />
-          <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-1/2" />
-          <div className="space-y-3">
-            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded" />
-            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded" />
-            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-5/6" />
-          </div>
-          <div className="h-12 bg-slate-200 dark:bg-slate-800 rounded-xl w-full" />
+    return (
+        <div className="min-h-screen bg-white dark:bg-slate-950 py-8 animate-pulse">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="h-10 w-10 bg-slate-200 dark:bg-slate-800 rounded-full" />
+                    <div className="space-y-2">
+                        <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                        <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="h-[500px] bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="h-24 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                            <div className="h-24 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                            <div className="h-24 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                        </div>
+                        <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <div className="h-[400px] bg-slate-200 dark:bg-slate-800 rounded-2xl sticky top-24" />
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
+}
+
+export function SkeletonGrid() {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
+            {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-4">
+                    <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+                    <div className="space-y-2">
+                        <div className="h-4 w-1/2 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                        <div className="h-3 w-1/4 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 }

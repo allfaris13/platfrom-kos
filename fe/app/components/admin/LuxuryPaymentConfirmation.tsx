@@ -51,7 +51,7 @@ export function LuxuryPaymentConfirmation() {
       date: new Date(p.tanggal_bayar).toLocaleDateString('id-ID'),
       method: 'Transfer Bank',
       status: p.status_pembayaran as Payment['status'],
-      receiptUrl: p.bukti_transfer ? (p.bukti_transfer.startsWith('http') ? p.bukti_transfer : `http://localhost:8081${p.bukti_transfer}`) : '',
+      receiptUrl: p.bukti_transfer ? (p.bukti_transfer.startsWith('http') ? p.bukti_transfer : `http://localhost:8080${p.bukti_transfer}`) : '',
     }));
     
     setPayments(mapped);

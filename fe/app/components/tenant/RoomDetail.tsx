@@ -40,6 +40,7 @@ import {
 import { Separator } from "@/app/components/ui/separator";
 import { Label } from "@/app/components/ui/label";
 import { toast } from "sonner";
+import { IMAGES } from "@/app/services/image";
 
 interface RoomDetailProps {
   roomId: string;
@@ -176,9 +177,9 @@ export function RoomDetail({
             })),
             features: (roomData.fasilitas || "WiFi, AC").split(',').map((f: string) => f.trim()),
             images: [
-              roomData.image_url ? (roomData.image_url.startsWith('http') ? roomData.image_url : `http://localhost:8081${roomData.image_url}`) : 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080',
-              'https://images.unsplash.com/photo-1662454419736-de132ff75638?q=80&w=1080',
-              'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1080'
+              roomData.image_url ? (roomData.image_url.startsWith('http') ? roomData.image_url : `http://localhost:8080${roomData.image_url}`) : IMAGES.ROOM_SUITE,
+              IMAGES.ROOM_DELUXE,
+              IMAGES.ROOM_STANDARD
             ]
           };
           setRealRoom(mapped);
@@ -266,8 +267,8 @@ export function RoomDetail({
   const averageRating =
     reviews.length > 0
       ? (
-          reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
-        ).toFixed(1)
+        reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+      ).toFixed(1)
       : "No ratings";
 
   return (
@@ -389,11 +390,10 @@ export function RoomDetail({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setCurrentImageIndex(idx)}
-                    className={`h-24 rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${
-                      idx === currentImageIndex
+                    className={`h-24 rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${idx === currentImageIndex
                         ? "border-stone-900 dark:border-stone-400 shadow-lg"
                         : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-                    }`}
+                      }`}
                   >
                     <ImageWithFallback
                       src={img}
@@ -445,12 +445,12 @@ export function RoomDetail({
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                       <Utensils className="w-5 h-5 text-stone-900 dark:text-stone-100" /> {/* Using Utensils as placeholder if Bath icon missing, or use custom SVG */}
                       {/* Better: Use 'Bath' if available or simple check */}
                       <div>
-                         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                           Bathrooms
                         </p>
                         <p className="font-bold text-slate-900 dark:text-slate-100">
@@ -461,7 +461,7 @@ export function RoomDetail({
 
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                       <MapPin className="w-5 h-5 text-stone-900 dark:text-stone-100" /> {/* Placeholder for Size/Maximize if not imported */}
-                       <div>
+                      <div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                           Size
                         </p>
@@ -472,8 +472,8 @@ export function RoomDetail({
                     </div>
 
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                       <ArrowLeft className="w-5 h-5 text-stone-900 dark:text-stone-100 rotate-90" /> {/* Placeholder for Floor/Layers */}
-                       <div>
+                      <ArrowLeft className="w-5 h-5 text-stone-900 dark:text-stone-100 rotate-90" /> {/* Placeholder for Floor/Layers */}
+                      <div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                           Floor
                         </p>
@@ -763,13 +763,13 @@ export function RoomDetail({
                 onClick={() => {
                   if (!isLoggedIn) onLoginPrompt?.();
                   else {
-                      // Format date to YYYY-MM-DD for consistency
-                      const formattedDate = date ? format(date, "yyyy-MM-dd") : undefined;
-                      onBookNow(roomId, {
-                          moveInDate: formattedDate,
-                          duration,
-                          guests
-                      });
+                    // Format date to YYYY-MM-DD for consistency
+                    const formattedDate = date ? format(date, "yyyy-MM-dd") : undefined;
+                    onBookNow(roomId, {
+                      moveInDate: formattedDate,
+                      duration,
+                      guests
+                    });
                   }
                 }}
                 className="w-full bg-slate-900 hover:bg-amber-500 text-white h-12 lg:h-14 text-sm lg:text-lg font-bold rounded-xl shadow-xl shadow-stone-900/20 transition-all active:scale-95"

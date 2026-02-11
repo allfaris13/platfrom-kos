@@ -21,6 +21,7 @@ import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { api, PaymentReminder } from '@/app/services/api';
 import { LogIn } from 'lucide-react';
 import { toast } from 'sonner';
+import { IMAGES } from '@/app/services/image';
 
 interface UserPlatformProps {
   onLogout?: () => void;
@@ -59,7 +60,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   useEffect(() => {
     const init = () => {
       setIsClient(true);
-      
+
       // Check both storages for token
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const hasToken = !!token;
@@ -161,8 +162,8 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         totalSpent: totalSpent,
         isGoogleUser: data.is_google_user,
         profileImage: data.penyewa?.foto_profil
-          ? (data.penyewa.foto_profil.startsWith('http') ? data.penyewa.foto_profil : `http://localhost:8081${data.penyewa.foto_profil}`)
-          : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NzIyNDZ8MHwxfHNlYXJjaHwxfHx1c2VyJTIwYXZhdGFyfGVufDB8fHx8fDE3MDAwMDAwMDB|&ixlib=rb-4.0.3&q=80&w=400',
+          ? (data.penyewa.foto_profil.startsWith('http') ? data.penyewa.foto_profil : `http://localhost:8080${data.penyewa.foto_profil}`)
+          : IMAGES.AVATARS.USER_DEFAULT,
       });
       setEditData({
         name: data.penyewa?.nama_lengkap || data.user?.username || '',
@@ -200,7 +201,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     totalBookings: 0,
     totalSpent: 0,
     isGoogleUser: false,
-    profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NzIyNDZ8MHwxfHNlYXJjaHwxfHx1c2VyJTIwYXZhdGFyfGVufDB8fHx8fDE3MDAwMDAwMDB|&ixlib=rb-4.0.3&q=80&w=400',
+    profileImage: IMAGES.AVATARS.USER_DEFAULT,
   });
 
   const [editData, setEditData] = useState(userData);
@@ -241,7 +242,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
       setUserData({
         ...editData,
         profileImage: res.penyewa?.foto_profil
-          ? (res.penyewa.foto_profil.startsWith('http') ? res.penyewa.foto_profil : `http://localhost:8081${res.penyewa.foto_profil}`)
+          ? (res.penyewa.foto_profil.startsWith('http') ? res.penyewa.foto_profil : `http://localhost:8080${res.penyewa.foto_profil}`)
           : editData.profileImage
       });
       setIsEditingProfile(false);
@@ -397,7 +398,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         </div>
       </header>
 
-      {/* Mobile Sidebar - Side Drawer Style (like previous admin sidebar) */}
+      {/* Mobile Sidebar - Premium Dark Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -407,7 +408,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileMenuOpen(false)}
-              className="md:hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[60]"
+              className="md:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[60]"
             />
 
             {/* Sidebar Drawer */}
@@ -416,29 +417,47 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="md:hidden fixed top-0 bottom-0 left-0 w-[280px] bg-white dark:bg-slate-900 z-[70] shadow-2xl flex flex-col"
+              className="md:hidden fixed top-0 bottom-0 left-0 w-[280px] z-[70] shadow-2xl flex flex-col"
+              style={{ background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f1626 100%)' }}
             >
-              {/* Sidebar Header */}
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-br from-stone-900 to-slate-900">
+              {/* Sidebar Header - Logo & Close */}
+              <div className="px-6 pt-6 pb-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-md">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
                     <Home className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-sm font-bold text-white uppercase tracking-tighter leading-none">Rahmat ZAW</h1>
-                    <p className="text-[8px] text-slate-300 uppercase font-black mt-1">Prime Stay</p>
+                    <h1 className="text-sm font-bold text-white tracking-tight leading-none">Rahmat ZAW</h1>
+                    <p className="text-[9px] text-slate-400 uppercase font-semibold mt-0.5">Prime Stay</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+                  className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Sidebar Menu */}
-              <nav className="flex-1 overflow-y-auto p-4 space-y-2 mt-4">
+              {/* User Profile Section */}
+              {isLoggedIn && (
+                <div className="mx-5 mb-5 p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <ImageWithFallback
+                      src={userData.profileImage}
+                      alt={userName || 'User'}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-amber-400/40 shadow-lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold text-sm truncate">{userName || 'User'}</p>
+                      <p className="text-amber-400 text-[10px] font-bold uppercase tracking-wider">Gold Member</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Menu */}
+              <nav className="flex-1 overflow-y-auto px-4 space-y-1">
                 {menuItems.filter(item => !item.hidden).map((item) => {
                   const Icon = item.icon;
                   const isActive = activeView === item.id;
@@ -449,53 +468,74 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                         setActiveView(item.id);
                         setMobileMenuOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-200 ${isActive
-                        ? 'bg-gradient-to-r from-stone-800 to-stone-900 text-white shadow-xl shadow-stone-900/20'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                      className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium transition-all duration-200 group ${isActive
+                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/10 text-amber-400 border border-amber-500/20'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
                         }`}
                     >
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                      <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
                       <span className="text-sm">{item.label}</span>
-                      {isActive && <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full" />}
+                      {isActive && <div className="ml-auto w-1.5 h-1.5 bg-amber-400 rounded-full shadow-sm shadow-amber-400/50" />}
                     </button>
                   );
                 })}
 
-                <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                {/* Contact Us */}
+                <button
+                  onClick={() => {
+                    setActiveView('contact');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium transition-all duration-200 group ${activeView === 'contact'
+                    ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/10 text-amber-400 border border-amber-500/20'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    }`}
+                >
+                  <MessageCircle className={`w-5 h-5 transition-colors ${activeView === 'contact' ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
+                  <span className="text-sm">Hubungi Kami</span>
+                  {activeView === 'contact' && <div className="ml-auto w-1.5 h-1.5 bg-amber-400 rounded-full shadow-sm shadow-amber-400/50" />}
+                </button>
+
+                {!isLoggedIn && (
                   <button
                     onClick={() => {
-                      setActiveView('contact');
+                      onLogout?.();
                       setMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-200 ${activeView === 'contact'
-                      ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20'
-                      : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/40'
-                      }`}
+                    className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all duration-200 group"
                   >
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="text-sm">Hubungi Kami</span>
+                    <LogIn className="w-5 h-5 text-slate-500 group-hover:text-slate-300" />
+                    <span className="text-sm">Masuk</span>
                   </button>
-
-                  {!isLoggedIn && (
-                    <button
-                      onClick={() => {
-                        onLogout?.();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-white bg-stone-900 hover:bg-stone-800 shadow-lg shadow-stone-900/20"
-                    >
-                      <LogIn className="w-5 h-5" />
-                      <span className="text-sm">Masuk</span>
-                    </button>
-                  )}
-                </div>
+                )}
               </nav>
 
+              {/* Sign Out Button */}
+              {isLoggedIn && (
+                <div className="px-4 py-3 border-t border-white/5">
+                  <button
+                    onClick={() => {
+                      api.logout();
+                      setMobileMenuOpen(false);
+                      onLogout?.();
+                    }}
+                    className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
+                  >
+                    <LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-400 transition-colors" />
+                    <span className="text-sm">Sign Out</span>
+                  </button>
+                </div>
+              )}
+
               {/* Sidebar Footer */}
-              <div className="p-6 border-t border-slate-100 dark:border-slate-800">
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center uppercase tracking-widest font-bold">
-                  &copy; 2026 Rahmat ZAW
+              <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
+                <p className="text-[10px] text-slate-600 uppercase tracking-widest font-bold">
+                  Premium V1.0.2
                 </p>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50" />
+                </div>
               </div>
             </motion.aside>
           </>
@@ -647,18 +687,18 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
 
                         {/* Bottom Row: Stats Grid - Separated for cleaner layout */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-white/10 pt-6">
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center md:items-start transition-colors hover:bg-white/10">
-                              <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Nomor Kamar</p>
-                              <p className="text-2xl font-bold text-white tracking-tight leading-none">{userData.totalBookings > 0 ? '#' + userData.totalBookings : '-'}</p>
-                            </div>
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center md:items-start transition-colors hover:bg-white/10">
-                              <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Total Pengeluaran</p>
-                              <p className="text-2xl font-bold text-white tracking-tight leading-none">Rp {userData.totalSpent.toLocaleString()}</p>
-                            </div>
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center md:items-start transition-colors hover:bg-white/10">
-                              <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Anggota Sejak</p>
-                              <p className="text-xl font-bold text-white tracking-tight leading-none">{userData.joinDate}</p>
-                            </div>
+                          <div className="bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center md:items-start transition-colors hover:bg-white/10">
+                            <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Nomor Kamar</p>
+                            <p className="text-2xl font-bold text-white tracking-tight leading-none">{userData.totalBookings > 0 ? '#' + userData.totalBookings : '-'}</p>
+                          </div>
+                          <div className="bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center md:items-start transition-colors hover:bg-white/10">
+                            <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Total Pengeluaran</p>
+                            <p className="text-2xl font-bold text-white tracking-tight leading-none">Rp {userData.totalSpent.toLocaleString()}</p>
+                          </div>
+                          <div className="bg-white/5 p-4 rounded-xl border border-white/5 backdrop-blur-sm flex flex-col items-center md:items-start transition-colors hover:bg-white/10">
+                            <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Anggota Sejak</p>
+                            <p className="text-xl font-bold text-white tracking-tight leading-none">{userData.joinDate}</p>
+                          </div>
                         </div>
                       </Card>
                     </motion.div>

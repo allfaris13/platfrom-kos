@@ -50,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
+import { IMAGES } from "@/app/services/image";
 
 // --- Komponen Counter untuk Trust Indicators ---
 function Counter({
@@ -85,13 +86,13 @@ function Counter({
 // --- Animation Variants ---
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { 
-      duration: 0.6, 
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
       ease: "easeOut" as const
-    } 
+    }
   },
 };
 
@@ -124,8 +125,7 @@ const defaultReviews = [
     role: "Marketing Executive",
     review:
       "LuxeStay exceeded all my expectations. The attention to detail is incredible.",
-    image:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?q=80&w=400",
+    image: IMAGES.AVATARS.FEMALE_1,
     stayDuration: "8 months",
   },
   {
@@ -133,8 +133,7 @@ const defaultReviews = [
     role: "University Student",
     review:
       "Finding a place that feels like home while being affordable was crucial.",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
+    image: IMAGES.AVATARS.MALE_1,
     stayDuration: "1 year",
   },
   {
@@ -142,8 +141,7 @@ const defaultReviews = [
     role: "Business Analyst",
     review:
       "The Premium Apartment I'm staying in is absolutely stunning. City view is amazing.",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=400",
+    image: IMAGES.AVATARS.FEMALE_2,
     stayDuration: "6 months",
   },
   {
@@ -151,8 +149,7 @@ const defaultReviews = [
     role: "Software Engineer",
     review:
       "The Executive Suite is worth every penny. Workspace is perfect for remote work.",
-    image:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=400",
+    image: IMAGES.AVATARS.MALE_2,
     stayDuration: "10 months",
   },
 ];
@@ -199,8 +196,8 @@ export function Homepage({
         image: r.image_url
           ? r.image_url.startsWith("http")
             ? r.image_url
-            : `http://localhost:8081${r.image_url}`
-          : "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080",
+            : `http://localhost:8080${r.image_url}`
+          : IMAGES.ROOM_STANDARD,
         location: "Kota Malang, Jawa Timur",
         rating: 4.8,
         reviews: 12,
@@ -223,8 +220,7 @@ export function Homepage({
       name: r.user?.username || "Anonymous",
       role: "Resident",
       review: r.comment,
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
+      image: IMAGES.AVATARS.USER_DEFAULT,
       stayDuration: "Verified",
       rating: r.rating,
     }));
@@ -249,9 +245,8 @@ export function Homepage({
 
       // 3. Price Filter
       const p = room.price;
-      if (selectedPrice === '500k' && p > 500000) return false;
-      if (selectedPrice === '1m' && (p <= 500000 || p > 1000000)) return false;
-      if (selectedPrice === 'gt1m' && p <= 1000000) return false;
+      if (selectedPrice === '1jt' && p < 900000) return false;
+      if (selectedPrice === '800rb' && p >= 900000) return false;
 
       // 4. Status Filter
       const status = (room.status || '').toLowerCase();
@@ -295,17 +290,17 @@ export function Homepage({
                   Kelola hunianmu, cek tagihan, atau cari kamar baru langsung dari sini. Nikmati kemudahan hidup di Rahmat ZAW.
                 </p>
                 <div className="flex flex-row gap-3 lg:gap-4">
-                  <Button 
-                    onClick={onViewHistory} 
+                  <Button
+                    onClick={onViewHistory}
                     className="flex-1 md:flex-none bg-stone-900 hover:bg-stone-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl"
                   >
                     Cek Tagihan & Pesanan
                   </Button>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     onClick={() => {
-                        const el = document.getElementById('featured-rooms');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      const el = document.getElementById('featured-rooms');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
                     }}
                     className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200"
                   >
@@ -333,7 +328,7 @@ export function Homepage({
                 </div>
               </>
             )}
-            
+
           </motion.div>
 
           <motion.div
@@ -344,9 +339,10 @@ export function Homepage({
           >
             <div className="relative z-10 rounded-[1.5rem] lg:rounded-[3rem] overflow-hidden shadow-2xl border-[4px] lg:border-[12px] border-white dark:border-slate-800">
               <ImageWithFallback
-                src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080"
+                src={IMAGES.HERO}
                 alt="Main Interior"
                 className="w-full aspect-[4/3] md:aspect-square lg:aspect-[4/3] object-cover"
+                priority
               />
             </div>
           </motion.div>
@@ -441,12 +437,11 @@ export function Homepage({
                 <button
                   key={tab}
                   onClick={() => setSelectedType(tab === "Semua" ? "all" : tab)}
-                  className={`px-3 lg:px-6 py-1.5 lg:py-2.5 rounded-md lg:rounded-xl text-[10px] lg:text-sm font-semibold transition-all whitespace-nowrap ${
-                    selectedType === tab ||
+                  className={`px-3 lg:px-6 py-1.5 lg:py-2.5 rounded-md lg:rounded-xl text-[10px] lg:text-sm font-semibold transition-all whitespace-nowrap ${selectedType === tab ||
                     (tab === "Semua" && selectedType === "all")
-                      ? "bg-slate-900 text-white shadow-md"
-                      : "text-slate-500 hover:bg-slate-50"
-                  }`}
+                    ? "bg-slate-900 text-white shadow-md"
+                    : "text-slate-500 hover:bg-slate-50"
+                    }`}
                 >
                   {tab}
                 </button>
@@ -630,7 +625,7 @@ export function Homepage({
           </div>
           <div className="col-span-1 md:col-span-5 lg:col-span-6 relative flex items-center justify-center">
             <div className="relative z-10 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] lg:rounded-[5rem] p-3 lg:p-12 aspect-square w-full max-w-lg">
-              <ImageWithFallback src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000" alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
+              <ImageWithFallback src={IMAGES.GUIDE_IMG} alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
             </div>
             {/* Decorative blob */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-amber-500/5 rounded-full blur-[60px] lg:blur-[120px] -z-10" />
@@ -655,7 +650,7 @@ export function Homepage({
             <motion.div className="col-span-12 lg:col-span-6 relative order-2 lg:order-1">
               <div className="aspect-square bg-white dark:bg-slate-900 rounded-[2rem] lg:rounded-[3rem] p-4 lg:p-8 shadow-2xl relative z-10">
                 <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000"
+                  src={IMAGES.HISTORY_IMG}
                   className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[2rem]"
                   alt="History Image"
                 />

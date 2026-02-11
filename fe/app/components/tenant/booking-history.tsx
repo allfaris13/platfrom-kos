@@ -89,7 +89,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
           return {
             id: b.id.toString(),
             roomName: b.kamar.nomor_kamar + " - " + b.kamar.tipe_kamar,
-            roomImage: b.kamar.image_url.startsWith('http') ? b.kamar.image_url : `http://localhost:8081${b.kamar.image_url}`,
+            roomImage: b.kamar.image_url.startsWith('http') ? b.kamar.image_url : `http://localhost:8080${b.kamar.image_url}`,
             location: `Floor ${b.kamar.floor}`,
             status: b.status_bayar === 'Confirmed' ? 'Confirmed' : (b.status_bayar === 'Pending' ? 'Pending' : 'Completed'),
             moveInDate: b.tanggal_mulai,

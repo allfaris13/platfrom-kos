@@ -22,11 +22,11 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
         style={style}
       >
         <div className="flex items-center justify-center w-full h-full relative">
-          <Image 
-            src={ERROR_IMG_SRC} 
-            alt="Error loading image" 
-            unoptimized 
-            fill 
+          <Image
+            src={ERROR_IMG_SRC}
+            alt="Error loading image"
+            unoptimized
+            fill
             className="object-none"
             {...rest}
           />
@@ -37,14 +37,13 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
 
   return (
     <div className={`relative overflow-hidden ${className ?? ''}`} style={style}>
-      <Image 
-        src={src as string} 
-        alt={alt ?? 'Image'} 
-        fill 
+      <Image
+        src={src as string}
+        alt={alt ?? 'Image'}
+        fill
         className="object-cover"
         unoptimized
         onError={handleError}
-        crossOrigin="anonymous"
         priority={priority}
         {...rest}
       />

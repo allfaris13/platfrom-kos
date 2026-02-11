@@ -17,7 +17,15 @@ const nextConfig: NextConfig = {
         protocol: "http",
         hostname: "localhost",
         port: "8081",
-      }
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "lh5.googleusercontent.com",
+      },
       // TODO: Tambahkan domain production Anda di sini sebelum deploy
       // {
       //   protocol: "https",

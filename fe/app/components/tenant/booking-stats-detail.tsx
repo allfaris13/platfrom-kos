@@ -59,7 +59,7 @@ export function BookingStatsDetail({ bookings: initialBookings, onBack }: Bookin
           return {
             id: b.id.toString(),
             roomName: room.nomor_kamar + " - " + room.tipe_kamar,
-            roomImage: room.image_url ? (room.image_url.startsWith('http') ? room.image_url : `http://localhost:8081${room.image_url}`) : '',
+            roomImage: room.image_url ? (room.image_url.startsWith('http') ? room.image_url : `http://localhost:8080${room.image_url}`) : '',
             location: `Floor ${room.floor}`,
             status: b.status_bayar === 'Confirmed' ? 'Confirmed' : (b.status_bayar === 'Pending' ? 'Pending' : 'Completed'),
             moveInDate: b.tanggal_mulai,
