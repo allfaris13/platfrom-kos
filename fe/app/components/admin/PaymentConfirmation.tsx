@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Check, X, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/app/services/api';
+import NextImage from 'next/image';
 import { Button } from '@/app/components/ui/button';
 import {
   Table,
@@ -74,7 +75,7 @@ export function PaymentConfirmation() {
       await api.confirmPayment(id);
       fetchPayments();
       toast.success("Payment confirmed");
-    } catch (e) {
+    } catch {
       toast.error("Failed to confirm payment");
     }
   };
@@ -241,7 +242,14 @@ export function PaymentConfirmation() {
                 <p className="text-sm text-slate-600 mb-2">Receipt</p>
                 <div className="overflow-hidden rounded-lg border bg-slate-50">
                   {viewingPayment.receiptUrl ? (
-                    <img src={viewingPayment.receiptUrl} alt="Receipt" className="w-full h-auto max-h-96 object-contain" />
+                    <NextImage 
+                      src={viewingPayment.receiptUrl} 
+                      alt="Receipt" 
+                      width={500}
+                      height={500}
+                      className="w-full h-auto max-h-96 object-contain"
+                      unoptimized 
+                    />
                   ) : (
                     <div className="p-8 text-center text-slate-500">No receipt image provided</div>
                   )}

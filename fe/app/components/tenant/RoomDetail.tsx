@@ -22,7 +22,7 @@ import {
   Briefcase,
   Share2,
 } from "lucide-react";
-import { api } from "@/app/services/api";
+import { api, Room, Review } from "@/app/services/api";
 import { Calendar } from "@/app/components/ui/calendar";
 import {
   Popover,
@@ -49,88 +49,39 @@ interface RoomDetailProps {
   onLoginPrompt?: () => void;
 }
 
-interface RoomData {
-  name: string;
-  type: string;
-  price: number;
-  location: string;
-  description: string;
-  bedrooms: number;
-  bathrooms: number;
-  size: string;
-  floor: number;
-  capacity: number; // Added capacity
+// UI-specific interface that extends or transforms the API Room data
+interface RoomUI extends Omit<Room, 'fasilitas'> {
+  // Override or add UI specific fields
   facilities: {
     name: string;
     icon: React.ComponentType<{ className?: string }>;
   }[];
   features: string[];
   images: string[];
+  // Ensure these are present
+  name: string;
+  type: string;
+  price: number;
+  location: string;
 }
-
-// Data Kamar (Mock data fallback for room details structure)
-const roomDetails: { [key: string]: RoomData } = {
-  "1": {
-    name: "Premium Suite 201",
-    type: "Luxury",
-    price: 1200,
-    location: "South Jakarta",
-    description:
-      "Luxurious premium suite with full kitchen and spacious balcony. Ideal for those who appreciate the finer things.",
-    bedrooms: 1,
-    bathrooms: 1,
-    size: "45m²",
-    floor: 2,
-    capacity: 2, // Default mock capacity
-    facilities: [
-      { name: "High-Speed WiFi", icon: Wifi },
-      { name: "Full Kitchen", icon: Utensils },
-      { name: "Air conditioning", icon: Wind },
-      { name: "Smart TV", icon: Monitor },
-      { name: "King Size Bed", icon: Bed },
-      { name: "Work Desk", icon: Briefcase },
-    ],
-    features: [
-      "Air conditioning",
-      "Private bathroom",
-      "Hot water",
-      "Work desk",
-      "High-speed WiFi",
-      "Smart TV with cable",
-      "Fully equipped kitchen",
-      "Balcony with city view",
-      "Premium bedding",
-      "Daily housekeeping",
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1668512624222-2e375314be39?q=80&w=1080",
-      "https://images.unsplash.com/photo-1662454419736-de132ff75638?q=80&w=1080",
-      "https://images.unsplash.com/photo-1507138451611-3001135909fa?q=80&w=1080",
-    ],
-  },
-};
 
 const facilityIcons: {
   [key: string]: React.ComponentType<{ className?: string }>;
 } = {
   "High-Speed WiFi": Wifi,
+  "WiFi": Wifi,
   "Air conditioning": Wind,
+  "AC": Wind,
   "Smart TV": Monitor,
+  "TV": Monitor,
   "King Size Bed": Bed,
+  "Bed": Bed,
+  "Kasur": Bed,
   "Work Desk": Briefcase,
+  "Meja Kerja": Briefcase,
   "Full Kitchen": Utensils,
+  "Dapur": Utensils,
 };
-
-interface Review {
-  id: number;
-  user_id: number;
-  rating: number;
-  comment: string;
-  created_at: string;
-  user: {
-    username: string;
-  };
-}
 
 export function RoomDetail({
   roomId,
@@ -148,21 +99,31 @@ export function RoomDetail({
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [guests, setGuests] = useState("1");
   const [duration, setDuration] = useState("1");
-  const [realRoom, setRealRoom] = useState<RoomData | null>(null);
+  const [room, setRoom] = useState<RoomUI | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      setRealRoom(null); // CRITICAL: Reset state so old room doesn't show during fetch
+      setRoom(null);
       try {
-        const [roomData, reviewsData] = await Promise.all([
-          api.getRoomById(roomId).catch(() => null) as Promise<any>,
-          api.getReviews(roomId).catch(() => []) as Promise<any[]>
+        // Parallel fetch for room and reviews
+        const [roomResult, reviewsResult] = await Promise.allSettled([
+          api.getRoomById(roomId),
+          api.getReviews(roomId)
         ]);
 
+        const roomData = roomResult.status === 'fulfilled' ? roomResult.value : null;
+        const reviewsData = reviewsResult.status === 'fulfilled' ? reviewsResult.value : [];
+
         if (roomData) {
-          const mapped: RoomData = {
+            // Helper to handle fasilitas string vs array
+            const fasilitasArray = Array.isArray(roomData.fasilitas) 
+                ? roomData.fasilitas 
+                : (roomData.fasilitas || "WiFi, AC").split(',').map(s => s.trim());
+
+            const mapped: RoomUI = {
+            ...roomData,
             name: roomData.nomor_kamar,
             type: roomData.tipe_kamar,
             price: Number(roomData.harga_per_bulan) || 0,
@@ -172,28 +133,29 @@ export function RoomDetail({
             bathrooms: roomData.bathrooms || 1,
             size: roomData.size || '24m²',
             floor: roomData.floor || 1,
-            capacity: roomData.capacity || 1, // Map capacity from API
-            facilities: (roomData.fasilitas || "WiFi, AC").split(',').map((f: string) => ({
-              name: f.trim(),
-              icon: facilityIcons[f.trim()] || Check
+            capacity: roomData.capacity || 1,
+            facilities: fasilitasArray.map((f: string) => ({
+              name: f,
+              icon: facilityIcons[f] || Check
             })),
-            features: (roomData.fasilitas || "WiFi, AC").split(',').map((f: string) => f.trim()),
+            features: fasilitasArray,
             images: [
               roomData.image_url ? (roomData.image_url.startsWith('http') ? roomData.image_url : `http://localhost:8081${roomData.image_url}`) : 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080',
-              'https://images.unsplash.com/photo-1662454419736-de132ff75638?q=80&w=1080',
-              'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1080'
+              // Add more fallback images or gallery images here if available in Room interface
+              ...(roomData.Gallery?.map(g => g.image_url.startsWith('http') ? g.image_url : `http://localhost:8081${g.image_url}`) || 
+                 ['https://images.unsplash.com/photo-1662454419736-de132ff75638?q=80&w=1080',
+                  'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1080'])
             ]
           };
-          setRealRoom(mapped);
-        } else if (roomId.startsWith('mock-')) {
-          // Handle mock data lookup for a seamless experience
-          const mockId = roomId.replace('mock-', '');
-          const mockDetail = roomDetails[mockId] || roomDetails['1'];
-          setRealRoom(mockDetail);
+          setRoom(mapped);
+        } else {
+             // Handle Not Found or Error
+             toast.error("Room not found");
         }
-        setReviews(reviewsData as Review[]);
+        setReviews(reviewsData);
       } catch (e) {
         console.error("Failed to fetch room detail", e);
+        toast.error("Failed to load room details");
       } finally {
         setIsLoading(false);
       }
@@ -201,9 +163,7 @@ export function RoomDetail({
     fetchData();
   }, [roomId]);
 
-  const room = realRoom || roomDetails["1"];
-
-  if (isLoading) {
+  if (isLoading || !room) {
     return <SkeletonDetail />;
   }
 
@@ -216,23 +176,21 @@ export function RoomDetail({
 
     setIsSubmittingReview(true);
     try {
-      const kID = parseInt(roomId) || 1;
+      const kID = parseInt(roomId);
       await api.createReview({
         kamar_id: kID,
         rating: newReview.rating,
         comment: newReview.comment,
-        // user_id is now handled by backend from token
       });
       // Refresh reviews
       const data = await api.getReviews(String(kID));
-      setReviews(data as Review[]);
+      setReviews(data);
       setNewReview({ rating: 5, comment: "" });
-    } catch (e: unknown) {
+      toast.success("Review submitted successfully!");
+    } catch (e) {
       console.error("Failed to submit review", e);
-      const message =
-        e instanceof Error
-          ? e.message
-          : "Failed to submit review. Please try again.";
+      // api.ts throws ApiErrorClass which has message
+      const message = e instanceof Error ? e.message : "Failed to submit review";
       toast.error(message);
     } finally {
       setIsSubmittingReview(false);
@@ -278,7 +236,6 @@ export function RoomDetail({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Header - Back Button & Title */}
         <motion.div
-          // ... existing header code ...
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
@@ -436,7 +393,6 @@ export function RoomDetail({
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                    {/* ... stats ... */}
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                       <Bed className="w-5 h-5 text-stone-900 dark:text-stone-100" />
                       <div>
@@ -450,8 +406,7 @@ export function RoomDetail({
                     </div>
                     
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <Utensils className="w-5 h-5 text-stone-900 dark:text-stone-100" /> {/* Using Utensils as placeholder if Bath icon missing, or use custom SVG */}
-                      {/* Better: Use 'Bath' if available or simple check */}
+                      <Utensils className="w-5 h-5 text-stone-900 dark:text-stone-100" />
                       <div>
                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                           Bathrooms
@@ -463,7 +418,7 @@ export function RoomDetail({
                     </div>
 
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                      <MapPin className="w-5 h-5 text-stone-900 dark:text-stone-100" /> {/* Placeholder for Size/Maximize if not imported */}
+                      <MapPin className="w-5 h-5 text-stone-900 dark:text-stone-100" />
                        <div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                           Size
@@ -475,7 +430,7 @@ export function RoomDetail({
                     </div>
 
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                       <ArrowLeft className="w-5 h-5 text-stone-900 dark:text-stone-100 rotate-90" /> {/* Placeholder for Floor/Layers */}
+                       <ArrowLeft className="w-5 h-5 text-stone-900 dark:text-stone-100 rotate-90" />
                        <div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                           Floor
@@ -485,7 +440,6 @@ export function RoomDetail({
                         </p>
                       </div>
                     </div>
-                    {/* ... other stats ... */}
                   </div>
                 </div>
 
@@ -501,8 +455,7 @@ export function RoomDetail({
                       },
                       idx: number,
                     ) => {
-                      const Icon =
-                        facilityIcons[facility.name] || facility.icon;
+                      const Icon = facilityIcons[facility.name] || facility.icon;
                       return (
                         <motion.div
                           key={idx}
@@ -540,7 +493,7 @@ export function RoomDetail({
               </Card>
             </motion.div>
 
-            {/* Reviews Section - NEW */}
+            {/* Reviews Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -619,7 +572,7 @@ export function RoomDetail({
                               </p>
                               <p className="text-xs text-slate-500">
                                 {new Date(
-                                  review.created_at,
+                                  review.created_at || new Date().toISOString(),
                                 ).toLocaleDateString()}
                               </p>
                             </div>
@@ -766,7 +719,6 @@ export function RoomDetail({
                 onClick={() => {
                   if (!isLoggedIn) onLoginPrompt?.();
                   else {
-                      // Format date to YYYY-MM-DD for consistency
                       const formattedDate = date ? format(date, "yyyy-MM-dd") : undefined;
                       onBookNow(roomId, {
                           moveInDate: formattedDate,
@@ -799,11 +751,11 @@ export function RoomDetail({
                 <div className="flex justify-between font-bold text-slate-900 dark:text-slate-100 text-base">
                   <span>Total Bayar</span>
                   <span>
-                    {new Intl.NumberFormat("id-ID", {
+                     {new Intl.NumberFormat("id-ID", {
                       style: "currency",
                       currency: "IDR",
                       minimumFractionDigits: 0,
-                    }).format(room.price * parseInt(duration) + 50000)}
+                    }).format((room.price * parseInt(duration)) + 50000)}
                   </span>
                 </div>
               </div>

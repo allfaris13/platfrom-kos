@@ -4,17 +4,21 @@ export interface User {
   id: number;
   username: string;
   role: 'admin' | 'penyewa' | 'calon_penyewa';
+  email?: string;
   token?: string;
   created_at?: string;
+  // For profile usage
+  penyewa?: Tenant;
+  is_google_user?: boolean;
 }
 
 export interface Room {
   id: number;
   nomor_kamar: string;
   tipe_kamar: string;
-  fasilitas: string;
+  fasilitas: string | string[]; // Supports both raw string or parsed array
   harga_per_bulan: number;
-  status: 'Tersedia' | 'Penuh' | 'Maintenance';
+  status: 'Tersedia' | 'Terisi' | 'Perbaikan' | 'Booked';
   capacity: number;
   floor: number;
   size: string;
@@ -24,6 +28,14 @@ export interface Room {
   image_url: string;
   created_at?: string;
   updated_at?: string;
+  kategori_id?: number;
+  Category?: {
+    nama_kategori: string;
+  };
+  Gallery?: { image_url: string }[];
+  // derived fields for UI
+  rating?: number;
+  reviews?: number;
 }
 
 export interface Gallery {
@@ -32,6 +44,8 @@ export interface Gallery {
   category: string;
   image_url: string;
   created_at?: string;
+  keti_id?: number;
+  Room?: Room;
 }
 
 export interface Review {
@@ -40,8 +54,13 @@ export interface Review {
   user?: User;
   kamar_id: number;
   rating: number;
-  comment: string;
+  comment: string; // Backend uses 'comment' or 'komentar'? Standardize to comment based on this file.
+  komentar?: string; // Alias if needed
   created_at?: string;
+  Penyewa?: {
+      nama_lengkap: string;
+      foto_profil: string;
+  };
 }
 
 export interface Tenant {
@@ -57,13 +76,14 @@ export interface Tenant {
   jenis_kelamin: string;
   foto_profil: string;
   created_at?: string;
-  status?: string; // Optional status for frontend display
-  kamar?: { nomor_kamar: string }; // Optional linking to current room
+  status?: string; 
+  kamar?: { nomor_kamar: string }; 
 }
 
 export interface Payment {
   id: number;
   pemesanan_id: number;
+  pemesanan?: Booking;
   jumlah_bayar: number;
   tanggal_bayar: string;
   bukti_transfer: string;
@@ -93,14 +113,22 @@ export interface Booking {
   penyewa_id: number;
   penyewa?: Tenant;
   kamar_id: number;
-  kamar?: Room; // Preloaded
+  kamar?: Room;
   tanggal_mulai: string;
+  tanggal_keluar: string; // or moveOutDate
   durasi_sewa: number;
   status_pemesanan: 'Pending' | 'Confirmed' | 'Cancelled' | 'Active' | 'Completed';
-  pembayaran?: Payment[];
+  pembayaran?: Payment[]; // Standardize on lowercase
+  payments?: Payment[]; // Alias if needed
   created_at?: string;
-  status_bayar?: string; // Optional frontend helper
-  total_bayar?: number; // Optional frontend helper
+  // UI helpers
+  moveInDate?: string;
+  moveOutDate?: string;
+  roomName?: string;
+  roomImage?: string;
+  monthlyRent?: number;
+  status_bayar?: string; 
+  total_bayar?: number; 
 }
 
 export interface DashboardStats {
@@ -126,6 +154,8 @@ export interface DashboardStats {
 export interface LoginResponse {
     token: string;
     user: User;
+    penyewa?: Tenant; // Added this
+    is_google_user?: boolean; // Added this
 }
 
 export interface MessageResponse {
@@ -184,7 +214,7 @@ const safeJson = async (res: Response) => {
 
   try {
     return JSON.parse(text);
-  } catch (e) {
+  } catch (_e) { // eslint-disable-line @typescript-eslint/no-unused-vars
     // If empty response (e.g. 200 OK but no body), return empty object?
     // But safeJson usually expects JSON. If text is empty and status ok, maybe return null?
     if (!text) return {}; 
@@ -192,14 +222,14 @@ const safeJson = async (res: Response) => {
   }
 };
 
-const apiCall = async <T>(method: string, endpoint: string, body?: any): Promise<T> => {
+const apiCall = async <T>(method: string, endpoint: string, body?: unknown): Promise<T> => {
   const headers = getHeaders();
   const config: RequestInit = { method, headers };
 
   if (body) {
     if (body instanceof FormData) {
       // Jika FormData, biarkan browser set boundary secara otomatis
-      delete (config.headers as any)['Content-Type'];
+      delete (config.headers as Record<string, string>)['Content-Type'];
       config.body = body;
     } else {
       config.body = JSON.stringify(body);
@@ -237,7 +267,7 @@ export const api = {
     return data;
   },
 
-  register: async (userData: any) => {
+  register: async (userData: Partial<Tenant> & { password?: string; username?: string }) => {
     // userData already includes birthdate from UserRegister.tsx
     // Returns created User object or message? Typically user object.
     return apiCall<User>('POST', '/auth/register', userData);
@@ -272,7 +302,7 @@ export const api = {
     return apiCall<Tenant>('PUT', '/profile', data);
   },
 
-  changePassword: async (data: any) => {
+  changePassword: async (data: { old_password?: string; new_password?: string }) => {
     return apiCall<MessageResponse>('PUT', '/profile/change-password', data);
   },
 
@@ -395,7 +425,7 @@ export const api = {
   },
 
   // --- OTHERS ---
-  sendContactForm: async (data: any) => {
+  sendContactForm: async (data: { name: string; email: string; message: string }) => {
     // Check contact_handler.go if needed, assume message
     return apiCall<MessageResponse>('POST', '/contact', data);
   },

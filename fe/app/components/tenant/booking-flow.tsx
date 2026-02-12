@@ -9,7 +9,6 @@ import {
   Check,
   CreditCard,
   DollarSign,
-  Upload,
   CheckCircle2,
   Loader2,
 } from "lucide-react";
@@ -21,12 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import { api } from "@/app/services/api";
+import { api, Room } from "@/app/services/api";
 import { toast } from "sonner";
 
 declare global {
   interface Window {
-    snap: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    snap: any; 
   }
 }
 
@@ -40,29 +40,22 @@ interface BookingFlowProps {
   };
 }
 
-interface BookingResponse {
-  id: number;
-}
-
-interface SnapResponse {
-  token: string;
-}
-
-const roomDetails: { [key: string]: any } = {
+// Fallback data
+const roomDetails: { [key: string]: Partial<Room> } = {
   "1": {
-    name: "Premium Suite 201",
+    nomor_kamar: "Premium Suite 201",
     harga_per_bulan: 1500000,
-    type: "Luxury",
+    tipe_kamar: "Luxury",
   },
   "2": {
-    name: "Deluxe Room 102",
+    nomor_kamar: "Deluxe Room 102",
     harga_per_bulan: 1200000,
-    type: "Deluxe",
+    tipe_kamar: "Deluxe",
   },
   "3": {
-    name: "Standard Room 005",
+    nomor_kamar: "Standard Room 005",
     harga_per_bulan: 850000,
-    type: "Standard",
+    tipe_kamar: "Standard",
   }
 };
 
@@ -93,7 +86,7 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
     setFormData({ ...formData, [field]: value });
   };
 
-  const [room, setRoom] = useState<any>(null);
+  const [room, setRoom] = useState<Room | Partial<Room> | null>(null);
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -102,7 +95,7 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
         console.log(`Fetching room with ID: ${roomId}`);
         
         // Try to fetch from API first
-        let apiData = null;
+        let apiData: Room | null = null;
         try {
             // Check if roomId looks like a real ID or mock
             if (!roomId.toString().startsWith("mock-")) {
@@ -123,18 +116,11 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
             // Try to find exact match in mock data
             let mockData = roomDetails[cleanId];
             
-            // If not found, and it looks like a real ID (numeric), do NOT force a wrong mock room
-            // unless we are desperate. 
-            // Better to show 0 or specific error than wrong info?
-            // The user complained about WRONG price.
-            
             if (!mockData) {
-                // If it's "A2", maybe we can find it by name? No.
-                // Just default to empty/generic if not found to avoid misleading 1.5M price
                  mockData = {
-                    name: `Room ${roomId}`,
+                    nomor_kamar: `Room ${roomId}`,
                     harga_per_bulan: 0, 
-                    type: "Unknown"
+                    tipe_kamar: "Unknown"
                  };
             }
             setRoom(mockData);
@@ -142,7 +128,6 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
       } catch (error) {
         console.error("Critical error in fetchRoom:", error);
         toast.error("Gagal memuat data kamar. Silakan coba lagi.");
-        // Do not set fake room here
       } finally {
         setLoading(false);
       }
@@ -155,7 +140,7 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
 
   // Robust price calculation: check multiple fields and ensure number
   const pricePerMonth = room 
-    ? (Number(room.harga_per_bulan) || Number(room.price) || 0) 
+    ? (Number(room.harga_per_bulan) || 0) 
     : 0;
 
   useEffect(() => {
@@ -182,7 +167,7 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
           kamar_id: parseInt(roomId),
           tanggal_mulai: formData.moveInDate,
           durasi_sewa: parseInt(formData.duration),
-        }) as BookingResponse;
+        });
 
         // 2. Create Payment Session (Manual)
         const paymentRes = await api.createPayment({
@@ -205,10 +190,11 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
             : "Silakan lakukan pembayaran tunai di lokasi.",
         });
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         setLoading(false);
         console.error(err);
-        toast.error(err.message || "Gagal membuat reservasi.");
+        const message = err instanceof Error ? err.message : "Gagal membuat reservasi.";
+        toast.error(message);
       }
     }
   };
@@ -250,7 +236,7 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
             </div>
 
             <p className="text-sm text-muted-foreground mb-6">
-                Setelah transfer, silakan upload bukti pembayaran di halaman "My Bookings".
+                Setelah transfer, silakan upload bukti pembayaran di halaman &quot;My Bookings&quot;.
             </p>
 
             <div className="space-y-3 p-6 bg-muted/50 rounded-lg mb-8 border border-border text-left">
@@ -431,8 +417,7 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
                       />
                     </div>
 
-                    {/* Guests Input (Read-only or Editable) */}
-                    {/* Since we don't have a guests field in the original form, adding it now */}
+                    {/* Guests Input */}
                      <div className="grid gap-2">
                   <Label htmlFor="guests">Number of Guests</Label>
                   <Select
@@ -465,11 +450,6 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
                           <span>Monthly rent</span>
                           <span>Rp {pricePerMonth.toLocaleString("id-ID")}</span>
                         </div>
-                        {/* 
-                           Assuming security deposit is 1 month rent or similar?
-                           For now, let's keep it equal to 1 month rent or remove if not applicable.
-                           The previous code had hardcoded values. I'll make it dynamic too.
-                        */}
                         <div className="font-bold pt-2 border-t border-blue-200 dark:border-blue-800 flex justify-between text-base">
                           <span>Total due</span>
                           <span>Rp {(pricePerMonth * parseInt(formData.duration)).toLocaleString("id-ID")}</span>
@@ -718,7 +698,6 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
                              }
                           </span>
                         </div>
-                         {/* Note about deposit if needed, or keeping it strictly rent based for simplicity if confirmed */}
                       </div>
                     </div>
 

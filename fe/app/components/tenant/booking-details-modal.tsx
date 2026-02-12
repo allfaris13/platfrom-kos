@@ -1,16 +1,34 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/app/components/ui/dialog";
 import { Badge } from "@/app/components/ui/badge";
-import { Separator } from "@/app/components/ui/separator";
+
 import { Copy, CheckCircle2, Clock, XCircle, CreditCard, Calendar } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { toast } from "sonner";
 import { ImageWithFallback } from "@/app/components/shared/ImageWithFallback";
 import { Payment } from "@/app/services/api";
 
+// import { Booking } from "@/app/services/api"; // Remove strict Booking import
+
+interface BookingDetails {
+    id: string | number;
+    status_pemesanan: string;
+    roomName?: string;
+    roomImage?: string;
+    kamar?: { nomor_kamar: string; tipe_kamar: string; image_url: string; floor: number; harga_per_bulan: number; };
+    durasi_sewa?: number;
+    duration?: string;
+    monthlyRent?: number;
+    moveInDate?: string;
+    tanggal_mulai?: string;
+    moveOutDate?: string;
+    tanggal_keluar?: string;
+    payments?: Payment[];
+}
+
 interface BookingDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  booking: any; // Keep flexible or strictly typed if possible
+  booking: BookingDetails | null;
 }
 
 export function BookingDetailsModal({ isOpen, onClose, booking }: BookingDetailsModalProps) {
@@ -37,8 +55,8 @@ export function BookingDetailsModal({ isOpen, onClose, booking }: BookingDetails
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl font-bold flex items-center gap-3">
               Booking Details
-              <Badge variant="outline" className={getStatusColor(booking.status)}>
-                {booking.status}
+              <Badge variant="outline" className={getStatusColor(booking.status_pemesanan)}>
+                {booking.status_pemesanan}
               </Badge>
             </DialogTitle>
           </div>
@@ -53,20 +71,20 @@ export function BookingDetailsModal({ isOpen, onClose, booking }: BookingDetails
             <div className="flex gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
               <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-slate-200">
                 <ImageWithFallback
-                  src={booking.roomImage}
-                  alt={booking.roomName}
+                  src={booking.roomImage || booking.kamar?.image_url || ''}
+                  alt={booking.roomName || booking.kamar?.nomor_kamar || 'Room'}
                   className="w-full h-full object-cover"
                 />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white">{booking.roomName}</h3>
-                <p className="text-sm text-slate-500 mb-2">{booking.location}</p>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white">{booking.roomName || booking.kamar?.nomor_kamar || 'Room'}</h3>
+                <p className="text-sm text-slate-500 mb-2">Kota Malang, Jawa Timur</p>
                 <div className="flex gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
                   <span className="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">
-                    {booking.duration}
+                    {booking.duration || (booking.durasi_sewa ? `${booking.durasi_sewa} Bulan` : '-')}
                   </span>
                   <span className="bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">
-                    Rp {booking.monthlyRent.toLocaleString()}/mo
+                    Rp {(booking.monthlyRent || booking.kamar?.harga_per_bulan || 0).toLocaleString()}/mo
                   </span>
                 </div>
               </div>
@@ -78,14 +96,14 @@ export function BookingDetailsModal({ isOpen, onClose, booking }: BookingDetails
                 <p className="text-xs text-slate-500 uppercase font-bold mb-1">Check In</p>
                 <p className="text-lg font-semibold flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-slate-400" />
-                  {new Date(booking.moveInDate).toLocaleDateString()}
+                  {(booking.moveInDate || booking.tanggal_mulai) ? new Date(booking.moveInDate || booking.tanggal_mulai!).toLocaleDateString() : '-'}
                 </p>
               </div>
               <div className="p-4 border border-slate-200 dark:border-slate-800 rounded-xl">
                 <p className="text-xs text-slate-500 uppercase font-bold mb-1">Check Out</p>
                 <p className="text-lg font-semibold flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-slate-400" />
-                  {new Date(booking.moveOutDate).toLocaleDateString()}
+                  {(booking.moveOutDate || booking.tanggal_keluar) ? new Date(booking.moveOutDate || booking.tanggal_keluar!).toLocaleDateString() : '-'}
                 </p>
               </div>
             </div>

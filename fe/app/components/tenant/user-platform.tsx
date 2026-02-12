@@ -1,16 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import useSWR, { mutate } from 'swr';
+
 import { Homepage } from './homepage';
 import { RoomDetail } from './RoomDetail';
 import { BookingFlow } from './booking-flow';
 import { BookingHistory } from './booking-history';
-import { BookingStatsDetail } from './booking-stats-detail';
+
 import { ContactUs } from './contact-us';
 import { Gallery } from './Gallery';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, XCircle, MessageCircle, Star, ImageIcon, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Home, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, XCircle, MessageCircle, ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -18,12 +18,37 @@ import { Card } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
-import { api, PaymentReminder } from '@/app/services/api';
+import { api } from '@/app/services/api';
 import { LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UserPlatformProps {
   onLogout?: () => void;
+}
+
+interface ProfileData {
+  user: {
+    username: string;
+    email: string;
+    created_at: string;
+  };
+  penyewa?: {
+    nama_lengkap: string;
+    nomor_hp: string;
+    alamat_asal: string;
+    nik: string;
+    jenis_kelamin: string;
+    foto_profil: string;
+  };
+  is_google_user: boolean;
+}
+
+interface BookingItem {
+  total_bayar: number;
+  status_pemesanan: string;
+  kamar?: {
+    nomor_kamar: string;
+  };
 }
 
 export function UserPlatform({ onLogout }: UserPlatformProps) {
@@ -136,21 +161,21 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   const fetchProfile = async () => {
     setIsLoadingProfile(true);
     try {
-      const data = (await api.getProfile()) as any;
+      const data = (await api.getProfile()) as unknown as ProfileData;
       let bookingsCount = 0;
       let totalSpent = 0;
       let currentRoomNumber = '-';
 
       try {
-        const bookingsData = (await api.getMyBookings()) as any[]; // Type assertion for flexibility
+        const bookingsData = (await api.getMyBookings()) as unknown as BookingItem[];
         bookingsCount = bookingsData.length;
-        totalSpent = bookingsData.reduce((sum: number, b: any) => sum + (b.total_bayar || 0), 0);
+        totalSpent = bookingsData.reduce((sum: number, b: BookingItem) => sum + (b.total_bayar || 0), 0);
 
         // Find active/confirmed booking to display room number
         // Priority: Active > Confirmed > Pending
-        const activeBooking = bookingsData.find((b: any) => b.status_pemesanan === 'Active') 
-                           || bookingsData.find((b: any) => b.status_pemesanan === 'Confirmed')
-                           || bookingsData.find((b: any) => b.status_pemesanan === 'Pending');
+        const activeBooking = bookingsData.find((b: BookingItem) => b.status_pemesanan === 'Active') 
+                           || bookingsData.find((b: BookingItem) => b.status_pemesanan === 'Confirmed')
+                           || bookingsData.find((b: BookingItem) => b.status_pemesanan === 'Pending');
 
         if (activeBooking && activeBooking.kamar) {
             currentRoomNumber = activeBooking.kamar.nomor_kamar;
@@ -190,6 +215,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         totalSpent: totalSpent,
         isGoogleUser: data.is_google_user,
         profileImage: '',
+        roomNumber: currentRoomNumber,
       });
       // Update simple userName state too
       setUserName(data.penyewa?.nama_lengkap || data.user?.username || 'User');
@@ -250,7 +276,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         formData.append('foto_profil', selectedFile);
       }
 
-      const res = (await api.updateProfile(formData)) as any;
+      const res = (await api.updateProfile(formData)) as unknown as ProfileData;
 
       setUserData({
         ...editData,

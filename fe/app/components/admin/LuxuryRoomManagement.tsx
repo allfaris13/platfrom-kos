@@ -148,7 +148,7 @@ export function LuxuryRoomManagement() {
       resetForm();
     } catch (e) {
       console.error(e);
-      alert(editingRoom ? "Failed to update room" : "Failed to create room");
+      toast.error(editingRoom ? "Failed to update room" : "Failed to create room");
     }
   };
 
@@ -159,7 +159,7 @@ export function LuxuryRoomManagement() {
         await fetchRooms();
       } catch (e) {
         console.error(e);
-        alert("Failed to delete room");
+        toast.error("Failed to delete room");
       }
     }
   };

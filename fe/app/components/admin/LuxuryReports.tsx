@@ -2,51 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { TrendingUp, Download, Calendar, DollarSign, Loader2, BarChart3, Activity } from 'lucide-react';
-import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { api } from '@/app/services/api';
+import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { api, Room, Payment as ApiPayment, DashboardStats } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-interface Room {
-  id: number;
-  tipe_kamar: string;
-  status: string;
-  harga_per_bulan: number;
-}
-
-interface Payment {
-  id: number;
-  jumlah_bayar: number;
-  status_pembayaran: string;
-  tanggal_bayar: string;
-  created_at: string;
-  pemesanan?: {
-    penyewa?: {
-      nama_lengkap: string;
-    };
-    kamar?: {
-      tipe_kamar: string;
-      nomor_kamar: string;
-    };
-  };
-}
-
-interface DashboardStats {
-  monthly_trend: { month: string; revenue: number }[];
-  demographics: { name: string; value: number; color: string }[];
-  type_breakdown: { type: string; revenue: number; count: number; occupied: number }[];
-  total_revenue: number;
-  pending_revenue: number;
-  pending_payments: number;
-  active_tenants: number;
-  occupied_rooms: number;
-  available_rooms: number;
-  potential_revenue: number;
-}
-
 export function LuxuryReports() {
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<ApiPayment[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,9 +22,9 @@ export function LuxuryReports() {
           api.getRooms(),
           api.getDashboardStats()
         ]);
-        setPayments(pData as Payment[]);
-        setRooms(rData as any); // Room interface might need adjustment or just use any if simple
-        setStats(sData as DashboardStats);
+        setPayments(pData);
+        setRooms(rData);
+        setStats(sData);
       } catch (e) {
         console.error("Failed to fetch reports data:", e);
       } finally {
@@ -74,7 +37,7 @@ export function LuxuryReports() {
   // Use backend-calculated values
   const totalRevenue = stats?.total_revenue || 0;
   const pendingRevenue = stats?.pending_revenue || 0;
-  const potentialRevenue = stats?.potential_revenue || 0;
+
 
   // Revenue by Room Type Data
   const revenueByType = stats?.type_breakdown || [];
@@ -87,14 +50,7 @@ export function LuxuryReports() {
   ];
 
   // Monthly Data from Backend
-  const monthlyRevenueData = stats?.monthly_trend?.length ? [...stats.monthly_trend].reverse() : [
-    { month: 'Jan', revenue: 4200000 },
-    { month: 'Feb', revenue: 5100000 },
-    { month: 'Mar', revenue: 4800000 },
-    { month: 'Apr', revenue: 5400000 },
-    { month: 'May', revenue: 6200000 },
-    { month: 'Jun', revenue: 5900000 }
-  ];
+
 
   const monthlyComparison = [
     { month: 'Jan', thisYear: 4200000, lastYear: 3800000 },
@@ -109,11 +65,11 @@ export function LuxuryReports() {
     const doc = new jsPDF();
 
     const tableColumn = ["Date", "Tenant Name", "Room Type", "Room No", "Amount", "Status"];
-    const tableRows: any[] = [];
+    const tableRows: (string | number)[][] = [];
 
     payments.forEach(p => {
       const rowData = [
-        new Date(p.created_at).toLocaleDateString("id-ID"),
+        new Date(p.created_at || new Date().toISOString()).toLocaleDateString("id-ID"),
         p.pemesanan?.penyewa?.nama_lengkap || "Unknown",
         p.pemesanan?.kamar?.tipe_kamar || "Unknown",
         p.pemesanan?.kamar?.nomor_kamar || "Unknown",
@@ -267,9 +223,9 @@ export function LuxuryReports() {
             </div>
             <p className="text-slate-400 text-[10px] md:text-sm mb-1">Occupancy</p>
             <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">
-              {rooms.length > 0 ? Math.round((rooms.filter(r => r.status === 'Penuh').length / rooms.length) * 100) : 0}%
+              {rooms.length > 0 ? Math.round((rooms.filter(r => r.status === 'Terisi').length / rooms.length) * 100) : 0}%
             </p>
-            <p className="text-[10px] text-purple-400">{rooms.filter(r => r.status === 'Penuh').length}/{rooms.length} rooms</p>
+            <p className="text-[10px] text-purple-400">{rooms.filter(r => r.status === 'Terisi').length}/{rooms.length} rooms</p>
           </div>
         </div>
       </div>

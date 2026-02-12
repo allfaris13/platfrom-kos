@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { api } from '@/app/services/api';
 import { ImageWithFallback } from './ImageWithFallback';
 import { useRouter } from 'next/navigation';

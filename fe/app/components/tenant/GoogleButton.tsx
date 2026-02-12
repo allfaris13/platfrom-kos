@@ -5,7 +5,7 @@ import { handleGoogleLogin } from '@/app/services/authgoogle';
 import { toast } from 'sonner';
 
 interface GoogleButtonProps {
-    onSuccess: (data: any) => void;
+    onSuccess: (data: unknown) => void;
     isLoading?: boolean;
 }
 

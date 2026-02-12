@@ -63,15 +63,21 @@ export function ContactUs() {
         duration: 4000,
         icon: <CheckCircle2 className="w-5 h-5 text-green-500" />,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setLoading(false);
-      toast.error(err.message || 'Gagal mengirim pesan. Silakan coba lagi.');
+      let errorMessage = 'Gagal mengirim pesan. Silakan coba lagi.';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      toast.error(errorMessage);
     }
   };
 
   useEffect(() => {
     // Check if Leaflet is available (loaded via CDN)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof window !== 'undefined' && (window as any).L) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const L = (window as any).L;
       
       const coords: [number, number] = [-7.9548233, 112.6049854];

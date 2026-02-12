@@ -1,5 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
-import { api } from './api';
+
 
 export interface GoogleUser {
     email: string;
@@ -10,7 +10,7 @@ export interface GoogleUser {
 
 export const decodeGoogleToken = (credential: string): GoogleUser | null => {
     try {
-        const decoded: any = jwtDecode(credential);
+        const decoded = jwtDecode<GoogleUser & { sub: string }>(credential);
         return {
             email: decoded.email,
             name: decoded.name,

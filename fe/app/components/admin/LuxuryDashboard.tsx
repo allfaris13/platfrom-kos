@@ -77,7 +77,6 @@ export function LuxuryDashboard() {
   const [roomsCount, setRoomsCount] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     const fetchAllData = async () => {
       try {
         const [statsData, tenantsData, paymentsData, roomsData] =
@@ -96,7 +95,7 @@ export function LuxuryDashboard() {
       }
     };
     fetchAllData();
-    interval = setInterval(fetchAllData, 30000); // refresh setiap 30 detik
+    const interval = setInterval(fetchAllData, 30000); // refresh setiap 30 detik
     return () => clearInterval(interval);
   }, []);
 

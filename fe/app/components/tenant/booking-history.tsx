@@ -27,7 +27,7 @@ import {
 import { api, PaymentReminder, Payment } from '@/app/services/api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs-component";
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+
 
 import { UploadProofModal } from './upload-proof-modal';
 import { BookingDetailsModal } from './booking-details-modal';
@@ -38,6 +38,7 @@ interface Booking {
   roomImage: string;
   location: string;
   status: string;
+  status_pemesanan: string;
   moveInDate: string;
   moveOutDate: string;
   monthlyRent: number;
@@ -48,10 +49,7 @@ interface Booking {
   payments?: Payment[]; // Add payments field
 }
 
-interface PaymentData {
-  id: number;
-  status_pembayaran: string;
-}
+
 
 interface KamarData {
   nomor_kamar: string;
@@ -80,7 +78,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
   const [calendarExpanded, setCalendarExpanded] = useState(false);
   const [reminders, setReminders] = useState<PaymentReminder[]>([]);
   const [isLoadingReminders, setIsLoadingReminders] = useState(false);
-  const router = useRouter();
+
   const [viewDetailsModalOpen, setViewDetailsModalOpen] = useState(false);
 
   const fetchBookings = useCallback(async () => {
@@ -95,6 +93,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
         tanggal_mulai: string; 
         durasi_sewa: number; 
         status_bayar: string; 
+        status_pemesanan: string;
         total_bayar: number;
         pembayaran: Payment[];
       }>;
@@ -112,6 +111,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
           roomImage: b.kamar.image_url.startsWith('http') ? b.kamar.image_url : `http://localhost:8081${b.kamar.image_url}`,
           location: `Floor ${b.kamar.floor}`,
           status: b.status_pemesanan === 'Confirmed' ? 'Confirmed' : (b.status_pemesanan === 'Pending' ? 'Pending' : (b.status_pemesanan === 'Cancelled' ? 'Cancelled' : 'Completed')),
+          status_pemesanan: b.status_pemesanan,
           moveInDate: b.tanggal_mulai,
           moveOutDate: moveOut.toISOString().split('T')[0],
           monthlyRent: b.kamar.harga_per_bulan,

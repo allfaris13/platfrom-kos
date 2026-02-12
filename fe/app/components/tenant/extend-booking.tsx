@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, CreditCard, X, ChevronRight, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, X, ChevronRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
-import { Card } from '@/app/components/ui/card';
 import { Badge } from '@/app/components/ui/badge';
 import { toast } from 'sonner';
-import { useApp } from '@/app/context';
 import { api } from '@/app/services/api';
+
+import NextImage from 'next/image';
 
 interface ExtendBookingProps {
   isOpen: boolean;
@@ -91,10 +91,13 @@ export function ExtendBooking({ isOpen, onClose, bookingData, onSuccess }: Exten
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
               {/* Room Summary */}
               <div className="flex gap-4 p-4 bg-slate-50 rounded-2xl">
-                <img 
+                <NextImage 
                   src={bookingData.image} 
-                  className="w-20 h-20 rounded-xl object-cover" 
+                  width={80}
+                  height={80}
+                  className="rounded-xl object-cover" 
                   alt="Room" 
+                  unoptimized
                 />
                 <div>
                   <h3 className="font-bold text-slate-900">{bookingData.roomName}</h3>

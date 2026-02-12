@@ -30,19 +30,14 @@ import {
   Tv,
   Coffee,
   Star,
-  CheckCircle2,
-  Calendar,
-  MessageCircle,
   Home,
   LucideIcon,
   Search,
-  ChevronRight,
-  Sparkles,
   ArrowRight,
   X,
   RotateCcw
 } from 'lucide-react';
-import { api } from '@/app/services/api';
+import { api, Room as ApiRoom, Review as ApiReview } from '@/app/services/api';
 import {
   Select,
   SelectContent,
@@ -90,7 +85,7 @@ const fadeInUp: Variants = {
     y: 0, 
     transition: { 
       duration: 0.6, 
-      ease: "easeOut" as const
+      ease: "easeOut"
     } 
   },
 };
@@ -101,7 +96,8 @@ const staggerContainer: Variants = {
 };
 
 // --- Interfaces & Data ---
-interface Room {
+// UI specific Room interface
+interface UIRoom {
   id: string;
   name: string;
   type: string;
@@ -114,11 +110,18 @@ interface Room {
   status?: string;
 }
 
-const featuredRooms: Room[] = [];
-
 const facilityIcons: { [key: string]: LucideIcon } = { WiFi: Wifi, AC: Wind, TV: Tv, 'Coffee Maker': Coffee };
 
-const defaultReviews = [
+interface ReviewUI {
+  name: string;
+  role: string;
+  review: string;
+  image: string;
+  stayDuration: string;
+  rating: number;
+}
+
+const defaultReviews: ReviewUI[] = [
   {
     name: "Sarah Chen",
     role: "Marketing Executive",
@@ -127,6 +130,7 @@ const defaultReviews = [
     image:
       "https://images.unsplash.com/photo-1494790108755-2616b612b786?q=80&w=400",
     stayDuration: "8 months",
+    rating: 5,
   },
   {
     name: "Ahmad Rahman",
@@ -136,6 +140,7 @@ const defaultReviews = [
     image:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
     stayDuration: "1 year",
+    rating: 4.5,
   },
   {
     name: "Maria Santos",
@@ -145,6 +150,7 @@ const defaultReviews = [
     image:
       "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=400",
     stayDuration: "6 months",
+    rating: 5,
   },
   {
     name: "David Kim",
@@ -154,6 +160,7 @@ const defaultReviews = [
     image:
       "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=400",
     stayDuration: "10 months",
+    rating: 4.8,
   },
 ];
 
@@ -168,7 +175,6 @@ interface HomepageProps {
 export function Homepage({
   onRoomClick,
   isLoggedIn,
-  onLoginPrompt,
   userName,
   onViewHistory,
 }: HomepageProps) {
@@ -184,14 +190,21 @@ export function Homepage({
 
   const realRooms = useMemo(() => {
     if (!roomsData || !Array.isArray(roomsData)) return [];
-    return roomsData.map((r: any) => {
+    return roomsData.map((r: ApiRoom) => {
       const rawPrice = r.harga_per_bulan;
-      const numericPrice =
-        typeof rawPrice === "number"
-          ? rawPrice
-          : Number(String(rawPrice || "").replace(/[^0-9]/g, "")) || 0;
+      const numericPrice = Number(rawPrice) || 0;
 
-      return {
+      // Ensure fasilitas is parsed correctly
+      let facilities: string[] = [];
+      if (Array.isArray(r.fasilitas)) {
+          facilities = r.fasilitas;
+      } else if (typeof r.fasilitas === 'string') {
+          facilities = r.fasilitas.split(',').map((f: string) => f.trim());
+      } else {
+          facilities = ["WiFi", "AC"]; // Default
+      }
+
+      const mapped: UIRoom = {
         id: String(r.id), // ID must be the actual numeric string for detail page
         name: r.nomor_kamar || 'Kamar Tanpa Nama',
         type: r.tipe_kamar || 'Standard',
@@ -202,13 +215,12 @@ export function Homepage({
             : `http://localhost:8081${r.image_url}`
           : "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080",
         location: "Kota Malang, Jawa Timur",
-        rating: 4.8,
-        reviews: 12,
-        facilities: r.fasilitas
-          ? r.fasilitas.split(",").map((f: string) => f.trim())
-          : ["WiFi", "AC"],
+        rating:  r.rating || 4.8,
+        reviews: r.reviews || 12,
+        facilities: facilities,
         status: r.status || "Tersedia",
       };
+      return mapped;
     });
   }, [roomsData]);
 
@@ -219,12 +231,13 @@ export function Homepage({
       reviewsDataApi.length === 0
     )
       return defaultReviews;
-    const mapped = reviewsDataApi.map((r: any) => ({
+    const mapped = reviewsDataApi.map((r: ApiReview) => ({
       name: r.user?.username || "Anonymous",
       role: "Resident",
       review: r.comment,
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
+      image: r.Penyewa?.foto_profil 
+          ? (r.Penyewa.foto_profil.startsWith("http") ? r.Penyewa.foto_profil : `http://localhost:8081${r.Penyewa.foto_profil}`)
+          : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
       stayDuration: "Verified",
       rating: r.rating,
     }));
@@ -235,7 +248,7 @@ export function Homepage({
     // ONLY show real rooms from the backend
     const all = [...realRooms];
 
-    return all.filter((room: Room) => {
+    return all.filter((room: UIRoom) => {
       // 1. Search Filter
       const searchLower = (searchLocation || '').trim().toLowerCase();
       if (searchLower && !room.name.toLowerCase().includes(searchLower)) return false;
@@ -553,7 +566,7 @@ export function Homepage({
                   </h3>
                   <p className="text-slate-500 max-w-xs mx-auto text-center">
                     Coba cari dengan kriteria lain atau kembali ke kategori
-                    "Semua".
+                    &quot;Semua&quot;.
                   </p>
                   <Button
                     variant="outline"
@@ -799,8 +812,8 @@ export function Homepage({
                         <p className="font-bold text-slate-900 dark:text-white text-xs lg:text-lg">
                           {r.name}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-medium uppercase">
-                          {r.role}
+                        <p className="text-slate-400 text-[10px] lg:text-sm uppercase tracking-wider">
+                          {r.role} • {r.stayDuration}
                         </p>
                       </div>
                     </div>
@@ -812,92 +825,26 @@ export function Homepage({
         </div>
       </section>
 
-      {/* 8. Services Section (2 Columns on Mobile) */}
-      <section className="px-4 py-16 lg:py-24 bg-white dark:bg-slate-900">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 lg:mb-20">
-            <p className="text-amber-500 font-bold mb-1 lg:mb-2 uppercase tracking-widest text-[10px] lg:text-sm">
-              Services
-            </p>
-            <h2 className="text-2xl lg:text-5xl font-bold text-slate-900 dark:text-white">
-              Kenapa Memilih Kami?
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-8">
-            {[
-              {
-                id: "01",
-                title: "Facilities",
-                desc: "WiFi, AC, Smart TV premium.",
-                icon: <Wifi className="w-6 h-6 lg:w-10 lg:h-10" />,
-              },
-              {
-                id: "02",
-                title: "Location",
-                desc: "Pusat Sigura-gura, Malang.",
-                icon: <MapPin className="w-6 h-6 lg:w-10 lg:h-10" />,
-              },
-              {
-                id: "03",
-                title: "Security",
-                desc: "CCTV 24 jam terkontrol.",
-                icon: <MessageCircle className="w-6 h-6 lg:w-10 lg:h-10" />,
-              },
-            ].map((service) => (
-              <Card
-                key={service.id}
-                className="relative p-6 lg:p-12 bg-slate-50 dark:bg-slate-800 border-0 rounded-[1.5rem] lg:rounded-[3rem] overflow-hidden group hover:bg-slate-900 transition-colors duration-500"
-              >
-                <span className="absolute top-4 right-6 lg:top-10 lg:right-14 text-3xl lg:text-8xl font-black text-slate-200 dark:text-slate-700 group-hover:text-white/10 transition-colors">
-                  {service.id}
-                </span>
-                <div className="relative z-10 text-left">
-                  <div className="w-10 h-10 lg:w-16 h-16 bg-white dark:bg-slate-900 rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 lg:mb-8 shadow-sm group-hover:bg-white transition-colors">
-                    <span className="text-amber-500">{service.icon}</span>
-                  </div>
-                  <h3 className="text-sm lg:text-3xl font-bold mb-2 group-hover:text-white transition-colors">
-                    {service.title}
-                  </h3>
-                  <p className="text-[10px] lg:text-base text-slate-500 leading-relaxed group-hover:text-white/70 transition-colors hidden lg:block">
-                    {service.desc}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
+      {/* 8. Call to Action */}
+      <section className="px-4 py-20 lg:py-32 bg-slate-900 text-white overflow-hidden relative">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=1080')] bg-cover bg-center opacity-10 mix-blend-overlay" />
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+           <h2 className="text-3xl md:text-5xl lg:text-6xl font-black mb-6 lg:mb-8 leading-tight">
+            Siap untuk Pindah?
+           </h2>
+           <p className="text-slate-300 text-sm md:text-lg lg:text-xl mb-8 lg:mb-12 max-w-2xl mx-auto">
+             Jadilah bagian dari komunitas kami. Hubungi admin untuk survey atau booking langsung via aplikasi.
+           </p>
+           <Button 
+            size="lg"
+            className="bg-amber-500 hover:bg-amber-600 text-white px-8 lg:px-12 py-6 lg:py-8 rounded-full text-lg lg:text-2xl font-bold shadow-2xl shadow-amber-500/20"
+            onClick={() => window.open('https://wa.me/6281234567890', '_blank')}
+           >
+             Chat Admin WhatsApp
+           </Button>
         </div>
       </section>
 
-      {/* CTA Section */}
-      {!isLoggedIn && (
-        <section className="px-6 pb-24">
-          <div className="max-w-7xl mx-auto bg-slate-900 dark:bg-amber-500 rounded-[3.5rem] p-12 lg:p-24 text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl" />
-            <div className="relative z-10 max-w-3xl mx-auto">
-              <h2 className="text-4xl lg:text-6xl font-bold text-white mb-8">
-                Siap Bergabung dengan{" "}
-                <span className="text-amber-400 dark:text-slate-900">
-                  Keluarga Besar
-                </span>{" "}
-                Rahmat ZAW?
-              </h2>
-              <p className="text-white/70 text-lg mb-12">
-                Dapatkan akses eksklusif ke berbagai fasilitas premium dan promo
-                menarik khusus member baru hari ini.
-              </p>
-              <Button
-                onClick={onLoginPrompt}
-                size="lg"
-                className="bg-white hover:bg-slate-100 text-slate-900 px-12 py-8 rounded-2xl text-xl font-black shadow-2xl"
-              >
-                Daftar Sekarang
-              </Button>
-            </div>
-            <Sparkles className="absolute bottom-10 left-10 text-white/10 w-32 h-32" />
-          </div>
-        </section>
-      )}
     </div>
   );
 }

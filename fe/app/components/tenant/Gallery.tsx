@@ -37,15 +37,18 @@ export function Gallery() {
   const { data: galleryData, isLoading } = useSWR('api/galleries', api.getGalleries);
   const [isLoadedMore, setIsLoadedMore] = useState(false);
 
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const displayItems = useMemo<GalleryItem[]>(() => {
-    if (!galleryData || (galleryData as any[]).length === 0) return fallbackKosData;
+    if (!galleryData || !Array.isArray(galleryData) || galleryData.length === 0) return fallbackKosData;
 
-    const mapped = (galleryData as Array<{ id: number | string; title?: string; category?: string; created_at?: string; image_url?: string }>).map((item) => ({
+    const mapped = galleryData.map((item: any) => ({
       id: item.id,
       title: item.title || "Elite Room",
       category: item.category || "Premium",
       year: item.created_at ? new Date(item.created_at).getFullYear().toString() : "2024",
-      imageUrl: item.image_url ? (item.image_url.startsWith('http') ? item.image_url : `http://localhost:8081${item.image_url}`) : "https://via.placeholder.com/800"
+      imageUrl: item.image_url 
+        ? (item.image_url.startsWith('http') ? item.image_url : `http://localhost:8081${item.image_url}`) 
+        : "https://via.placeholder.com/800"
     }));
 
     return isLoadedMore ? [...mapped, ...moreKosItems] : mapped;

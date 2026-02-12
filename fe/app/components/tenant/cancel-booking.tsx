@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, DollarSign, X, ChevronRight, AlertCircle, Trash2 } from 'lucide-react';
+import { Calendar, X, ChevronRight, AlertCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { toast } from 'sonner';
-import { useApp } from '@/app/context';
+
 import { api } from '@/app/services/api';
+
+import NextImage from 'next/image';
 
 interface CancelBookingProps {
   isOpen: boolean;
@@ -23,7 +25,7 @@ interface CancelBookingProps {
   onSuccess?: () => void;
 }
 
-const REFUND_PENALTY = 100; // 100% potongan (No Refund)
+
 
 export function CancelBooking({ isOpen, onClose, bookingData, onSuccess }: CancelBookingProps) {
   const [loading, setLoading] = useState(false);
@@ -99,10 +101,13 @@ export function CancelBooking({ isOpen, onClose, bookingData, onSuccess }: Cance
               {/* Room Summary */}
               <div className="p-4 bg-slate-50 rounded-2xl">
                 <div className="flex gap-4">
-                  <img 
+                  <NextImage 
                     src={bookingData.image} 
-                    className="w-20 h-20 rounded-xl object-cover" 
+                    width={80}
+                    height={80}
+                    className="rounded-xl object-cover" 
                     alt="Room" 
+                    unoptimized
                   />
                   <div className="flex-1">
                     <h3 className="font-bold text-slate-900">{bookingData.roomName}</h3>

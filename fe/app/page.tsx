@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { Button } from "@/app/components/ui/button";
 
 // Login Components
@@ -29,15 +29,11 @@ type AdminPage =
   | "tenants"
   | "payments"
   | "reports";
-type TenantPage = "landing" | "room-detail" | "booking" | "payment" | "history";
 
 // Storage keys
 const STORAGE_KEYS = {
   VIEW_MODE: "app_view_mode",
   ADMIN_PAGE: "app_admin_page",
-  TENANT_PAGE: "app_tenant_page",
-  SELECTED_ROOM_ID: "app_selected_room_id",
-  BOOKING_DATA: "app_booking_data",
   USER_ROLE: "app_user_role",
 };
 
@@ -45,20 +41,13 @@ export default function App() {
   // Initialize with null/placeholder to prevent rendering wrong page before hydration
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
   const [adminPage, setAdminPage] = useState<AdminPage>("dashboard");
-  const [tenantPage, setTenantPage] = useState<TenantPage>("landing");
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [bookingData, setBookingData] = useState<{
-    roomId: string;
-    moveInDate: string;
-    duration: string;
-  } | null>(null);
   const [userRole, setUserRole] = useState<"admin" | "tenant" | "guest" | null>(
     null,
   );
   const [isClient, setIsClient] = useState(false);
 
   useLayoutEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
     
     // FETCH STORED DATA FIRST
@@ -97,26 +86,6 @@ export default function App() {
     ) as AdminPage;
     if (storedAdminPage) setAdminPage(storedAdminPage);
 
-    const storedTenantPage = localStorage.getItem(
-      STORAGE_KEYS.TENANT_PAGE,
-    ) as TenantPage;
-    if (storedTenantPage) setTenantPage(storedTenantPage);
-
-    const storedRoomId = localStorage.getItem(STORAGE_KEYS.SELECTED_ROOM_ID);
-    if (storedRoomId) setSelectedRoomId(storedRoomId);
-
-    const storedBookingData = localStorage.getItem(STORAGE_KEYS.BOOKING_DATA);
-    if (storedBookingData) {
-      try {
-        const parsed = JSON.parse(storedBookingData);
-        if (parsed && typeof parsed === "object") {
-          setBookingData(parsed);
-        }
-      } catch {
-        localStorage.removeItem(STORAGE_KEYS.BOOKING_DATA);
-      }
-    }
-
     // Role is handled above with token check slightly, but let's keep this for non-token cases or consistency
   }, []);
 
@@ -130,32 +99,6 @@ export default function App() {
     if (!isClient) return;
     localStorage.setItem(STORAGE_KEYS.ADMIN_PAGE, adminPage);
   }, [adminPage, isClient]);
-
-  useEffect(() => {
-    if (!isClient) return;
-    localStorage.setItem(STORAGE_KEYS.TENANT_PAGE, tenantPage);
-  }, [tenantPage, isClient]);
-
-  useEffect(() => {
-    if (!isClient) return;
-    if (selectedRoomId) {
-      localStorage.setItem(STORAGE_KEYS.SELECTED_ROOM_ID, selectedRoomId);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.SELECTED_ROOM_ID);
-    }
-  }, [selectedRoomId, isClient]);
-
-  useEffect(() => {
-    if (!isClient) return;
-    if (bookingData) {
-      localStorage.setItem(
-        STORAGE_KEYS.BOOKING_DATA,
-        JSON.stringify(bookingData),
-      );
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.BOOKING_DATA);
-    }
-  }, [bookingData, isClient]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -282,7 +225,6 @@ export default function App() {
     return <UserPlatform onLogout={() => {
         clearStoredState();
         setUserRole(null);
-        setTenantPage("landing");
         setViewMode("login");
     }} />;
   }
@@ -293,7 +235,6 @@ export default function App() {
       onLogout={() => {
         clearStoredState();
         setUserRole(null);
-        setTenantPage("landing");
         setViewMode("login");
       }}
     />

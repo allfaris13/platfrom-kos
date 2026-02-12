@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Check, X, Eye, Clock, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { api } from '@/app/services/api';
+import { api, Payment as ApiPayment } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface Payment {
   id: number;
@@ -16,17 +17,7 @@ interface Payment {
   receiptUrl: string;
 }
 
-interface BackendPayment {
-  id: number;
-  jumlah_bayar: number;
-  tanggal_bayar: string;
-  status_pembayaran: string;
-  bukti_transfer: string;
-  pemesanan?: {
-    penyewa?: { nama_lengkap: string };
-    kamar?: { nomor_kamar: string };
-  };
-}
+
 
 export function LuxuryPaymentConfirmation() {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -36,14 +27,11 @@ export function LuxuryPaymentConfirmation() {
  const fetchPayments = async () => {
   setIsLoading(true);
   try {
-    // Berikan tipe data [any] atau [ApiResponse] agar .map bisa digunakan
-    const response = await api.getAllPayments() as any; 
+    const response = await api.getAllPayments();
     
-    // Pastikan kita mengakses properti yang tepat (data.data atau langsung response)
-    // Tergantung bagaimana backendmu mengembalikan array-nya
-    const paymentData = Array.isArray(response) ? response : (response.data || []);
+    const paymentData = Array.isArray(response) ? response : [];
 
-    const mapped = paymentData.map((p: BackendPayment) => ({
+    const mapped = paymentData.map((p: ApiPayment) => ({
       id: p.id,
       tenantName: p.pemesanan?.penyewa?.nama_lengkap || 'Guest',
       roomName: p.pemesanan?.kamar?.nomor_kamar || 'Kamar',
@@ -278,10 +266,12 @@ export function LuxuryPaymentConfirmation() {
                 <div className="bg-slate-800/30 rounded-xl p-4 md:p-6 text-center border-2 border-dashed border-slate-700">
                   {viewingPayment.receiptUrl ? (
                     <div className="relative w-full h-64 md:h-96">
-                       <img 
+                       <Image 
                           src={viewingPayment.receiptUrl} 
                           alt="Receipt" 
-                          className="w-full h-full object-contain rounded-lg"
+                          fill
+                          className="object-contain rounded-lg"
+                          unoptimized
                        />
                     </div>
                   ) : (

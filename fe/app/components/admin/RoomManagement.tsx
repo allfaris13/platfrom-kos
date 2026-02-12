@@ -139,7 +139,7 @@ export function RoomManagement() {
       await fetchRooms();
       setIsDialogOpen(false);
       resetForm();
-    } catch (e) {
+    } catch {
         toast.error("Failed to save room");
     }
   };
@@ -150,7 +150,7 @@ export function RoomManagement() {
           await api.deleteRoom(id);
           await fetchRooms();
           toast.success("Room deleted");
-      } catch (e) {
+      } catch {
           toast.error("Failed to delete room");
       }
     }

@@ -2,14 +2,7 @@ import { useEffect, useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { api } from '@/app/services/api';
 import { Input } from '@/app/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/app/components/ui/table';
+
 
 interface Tenant {
   id: string;

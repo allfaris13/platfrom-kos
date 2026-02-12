@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, Image as ImageIcon, Home, Users, CreditCard, Menu, X, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Image as ImageIcon, Home, Users, CreditCard, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 
@@ -12,6 +12,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ currentPage, onNavigate }: AdminSidebarProps) {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 

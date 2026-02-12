@@ -20,7 +20,6 @@ interface Gallery {
 export function GalleryData() {
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Form State
@@ -76,9 +75,7 @@ export function GalleryData() {
   };
 
   const filteredImages = galleries.filter(img => {
-    const matchesSearch = img.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'All' || img.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    return img.title.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (

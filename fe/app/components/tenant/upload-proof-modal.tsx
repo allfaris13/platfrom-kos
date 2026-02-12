@@ -10,7 +10,7 @@ import {
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { api } from "@/app/services/api";
 import { toast } from "sonner";
 
@@ -48,8 +48,12 @@ export function UploadProofModal({
       toast.success("Proof uploaded successfully!");
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to upload proof");
+    } catch (error: unknown) {
+      let errorMessage = "Failed to upload proof";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
