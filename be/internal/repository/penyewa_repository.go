@@ -10,8 +10,10 @@ type PenyewaRepository interface {
 	FindByUserID(userID uint) (*models.Penyewa, error)
 	FindByEmail(email string) (*models.Penyewa, error)
 	FindAll() ([]models.Penyewa, error)
+	FindByRole(role string) ([]models.Penyewa, error)
 	Create(penyewa *models.Penyewa) error
 	Update(penyewa *models.Penyewa) error
+	UpdateRole(penyewaID uint, role string) error
 }
 
 type penyewaRepository struct {
@@ -46,4 +48,14 @@ func (r *penyewaRepository) Create(penyewa *models.Penyewa) error {
 
 func (r *penyewaRepository) Update(penyewa *models.Penyewa) error {
 	return r.db.Save(penyewa).Error
+}
+
+func (r *penyewaRepository) FindByRole(role string) ([]models.Penyewa, error) {
+	var penyewas []models.Penyewa
+	err := r.db.Where("role = ?", role).Preload("User").Find(&penyewas).Error
+	return penyewas, err
+}
+
+func (r *penyewaRepository) UpdateRole(penyewaID uint, role string) error {
+	return r.db.Model(&models.Penyewa{}).Where("id = ?", penyewaID).Update("role", role).Error
 }

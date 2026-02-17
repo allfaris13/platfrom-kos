@@ -90,6 +90,7 @@ func (s *authService) Register(username, password, role, email, phone, address, 
 			AlamatAsal:   address,
 			TanggalLahir: tglLahir,
 			NIK:          nik,
+			Role:         "guest", // New users start as guest
 		}
 		if err := s.penyewaRepo.Create(penyewa); err != nil {
 			log.Printf("Failed to create penyewa profile for user %s: %v", username, err)
@@ -122,6 +123,7 @@ func (s *authService) GoogleLogin(email, username, picture string) (string, *mod
         penyewa := &models.Penyewa{
             UserID:       user.ID,
             NamaLengkap:  username, // Ubah ke NamaLengkap jika di modelnya begitu
+            Role:         "guest", // Google OAuth users start as guest
         }
         s.penyewaRepo.Create(penyewa)
     }

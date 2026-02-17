@@ -41,7 +41,7 @@ func LoadConfig() *Config {
 		DBHost:         getEnv("DB_HOST", "localhost"),
 		DBUser:         getEnv("DB_USER", "postgres"),
 		DBPassword:     getEnv("DB_PASSWORD", ""),
-		DBName:         getEnv("DB_NAME", "koskosan"),
+		DBName:         getEnv("DB_NAME", "koskosan_db"),
 		DBPort:         getEnv("DB_PORT", "5432"),
 		JWTSecret:      os.Getenv("JWT_SECRET"), // NO FALLBACK - must be set!
 		Port:           getEnv("PORT", "8080"),

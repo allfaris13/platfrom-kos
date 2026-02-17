@@ -46,7 +46,7 @@ func main() {
 	reviewService := service.NewReviewService(reviewRepo)
 	profileService := service.NewProfileService(userRepo, penyewaRepo)
 	bookingService := service.NewBookingService(bookingRepo, penyewaRepo, kamarRepo, paymentRepo)
-	paymentService := service.NewPaymentService(paymentRepo, bookingRepo, kamarRepo, db, emailSender, waSender)
+	paymentService := service.NewPaymentService(paymentRepo, bookingRepo, kamarRepo, penyewaRepo, db, emailSender, waSender)
 	tenantService := service.NewTenantService(penyewaRepo)
 	contactService := service.NewContactService()
 

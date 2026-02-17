@@ -71,6 +71,7 @@ type Penyewa struct {
 	AlamatAsal   string         `json:"alamat_asal"`
 	JenisKelamin string         `json:"jenis_kelamin"` // enum
 	FotoProfil   string         `json:"foto_profil"`
+	Role         string         `gorm:"default:guest" json:"role"` // guest, tenant, former_tenant
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`

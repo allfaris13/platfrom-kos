@@ -7,6 +7,7 @@ import (
 
 type TenantService interface {
 	GetAllTenants() ([]models.Penyewa, error)
+	GetTenantsByRole(role string) ([]models.Penyewa, error)
 }
 
 type tenantService struct {
@@ -19,4 +20,8 @@ func NewTenantService(repo repository.PenyewaRepository) TenantService {
 
 func (s *tenantService) GetAllTenants() ([]models.Penyewa, error) {
 	return s.repo.FindAll()
+}
+
+func (s *tenantService) GetTenantsByRole(role string) ([]models.Penyewa, error) {
+	return s.repo.FindByRole(role)
 }

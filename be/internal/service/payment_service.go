@@ -24,13 +24,14 @@ type paymentService struct {
 	repo            repository.PaymentRepository
 	bookingRepo     repository.BookingRepository
 	kamarRepo       repository.KamarRepository
+	penyewaRepo     repository.PenyewaRepository
 	db              *gorm.DB
 	emailSender     utils.EmailSender
 	waSender        utils.WhatsAppSender
 }
 
-func NewPaymentService(repo repository.PaymentRepository, bookingRepo repository.BookingRepository, kamarRepo repository.KamarRepository, db *gorm.DB, emailSender utils.EmailSender, waSender utils.WhatsAppSender) PaymentService {
-	return &paymentService{repo, bookingRepo, kamarRepo, db, emailSender, waSender}
+func NewPaymentService(repo repository.PaymentRepository, bookingRepo repository.BookingRepository, kamarRepo repository.KamarRepository, penyewaRepo repository.PenyewaRepository, db *gorm.DB, emailSender utils.EmailSender, waSender utils.WhatsAppSender) PaymentService {
+	return &paymentService{repo, bookingRepo, kamarRepo, penyewaRepo, db, emailSender, waSender}
 }
 
 func (s *paymentService) GetAllPayments() ([]models.Pembayaran, error) {
@@ -69,6 +70,27 @@ func (s *paymentService) ConfirmPayment(paymentID uint) error {
 				kamar.Status = "Penuh"
 				if err := txKamarRepo.Update(kamar); err != nil {
 					return err
+				}
+			}
+
+			// Update penyewa role from guest to tenant on first confirmed payment
+			if s.penyewaRepo != nil {
+				var penyewa models.Penyewa
+				if err := tx.Where("id = ?", booking.PenyewaID).First(&penyewa).Error; err == nil {
+					if penyewa.Role == "guest" {
+						// Check if this is the first confirmed payment
+						var confirmedPaymentCount int64
+						tx.Table("pembayaran").
+							Joins("JOIN pemesanan ON pemesanan.id = pembayaran.pemesanan_id").
+							Where("pemesanan.penyewa_id = ? AND pembayaran.status_pembayaran = ?", booking.PenyewaID, "Confirmed").
+							Count(&confirmedPaymentCount)
+						
+						if confirmedPaymentCount <= 1 { // This is the first confirmed payment
+							if err := tx.Model(&penyewa).Update("role", "tenant").Error; err != nil {
+								return err
+							}
+						}
+					}
 				}
 			}
 		}

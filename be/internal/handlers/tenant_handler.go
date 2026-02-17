@@ -17,7 +17,20 @@ func NewTenantHandler(s service.TenantService) *TenantHandler {
 }
 
 func (h *TenantHandler) GetAllTenants(c *gin.Context) {
-	tenants, err := h.service.GetAllTenants()
+	// Check if role filter is provided
+	role := c.Query("role")
+	
+	var tenants []models.Penyewa
+	var err error
+	
+	if role != "" {
+		// Filter by role if provided
+		tenants, err = h.service.GetTenantsByRole(role)
+	} else {
+		// Get all tenants
+		tenants, err = h.service.GetAllTenants()
+	}
+	
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
