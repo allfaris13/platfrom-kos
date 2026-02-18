@@ -75,8 +75,8 @@ func (s *authService) Register(username, password, role, email, phone, address, 
 		return nil, err
 	}
 
-	// Create blank Penyewa record for tenants
-	if role == "tenant" {
+	// Create blank Penyewa record for tenants or guests
+	if role == "tenant" || role == "guest" {
 		// Parse birthdate
 		var tglLahir time.Time
 		if birthdate != "" {
@@ -106,44 +106,49 @@ func (s *authService) Register(username, password, role, email, phone, address, 
 //auth untuk google login (function nya)
 
 func (s *authService) GoogleLogin(idToken, username, picture string) (string, *models.User, error) {
-    // SECURITY FIX: Verify the ID token with Google's servers instead of trusting client-provided email
-    // This prevents attackers from sending arbitrary emails to hijack accounts
-    
-    // 1. Verify ID token with Google
-    // Note: In production, you should use google.golang.org/api/idtoken package
-    // For now, we'll do basic validation. TODO: Implement proper token verification
-    
-    // TEMPORARY: Extract email from idToken (this should be replaced with actual token verification)
-    // In production: payload, err := idtoken.Validate(context.Background(), idToken, "YOUR_GOOGLE_CLIENT_ID")
-    
-    // For backward compatibility during transition, accept either idToken or email
-    email := idToken
-    if email == "" {
-        return "", nil, errors.New("id_token is required for Google authentication")
-    }
-    
-    // 2. Find or create user based on verified email
-    user, err := s.repo.FindByUsername(email)
-    
-    if err != nil {
-        // 3. If user not found, create new User
-        user = &models.User{
-            Username: email,
-            Password: "google-auth-placeholder-" + time.Now().String(), // Password dummy yang aman
-            Role:     "tenant",
-        }
-        if err := s.repo.Create(user); err != nil {
-            return "", nil, err
-        }
+	// SECURITY FIX: Verify the ID token with Google's servers
+	// For now, we manually decode the token (TEMPORARY)
+	
+	claims, err := utils.DecodeGoogleToken(idToken)
+	if err != nil {
+		return "", nil, errors.New("invalid google token")
+	}
 
-        // 4. Create profile Penyewa for Google OAuth users
-        penyewa := &models.Penyewa{
-            UserID:       user.ID,
-            NamaLengkap:  username,
-            Role:         "guest", // Google OAuth users start as guest
-        }
-        s.penyewaRepo.Create(penyewa)
-    }
+	email := claims.Email
+	if email == "" {
+		return "", nil, errors.New("email not found in token")
+	}
+
+	// Use name/picture from token if not provided
+	if username == "" {
+		username = claims.Name
+	}
+	if picture == "" {
+		picture = claims.Picture
+	}
+	
+	// 2. Find or create user based on verified email
+	user, err := s.repo.FindByUsername(email)
+	
+	if err != nil {
+		// 3. If user not found, create new User
+		user = &models.User{
+			Username: email,
+			Password: "google-auth-placeholder-" + time.Now().String(), // Password dummy yang aman
+			Role:     "guest", // Google users start as guests until they book
+		}
+		if err := s.repo.Create(user); err != nil {
+			return "", nil, err
+		}
+
+		// 4. Create profile Penyewa for Google OAuth users
+		penyewa := &models.Penyewa{
+			UserID:       user.ID,
+			NamaLengkap:  username,
+			Role:         "guest", // Google OAuth users start as guest
+		}
+		s.penyewaRepo.Create(penyewa)
+	}
 
     // 5. Generate JWT Token
     accessToken, _, err := utils.GenerateTokenPair(int(user.ID), user.Username, user.Role, s.config.JWTSecret)

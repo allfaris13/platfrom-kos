@@ -86,15 +86,15 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
     const init = () => {
       setIsClient(true);
       
-      // Check both storages for token
+      // Check both storages for token or user
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      const hasToken = !!token;
-      setIsLoggedIn(hasToken);
+      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+      const hasAuth = !!token || !!userStr;
+      setIsLoggedIn(hasAuth);
 
-      if (hasToken) {
+      if (hasAuth) {
         try {
           // Check both storages for user data
-          const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
           if (userStr) {
             const userObj = JSON.parse(userStr);
             setUserName(userObj.username || userObj.name || 'User');

@@ -97,7 +97,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	// Parse birthdate
 	
-	user, err := h.service.Register(input.Username, input.Password, "tenant", input.Email, input.Phone, input.Address, input.Birthdate, input.NIK)
+	user, err := h.service.Register(input.Username, input.Password, "guest", input.Email, input.Phone, input.Address, input.Birthdate, input.NIK)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

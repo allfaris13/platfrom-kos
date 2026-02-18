@@ -11,7 +11,7 @@ import { ImageWithFallback } from './ImageWithFallback';
 import { GoogleButton } from './GoogleButton';
 
 interface UserLoginProps {
-  onLoginSuccess: () => void;
+  onLoginSuccess: (user: any) => void;
   onBack: () => void;
   onRegisterClick: () => void;
   onForgotPassword: () => void;
@@ -29,8 +29,15 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
     setIsLoading(true);
     setError('');
     try {
-      await api.login({ username, password });
-      onLoginSuccess();
+      const response = await api.login({ username, password });
+      // response might be LoginResponse directly depending on api.ts implementation
+      // Assuming api.login returns the data directly based on previous files
+      const loginData = response as unknown as LoginResponse;
+      if (loginData.user) {
+         onLoginSuccess(loginData.user);
+      } else {
+         onLoginSuccess(loginData); // Fallback
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -209,8 +216,16 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
               const loginData = data as LoginResponse;
               if (loginData.user) {
                 localStorage.setItem('user', JSON.stringify(loginData.user));
+                onLoginSuccess(loginData.user);
+              } else {
+                // Fallback attempt to get user from localstorage if set by authgoogle
+                 try {
+                     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                     onLoginSuccess(storedUser);
+                 } catch {
+                     onLoginSuccess({});
+                 }
               }
-              onLoginSuccess();
             }}
           />
 

@@ -52,11 +52,14 @@ export default function App() {
     
     // FETCH STORED DATA FIRST
     const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const storedUserStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const isAuthenticated = !!storedToken || !!storedUserStr; // Support both checks
+    
     const storedViewMode = localStorage.getItem(STORAGE_KEYS.VIEW_MODE) as ViewMode;
     const storedUserCheckRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE) as "admin" | "tenant" | "guest";
     
-    // If user has token, force them to their dashboard unless they are explicitly admin
-    if (storedToken) {
+    // If user is authenticated, force them to their dashboard unless they are explicitly admin
+    if (isAuthenticated) {
         if (storedUserCheckRole === 'admin') {
            // Admin logic
            if (storedViewMode === 'login' || storedViewMode === 'register' || storedViewMode === 'forgot-password') {
@@ -143,9 +146,15 @@ export default function App() {
   if (viewMode === "login") {
     return (
       <UserLogin
-        onLoginSuccess={() => {
-          setUserRole("tenant");
-          setViewMode("tenant");
+        onLoginSuccess={(user: any) => {
+          if (user?.role === 'admin') {
+              setUserRole("admin");
+              // Admin portal needs to be set to admin view mode
+              setViewMode("admin");
+          } else {
+              setUserRole("tenant");
+              setViewMode("tenant");
+          }
         }}
         onBack={() => setViewMode("home")}
         onRegisterClick={() => setViewMode("register")}

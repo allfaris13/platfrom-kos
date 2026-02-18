@@ -27,8 +27,16 @@ export const decodeGoogleToken = (credential: string): GoogleUser | null => {
 export const handleGoogleLogin = async (credential: string) =>{
     // Send raw ID token to backend for server-side verification
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
-        const res = await fetch(`${apiUrl}/api/auth/google-login`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
+        // Remove trailing slash if present
+        const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+        
+        // Handle if apiUrl already includes /api
+        const endpoint = baseUrl.endsWith('/api') 
+            ? `${baseUrl}/auth/google-login` 
+            : `${baseUrl}/api/auth/google-login`;
+
+        const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include', // Send cookies with request

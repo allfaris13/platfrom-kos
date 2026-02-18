@@ -128,11 +128,12 @@ func (m *MockBookingRepository) WithTx(tx *gorm.DB) repository.BookingRepository
 // Test CancelBooking - Success
 func TestBookingService_CancelBooking_Success(t *testing.T) {
 	mockBookingRepo := new(MockBookingRepository)
+	mockUserRepo := new(MockUserRepository)
 	mockPenyewaRepo := new(MockPenyewaRepository)
 	mockKamarRepo := new(MockKamarRepository)
 	mockPaymentRepo := new(MockPaymentRepository)
 
-	service := NewBookingService(mockBookingRepo, mockPenyewaRepo, mockKamarRepo, mockPaymentRepo)
+	service := NewBookingService(mockBookingRepo, mockUserRepo, mockPenyewaRepo, mockKamarRepo, mockPaymentRepo)
 
 	bookingID := uint(1)
 	userID := uint(1)
@@ -158,11 +159,12 @@ func TestBookingService_CancelBooking_Success(t *testing.T) {
 // Test CancelBooking - IDOR Protection
 func TestBookingService_CancelBooking_IDOR_Unauthorized(t *testing.T) {
 	mockBookingRepo := new(MockBookingRepository)
+	mockUserRepo := new(MockUserRepository)
 	mockPenyewaRepo := new(MockPenyewaRepository)
 	mockKamarRepo := new(MockKamarRepository)
 	mockPaymentRepo := new(MockPaymentRepository)
 
-	service := NewBookingService(mockBookingRepo, mockPenyewaRepo, mockKamarRepo, mockPaymentRepo)
+	service := NewBookingService(mockBookingRepo, mockUserRepo, mockPenyewaRepo, mockKamarRepo, mockPaymentRepo)
 
 	bookingID := uint(1)
 	attackerUserID := uint(2)

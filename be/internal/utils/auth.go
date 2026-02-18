@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -9,6 +11,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+// GoogleClaims structure for Google ID Token
+type GoogleClaims struct {
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
+	Sub     string `json:"sub"`
+	jwt.RegisteredClaims
+}
 
 // TokenClaims struktur untuk JWT claims
 type TokenClaims struct {
@@ -196,4 +207,30 @@ func ClearAuthCookies(c *gin.Context) {
 		false,
 		true,
 	)
+}
+
+// DecodeGoogleToken decodes a Google ID token without verification (TEMPORARY)
+func DecodeGoogleToken(tokenString string) (*GoogleClaims, error) {
+	parts := strings.Split(tokenString, ".")
+	if len(parts) != 3 {
+		return nil, errors.New("invalid token format")
+	}
+
+	payload := parts[1]
+	// Add padding if needed
+	if l := len(payload) % 4; l > 0 {
+		payload += strings.Repeat("=", 4-l)
+	}
+
+	decoded, err := base64.URLEncoding.DecodeString(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	var claims GoogleClaims
+	if err := json.Unmarshal(decoded, &claims); err != nil {
+		return nil, err
+	}
+
+	return &claims, nil
 }

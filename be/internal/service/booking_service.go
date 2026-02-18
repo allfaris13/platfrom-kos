@@ -28,13 +28,14 @@ type BookingService interface {
 
 type bookingService struct {
 	repo        repository.BookingRepository
+	userRepo    repository.UserRepository
 	penyewaRepo repository.PenyewaRepository
 	kamarRepo   repository.KamarRepository
 	paymentRepo repository.PaymentRepository
 }
 
-func NewBookingService(repo repository.BookingRepository, penyewaRepo repository.PenyewaRepository, kamarRepo repository.KamarRepository, paymentRepo repository.PaymentRepository) BookingService {
-	return &bookingService{repo, penyewaRepo, kamarRepo, paymentRepo}
+func NewBookingService(repo repository.BookingRepository, userRepo repository.UserRepository, penyewaRepo repository.PenyewaRepository, kamarRepo repository.KamarRepository, paymentRepo repository.PaymentRepository) BookingService {
+	return &bookingService{repo, userRepo, penyewaRepo, kamarRepo, paymentRepo}
 }
 
 func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error) {
@@ -125,6 +126,23 @@ func (s *bookingService) CreateBooking(userID uint, kamarID uint, tanggalMulai s
 
 	if err := s.repo.Create(&booking); err != nil {
 		return nil, err
+	}
+
+	// ROLE TRANSITION: If user was a guest, promote to tenant
+	if penyewa.Role == "guest" {
+		// 1. Update Penyewa record role
+		if err := s.penyewaRepo.UpdateRole(penyewa.ID, "tenant"); err != nil {
+			fmt.Printf("Warning: Failed to update penyewa role for user %d: %v\n", userID, err)
+		}
+		
+		// 2. Update User record role
+		user, err := s.userRepo.FindByID(userID)
+		if err == nil {
+			user.Role = "tenant"
+			if err := s.userRepo.Update(user); err != nil {
+				fmt.Printf("Warning: Failed to update user role for user %d: %v\n", userID, err)
+			}
+		}
 	}
 
 	// Re-fetch to get associations if needed, or just return
