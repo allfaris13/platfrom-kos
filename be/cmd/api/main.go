@@ -65,6 +65,12 @@ func main() {
 	tenantService := service.NewTenantService(penyewaRepo)
 	contactService := service.NewContactService()
 
+	// 4.1 Initialize Socket.io
+	socketServer, err := utils.InitSocketServer()
+	if err != nil {
+		log.Fatalf("Failed to initialize Socket.io: %v", err)
+	}
+
 
 	// 5. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService, cfg)
@@ -113,10 +119,15 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Cookie"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Cookie", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+
+	// Socket.io mount
+	r.GET("/socket.io/*any", gin.WrapH(socketServer.Server))
+	r.POST("/socket.io/*any", gin.WrapH(socketServer.Server))
+	r.Handle("ANY", "/socket.io/*any", gin.WrapH(socketServer.Server))
 
 	// API Routes
 	appRoutes.Register(r, cfg)
