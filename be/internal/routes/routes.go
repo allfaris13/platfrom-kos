@@ -61,6 +61,7 @@ func (r *Routes) Register(router *gin.Engine, cfg *config.Config) {
 
 	api := router.Group("/api")
 	{
+		api.Static("/uploads", "./uploads")
 		// Public routes - tidak perlu auth
 		r.registerPublicRoutes(api)
 
@@ -121,6 +122,7 @@ func (r *Routes) registerProtectedRoutes(protected *gin.RouterGroup) {
 	{
 		bookings.GET("", r.bookingHandler.GetMyBookings) // GET /api/bookings
 		bookings.POST("", r.bookingHandler.CreateBooking) // POST /api/bookings
+		bookings.POST("/with-proof", r.bookingHandler.CreateBookingWithProof) // POST /api/bookings/with-proof
 		bookings.POST("/:id/cancel", r.bookingHandler.CancelBooking) // POST /api/bookings/:id/cancel
 		bookings.POST("/:id/extend", r.bookingHandler.ExtendBooking) // POST /api/bookings/:id/extend
 	}

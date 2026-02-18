@@ -371,6 +371,10 @@ export const api = {
     return apiCall<Booking>('POST', '/bookings', bookingData);
   },
 
+  createBookingWithProof: async (formData: FormData) => {
+    return apiCall<Booking>('POST', '/bookings/with-proof', formData);
+  },
+
   cancelBooking: async (id: string) => {
     return apiCall<MessageResponse>('POST', `/bookings/${id}/cancel`);
   },
@@ -387,21 +391,7 @@ export const api = {
   uploadPaymentProof: async (paymentId: number, file: File) => {
     const formData = new FormData();
     formData.append('proof', file);
-
-    const response = await fetch(`${API_URL}/payments/${paymentId}/proof`, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        // 'Authorization': `Bearer ${localStorage.getItem('token')}`, // Removed: cookie auth
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiErrorClass(errorData.error || 'Failed to upload proof', response.status);
-    }
-
-    return response.json();
+    return apiCall<{ message: string; url: string }>('POST', `/payments/${paymentId}/proof`, formData);
   },
 
   getPaymentReminders: async () => {

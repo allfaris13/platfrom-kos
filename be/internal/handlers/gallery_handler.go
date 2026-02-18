@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/service"
 	"koskosan-be/internal/utils"
@@ -58,18 +59,16 @@ func (h *GalleryHandler) CreateGallery(c *gin.Context) {
 				imageURL = url
 			} else {
 				utils.GlobalLogger.Error("Cloudinary upload failed: %v", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image to cloud: %v", err)})
 				return
 			}
-		}
-	} else {
-		// Local fallback
-		filename, err := utils.SaveFile(file, "uploads/gallery")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image file"})
 			return
 		}
-		imageURL = "/uploads/gallery/" + filename
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
+		return
 	}
 
 	gallery := models.Gallery{

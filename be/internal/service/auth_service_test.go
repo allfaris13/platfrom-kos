@@ -4,6 +4,7 @@ import (
 	"errors"
 	"koskosan-be/internal/config"
 	"koskosan-be/internal/models"
+	"koskosan-be/internal/repository"
 	"koskosan-be/internal/utils"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // MockUserRepository implements repository.UserRepository interface
@@ -50,6 +52,14 @@ func (m *MockUserRepository) FindByResetToken(token string) (*models.User, error
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockUserRepository) WithTx(tx *gorm.DB) repository.UserRepository {
+	args := m.Called(tx)
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(repository.UserRepository)
 }
 
 // MockPenyewaRepository implements repository.PenyewaRepository interface
@@ -106,7 +116,15 @@ func (m *MockPenyewaRepository) FindAllPaginated(pagination *utils.Pagination, s
 	if args.Get(0) == nil {
 		return nil, 0, args.Error(2)
 	}
-	return args.Get(0).([]models.Penyewa), args.Get(1).(int64), args.Error(2)
+	return args.Get(0).([]models.Penyewa), int64(args.Int(1)), args.Error(2)
+}
+
+func (m *MockPenyewaRepository) WithTx(tx *gorm.DB) repository.PenyewaRepository {
+	args := m.Called(tx)
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(repository.PenyewaRepository)
 }
 
 // MockEmailSender implements utils.EmailSender interface

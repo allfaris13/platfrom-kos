@@ -12,6 +12,7 @@ type UserRepository interface {
 	FindByResetToken(token string) (*models.User, error)
 	Create(user *models.User) error
 	Update(user *models.User) error
+	WithTx(tx *gorm.DB) UserRepository
 }
 
 type userRepository struct {
@@ -46,4 +47,8 @@ func (r *userRepository) Create(user *models.User) error {
 
 func (r *userRepository) Update(user *models.User) error {
 	return r.db.Save(user).Error
+}
+
+func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
+	return &userRepository{db: tx}
 }

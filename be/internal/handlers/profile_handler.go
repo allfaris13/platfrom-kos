@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/service"
 	"koskosan-be/internal/utils"
@@ -101,13 +102,18 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 						url, err := h.cloudinary.UploadImage(src, "koskosan/profiles")
 						if err == nil {
 							input.FotoProfil = url
+						} else {
+							utils.GlobalLogger.Error("Failed to upload to Cloudinary: %v", err)
+							c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload profile photo to cloud: %v", err)})
+							return
 						}
+					} else {
+						c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open profile photo"})
+						return
 					}
 				} else {
-					filename, err := utils.SaveFile(file, "uploads/profiles")
-					if err == nil {
-						input.FotoProfil = "/uploads/profiles/" + filename
-					}
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
+					return
 				}
 			}
 		}

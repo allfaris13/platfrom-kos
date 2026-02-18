@@ -6,7 +6,6 @@ import (
 	"koskosan-be/internal/service"
 	"koskosan-be/internal/utils"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -113,45 +112,16 @@ func (h *PaymentHandler) UploadPaymentProof(c *gin.Context) {
 				proofURL = url
 			} else {
 				utils.GlobalLogger.Error("Cloudinary upload failed: %v", err)
-				// Fallback to local if upload failed?
-				// Better to fail safely or try local.
-				// Let's rely on error handling.
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload proof to cloud"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload proof to cloud: %v", err)})
 				return
 			}
-		}
-	}
-
-	if proofURL == "" {
-		// Local fallback
-		// SECURITY FIX: Use UUID for filename to prevent path traversal attacks
-		// Extract file extension safely
-		fileExt := ""
-		if len(file.Filename) > 0 {
-			for i := len(file.Filename) - 1; i >= 0 && i > len(file.Filename)-6; i-- {
-				if file.Filename[i] == '.' {
-					fileExt = file.Filename[i:]
-					break
-				}
-			}
-		}
-
-		// Generate secure UUID-based filename
-		filename := fmt.Sprintf("proof_%d_%s%s", id, generateUUID(), fileExt)
-		filepath := "uploads/proofs/" + filename
-
-		// Ensure directory exists
-		if err := os.MkdirAll("uploads/proofs", os.ModePerm); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open proof file"})
 			return
 		}
-
-		// Save file
-		if err := c.SaveUploadedFile(file, filepath); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-			return
-		}
-		proofURL = "/uploads/proofs/" + filename
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
+		return
 	}
 
 	if err := h.service.UploadPaymentProof(uint(id), proofURL); err != nil {

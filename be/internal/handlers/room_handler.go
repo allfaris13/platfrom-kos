@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/service"
 	"koskosan-be/internal/utils"
@@ -70,7 +71,6 @@ func (h *KamarHandler) CreateKamar(c *gin.Context) {
 	if err == nil {
 		// If file is provided, validate and save
 		if utils.IsImageFile(file) {
-			// Phase 3: Cloudinary Upload
 			if h.cloudinary != nil {
 				src, err := file.Open()
 				if err == nil {
@@ -79,18 +79,17 @@ func (h *KamarHandler) CreateKamar(c *gin.Context) {
 					if err == nil {
 						imageURL = url
 					} else {
-						// Log error but verify if we should fail request
 						utils.GlobalLogger.Error("Failed to upload to Cloudinary: %v", err)
-						// Fallback to local? No, just fail or default.
-						imageURL = "https://via.placeholder.com/400?text=Upload+Failed"
+						c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image to cloud: %v", err)})
+						return
 					}
+				} else {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image file"})
+					return
 				}
 			} else {
-				// Fallback to local if cloudinary not configured (dev mode without creds)
-				filename, err := utils.SaveFile(file, "uploads/rooms")
-				if err == nil {
-					imageURL = "/uploads/rooms/" + filename
-				}
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
+				return
 			}
 		}
 	} else {
@@ -169,7 +168,6 @@ func (h *KamarHandler) UpdateKamar(c *gin.Context) {
 	file, err := c.FormFile("image")
 	if err == nil {
 		if utils.IsImageFile(file) {
-			// Phase 3: Cloudinary Upload
 			if h.cloudinary != nil {
 				src, err := file.Open()
 				if err == nil {
@@ -179,14 +177,16 @@ func (h *KamarHandler) UpdateKamar(c *gin.Context) {
 						kamar.ImageURL = url
 					} else {
 						utils.GlobalLogger.Error("Failed to upload to Cloudinary: %v", err)
+						c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image to cloud: %v", err)})
+						return
 					}
+				} else {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image file"})
+					return
 				}
 			} else {
-				// Fallback to local
-				filename, err := utils.SaveFile(file, "uploads/rooms")
-				if err == nil {
-					kamar.ImageURL = "/uploads/rooms/" + filename
-				}
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
+				return
 			}
 		}
 	}

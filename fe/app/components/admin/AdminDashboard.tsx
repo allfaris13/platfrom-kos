@@ -20,7 +20,7 @@ export function AdminDashboard() {
           api.getRooms()
         ]);
         setStatsData(s);
-        setTenants(t);
+        setTenants(t.data);
         setRooms(r);
       } catch (e) {
         console.error(e);

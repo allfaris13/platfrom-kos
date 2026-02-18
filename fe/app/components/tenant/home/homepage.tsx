@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import useSWR from "swr";
+import { useEffect, useRef } from "react";
 import {
   motion,
   useInView,
@@ -32,7 +31,6 @@ import {
   X,
   RotateCcw
 } from 'lucide-react';
-import { api, Room as ApiRoom, Review as ApiReview } from '@/app/services/api';
 import { getImageUrl } from '@/app/utils/api-url';
 import {
   Select,
@@ -41,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
+import { useHome } from "../dashboard/hooks/useHome";
 
 // --- Komponen Counter untuk Trust Indicators ---
 function Counter({
@@ -91,75 +90,6 @@ const staggerContainer: Variants = {
   visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
 };
 
-// --- Interfaces & Data ---
-// UI specific Room interface
-interface UIRoom {
-  id: string;
-  name: string;
-  type: string;
-  price: number;
-  image: string;
-  location: string;
-  rating: number;
-  reviews: number;
-  facilities: string[];
-  status?: string;
-}
-
-
-
-interface ReviewUI {
-  name: string;
-  role: string;
-  review: string;
-  image: string;
-  stayDuration: string;
-  rating: number;
-}
-
-const defaultReviews: ReviewUI[] = [
-  {
-    name: "Sarah Chen",
-    role: "Marketing Executive",
-    review:
-      "LuxeStay exceeded all my expectations. The attention to detail is incredible.",
-    image:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?q=80&w=400",
-    stayDuration: "8 months",
-    rating: 5,
-  },
-  {
-    name: "Ahmad Rahman",
-    role: "University Student",
-    review:
-      "Finding a place that feels like home while being affordable was crucial.",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
-    stayDuration: "1 year",
-    rating: 4.5,
-  },
-  {
-    name: "Maria Santos",
-    role: "Business Analyst",
-    review:
-      "The Premium Apartment I'm staying in is absolutely stunning. City view is amazing.",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=400",
-    stayDuration: "6 months",
-    rating: 5,
-  },
-  {
-    name: "David Kim",
-    role: "Software Engineer",
-    review:
-      "The Executive Suite is worth every penny. Workspace is perfect for remote work.",
-    image:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=400",
-    stayDuration: "10 months",
-    rating: 4.8,
-  },
-];
-
 interface HomepageProps {
   onRoomClick: (roomId: string) => void;
   isLoggedIn?: boolean;
@@ -174,95 +104,18 @@ export function Homepage({
   userName,
   onViewHistory,
 }: HomepageProps) {
-  const [searchLocation, setSearchLocation] = useState("");
-  const [selectedPrice, setSelectedPrice] = useState("all");
-  const [selectedType, setSelectedType] = useState("all");
-
-  const { data: roomsData, isLoading: isLoadingRooms } = useSWR(
-    "api/rooms",
-    api.getRooms,
-  );
-  const { data: reviewsDataApi } = useSWR("api/reviews", api.getAllReviews);
-
-  const realRooms = useMemo(() => {
-    if (!roomsData || !Array.isArray(roomsData)) return [];
-    return roomsData.map((r: ApiRoom) => {
-      const rawPrice = r.harga_per_bulan;
-      const numericPrice = Number(rawPrice) || 0;
-
-      // Ensure fasilitas is parsed correctly
-      let facilities: string[] = [];
-      if (Array.isArray(r.fasilitas)) {
-          facilities = r.fasilitas;
-      } else if (typeof r.fasilitas === 'string') {
-          facilities = r.fasilitas.split(',').map((f: string) => f.trim());
-      } else {
-          facilities = ["WiFi", "AC"]; // Default
-      }
-
-      const mapped: UIRoom = {
-        id: String(r.id), // ID must be the actual numeric string for detail page
-        name: r.nomor_kamar || 'Kamar Tanpa Nama',
-        type: r.tipe_kamar || 'Standard',
-        price: numericPrice,
-        image: getImageUrl(r.image_url) || "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080",
-        location: "Kota Malang, Jawa Timur",
-        rating:  r.rating || 4.8,
-        reviews: r.reviews || 12,
-        facilities: facilities,
-        status: r.status || "Tersedia",
-      };
-      return mapped;
-    });
-  }, [roomsData]);
-
-  const reviews = useMemo(() => {
-    if (
-      !reviewsDataApi ||
-      !Array.isArray(reviewsDataApi) ||
-      reviewsDataApi.length === 0
-    )
-      return defaultReviews;
-    const mapped = reviewsDataApi.map((r: ApiReview) => ({
-      name: r.user?.username || "Anonymous",
-      role: "Resident",
-      review: r.comment,
-      image: getImageUrl(r.Penyewa?.foto_profil) || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",
-      stayDuration: "Verified",
-      rating: r.rating,
-    }));
-    return mapped.length >= 4 ? mapped : [...mapped, ...defaultReviews];
-  }, [reviewsDataApi]);
-
-  const displayRooms = useMemo(() => {
-    // ONLY show real rooms from the backend
-    const all = [...realRooms];
-
-    return all.filter((room: UIRoom) => {
-      // 1. Search Filter
-      const searchLower = (searchLocation || '').trim().toLowerCase();
-      if (searchLower && !room.name.toLowerCase().includes(searchLower)) return false;
-
-      // 2. Type Filter
-      if (selectedType !== 'all') {
-        const filterType = selectedType.toLowerCase();
-        const roomType = (room.type || '').toLowerCase();
-        if (!roomType.includes(filterType)) return false;
-      }
-
-      // 3. Price Filter
-      const p = room.price;
-      if (selectedPrice === '500k' && p > 500000) return false;
-      if (selectedPrice === '1m' && (p <= 500000 || p > 1000000)) return false;
-      if (selectedPrice === 'gt1m' && p <= 1000000) return false;
-
-      // 4. Status Filter
-      const status = (room.status || '').toLowerCase();
-      if (status === 'tidak tersedia' || status === 'penuh') return false;
-
-      return true;
-    });
-  }, [realRooms, searchLocation, selectedType, selectedPrice]);
+  const {
+    searchLocation,
+    setSearchLocation,
+    selectedPrice,
+    setSelectedPrice,
+    selectedType,
+    setSelectedType,
+    isLoadingRooms,
+    displayRooms,
+    resetFilters,
+    reviews
+  } = useHome();
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -407,11 +260,7 @@ export function Homepage({
                 {(searchLocation || selectedPrice !== 'all' || selectedType !== 'all') && (
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setSearchLocation('');
-                      setSelectedPrice('all');
-                      setSelectedType('all');
-                    }}
+                    onClick={resetFilters}
                     className="h-12 lg:h-14 border-2 border-slate-100 rounded-xl lg:rounded-2xl px-4 group hover:bg-slate-50"
                     title="Reset Filter"
                   >
@@ -561,11 +410,7 @@ export function Homepage({
                   <Button
                     variant="outline"
                     className="mt-6 rounded-full border-slate-300"
-                    onClick={() => {
-                      setSelectedType("all");
-                      setSelectedPrice("all");
-                      setSearchLocation("");
-                    }}
+                    onClick={resetFilters}
                   >
                     Reset Filter
                   </Button>
@@ -799,12 +644,8 @@ export function Homepage({
                         />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-900 dark:text-white text-xs lg:text-lg">
-                          {r.name}
-                        </p>
-                        <p className="text-slate-400 text-[10px] lg:text-sm uppercase tracking-wider">
-                          {r.role} • {r.stayDuration}
-                        </p>
+                        <p className="text-sm lg:text-lg font-bold text-slate-900 dark:text-white">{r.name}</p>
+                        <p className="text-[10px] lg:text-sm text-slate-500">{r.role} • {r.stayDuration}</p>
                       </div>
                     </div>
                   </Card>
@@ -815,26 +656,14 @@ export function Homepage({
         </div>
       </section>
 
-      {/* 8. Call to Action */}
-      <section className="px-4 py-20 lg:py-32 bg-slate-900 text-white overflow-hidden relative">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=1080')] bg-cover bg-center opacity-10 mix-blend-overlay" />
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-           <h2 className="text-3xl md:text-5xl lg:text-6xl font-black mb-6 lg:mb-8 leading-tight">
-            Siap untuk Pindah?
-           </h2>
-           <p className="text-slate-300 text-sm md:text-lg lg:text-xl mb-8 lg:mb-12 max-w-2xl mx-auto">
-             Jadilah bagian dari komunitas kami. Hubungi admin untuk survey atau booking langsung via aplikasi.
-           </p>
-           <Button 
-            size="lg"
-            className="bg-amber-500 hover:bg-amber-600 text-white px-8 lg:px-12 py-6 lg:py-8 rounded-full text-lg lg:text-2xl font-bold shadow-2xl shadow-amber-500/20"
-            onClick={() => window.open('https://wa.me/6281234567890', '_blank')}
-           >
-             Chat Admin WhatsApp
-           </Button>
+      {/* Footer Decoration */}
+      <div className="mt-20 py-10 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-slate-400 text-[10px] uppercase tracking-widest px-8">
+        <p>© 2026 Rahmat ZAW Residence</p>
+        <div className="flex gap-6">
+          <span className="cursor-pointer hover:text-black dark:hover:text-white transition-colors">Instagram</span>
+          <span className="cursor-pointer hover:text-black dark:hover:text-white transition-colors">WhatsApp</span>
         </div>
-      </section>
-
+      </div>
     </div>
   );
 }

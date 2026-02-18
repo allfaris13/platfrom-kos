@@ -16,6 +16,7 @@ type PenyewaRepository interface {
 	Update(penyewa *models.Penyewa) error
 	UpdateRole(penyewaID uint, role string) error
 	FindAllPaginated(pagination *utils.Pagination, search, role string) ([]models.Penyewa, int64, error)
+	WithTx(tx *gorm.DB) PenyewaRepository
 }
 
 type penyewaRepository struct {
@@ -82,4 +83,8 @@ func (r *penyewaRepository) FindAllPaginated(pagination *utils.Pagination, searc
 	err := query.Scopes(utils.Paginate(models.Penyewa{}, pagination, query)).Find(&penyewas).Error
 
 	return penyewas, totalRows, err
+}
+
+func (r *penyewaRepository) WithTx(tx *gorm.DB) PenyewaRepository {
+	return &penyewaRepository{db: tx}
 }

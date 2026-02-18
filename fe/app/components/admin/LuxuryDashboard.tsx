@@ -18,6 +18,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { api, DashboardStats as DashboardStatResponse, Tenant, Payment } from "@/app/services/api";
 
@@ -86,9 +87,11 @@ export function LuxuryDashboard() {
             api.getAllPayments(),
             api.getRooms(),
           ]);
-        setStats(statsData);
-        setTenants(tenantsData);
-        setPayments(paymentsData);
+        if (Array.isArray(tenantsData)) {
+            setTenants(tenantsData);
+        } else if (tenantsData && tenantsData.data) {
+            setTenants(tenantsData.data);
+        }
         setRoomsCount(roomsData.length);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -161,10 +164,27 @@ export function LuxuryDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6">
+      <motion.div 
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+          }
+        }}
+        className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6"
+      >
         {/* Total Revenue */}
-        <div className="group relative overflow-hidden bg-gradient-to-br from-amber-500/10 to-amber-600/10 border border-amber-500/20 rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/20 to-transparent rounded-full blur-3xl" />
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0 }
+          }}
+          className="group relative overflow-hidden glass-dark rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-2 md:mb-4">
               <div className="p-2 md:p-3 bg-amber-500/20 rounded-xl">
@@ -183,11 +203,17 @@ export function LuxuryDashboard() {
             </p>
             <p className="text-[10px] text-slate-500">Bulan ini</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Active Tenants */}
-        <div className="group relative overflow-hidden bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-3xl" />
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0 }
+          }}
+          className="group relative overflow-hidden glass-dark rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-2 md:mb-4">
               <div className="p-2 md:p-3 bg-blue-500/20 rounded-xl">
@@ -208,11 +234,17 @@ export function LuxuryDashboard() {
               {tenants.length} total pendaftaran
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Available Rooms */}
-        <div className="group relative overflow-hidden bg-gradient-to-br from-green-500/10 to-green-600/10 border border-green-500/20 rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-3xl" />
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0 }
+          }}
+          className="group relative overflow-hidden glass-dark rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-2 md:mb-4">
               <div className="p-2 md:p-3 bg-green-500/20 rounded-xl">
@@ -234,11 +266,17 @@ export function LuxuryDashboard() {
               Dari {roomsCount} kamar
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Pending Payments */}
-        <div className="group relative overflow-hidden bg-gradient-to-br from-red-500/10 to-red-600/10 border border-red-500/20 rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/20 to-transparent rounded-full blur-3xl" />
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0 }
+          }}
+          className="group relative overflow-hidden glass-dark rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-300"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-2 md:mb-4">
               <div className="p-2 md:p-3 bg-red-500/20 rounded-xl">
@@ -258,8 +296,8 @@ export function LuxuryDashboard() {
             </p>
             <p className="text-[10px] text-slate-500">Perlu konfirmasi</p>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

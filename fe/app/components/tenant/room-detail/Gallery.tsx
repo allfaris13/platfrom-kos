@@ -1,62 +1,34 @@
 "use client";
 
-import { useState, useMemo } from 'react';
-import useSWR from 'swr';
-import { getImageUrl } from '@/app/utils/api-url';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
-import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
-import { SkeletonGrid } from '@/app/components/ui/loading-screen';
-import { api, type Gallery as GalleryType } from '@/app/services/api';
-
-// --- Data Kos-Kosan Fallback ---
-const fallbackKosData = [
-  { id: 1, title: "The Heritage Pavilion", category: "Classic Executive", year: "2022", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=800" },
-  { id: 2, title: "Urban Minimalist Suite", category: "Modern Studio", year: "2023", imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=800" },
-  { id: 3, title: "Skyline View Apartment", category: "Premium Loft", year: "2024", imageUrl: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?q=80&w=800" },
-  { id: 4, title: "The Zen Garden Room", category: "Executive Garden", year: "2023", imageUrl: "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?q=80&w=800" },
-  { id: 5, title: "Industrial Loft A1", category: "Compact Studio", year: "2024", imageUrl: "https://images.unsplash.com/photo-1484154218962-a197022b5858?q=80&w=800" },
-  { id: 6, title: "Nordic Comfort Suite", category: "Deluxe Twin", year: "2023", imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=800" },
-];
-
-const moreKosItems = [
-  { id: 7, title: "Metropolitan Suite", category: "Signature Suite", year: "2024", imageUrl: "https://images.unsplash.com/photo-1721009714214-e688d8c07506?q=80&w=1080" },
-  { id: 8, title: "The Terracotta Room", category: "Standard Plus", year: "2023", imageUrl: "https://images.unsplash.com/photo-1560448204-61dc36dc98c8?q=80&w=800" },
-  { id: 9, title: "Bohemian Sanctuary", category: "Thematic Room", year: "2024", imageUrl: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=800" },
-  { id: 10, title: "Glass House Penthouse", category: "Ultra Premium", year: "2025", imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800" },
-];
+import { motion, AnimatePresence } from "framer-motion";
+import { ImageWithFallback } from "@/app/components/shared/ImageWithFallback";
+import { SkeletonGrid } from "@/app/components/ui/loading-screen";
+import { ArrowRight } from "lucide-react";
+import { useGallery } from "../dashboard/hooks/useGallery";
 
 interface GalleryItem {
   id: number | string;
   title: string;
   category: string;
-  year: string;
-  imageUrl: string;
+  image_url: string;
+  year?: string;
 }
 
 export function Gallery() {
-  const { data: galleryData, isLoading } = useSWR('api/galleries', api.getGalleries);
-  const [isLoadedMore, setIsLoadedMore] = useState(false);
+  const {
+    items,
+    hasMore,
+    isLoading,
+    handleLoadMore,
+    isLoadedMore
+  } = useGallery();
 
-  const displayItems = useMemo<GalleryItem[]>(() => {
-    if (!galleryData || !Array.isArray(galleryData) || galleryData.length === 0) return fallbackKosData;
-
-    const mapped = galleryData.map((item: GalleryType) => ({
-      id: item.id,
-      title: item.title || "Elite Room",
-      category: item.category || "Premium",
-      year: item.created_at ? new Date(item.created_at).getFullYear().toString() : "2024",
-      imageUrl: item.image_url 
-        ? getImageUrl(item.image_url) 
-        : "https://via.placeholder.com/800"
-    }));
-
-    return isLoadedMore ? [...mapped, ...moreKosItems] : mapped;
-  }, [galleryData, isLoadedMore]);
-
-  const handleLoadMore = () => {
-    setIsLoadedMore(true);
-  };
+  // Map hook items to displayItems used in the visual snippet
+  const displayItems = items.map(item => ({
+    ...item,
+    image_url: item.image_url,
+    year: "2026" // Default fallback or could be derived from data if available
+  }));
 
   return (
     <section className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-500 overflow-x-hidden py-20">
@@ -71,7 +43,7 @@ export function Gallery() {
           >
             <div className="space-y-4">
               <h2 className="text-6xl md:text-7xl font-light tracking-tight leading-none text-slate-900 dark:text-white">
-                Elite <br /> <span className="italic">Residences</span>
+                Elite <br /> <span className="italic font-serif">Residences</span>
               </h2>
             </div>
             <p className="max-w-xs text-stone-500 dark:text-slate-400 font-sans text-sm leading-relaxed tracking-wide uppercase">
@@ -101,7 +73,9 @@ export function Gallery() {
               </div>
               <div className="space-y-4 font-sans text-sm text-stone-600 dark:text-slate-400">
                 {cat.features.map((feat) => (
-                  <p key={feat} className="hover:text-black dark:hover:text-white transition-colors">→ {feat}</p>
+                  <p key={feat} className="hover:text-black dark:hover:text-white transition-colors flex items-center gap-2">
+                    <span className="text-[10px]">→</span> {feat}
+                  </p>
                 ))}
               </div>
             </motion.div>
@@ -111,7 +85,7 @@ export function Gallery() {
         {/* --- COLLECTION GRID (ASIMETRIS) --- */}
         <div className="border-t border-stone-200 dark:border-slate-900 pt-16">
           <div className="flex justify-between items-end mb-20">
-            <h2 className="text-5xl font-light italic tracking-tighter text-slate-900 dark:text-slate-100">Our Rooms</h2>
+            <h2 className="text-5xl font-light italic font-serif tracking-tighter text-slate-900 dark:text-slate-100">Our Rooms</h2>
             <button className="font-sans text-xs uppercase tracking-[0.2em] border-b border-black dark:border-white pb-1 hover:opacity-50 transition-opacity text-slate-900 dark:text-slate-100">
               Lihat Semua Unit
             </button>
@@ -120,46 +94,47 @@ export function Gallery() {
           {isLoading ? (
             <SkeletonGrid count={8} />
           ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-12 md:gap-x-12 md:gap-y-24">
-            <AnimatePresence mode="popLayout">
-              {displayItems.map((item: GalleryItem, index: number) => (
-                <motion.div
-                  layout
-                  key={item.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: (index % 4) * 0.1 }}
-                  className={`flex flex-col ${index % 4 === 1 ? "lg:mt-32" :
-                    index % 4 === 3 ? "lg:mt-16" : ""
-                    }`}
-                >
-                  <div className="relative aspect-[3/4] overflow-hidden bg-stone-200 dark:bg-slate-900 mb-6 group">
-                    <ImageWithFallback
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 dark:group-hover:bg-white/5 transition-colors" />
-                  </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-12 md:gap-x-12 md:gap-y-24">
+              <AnimatePresence mode="popLayout">
+                {displayItems.map((item: GalleryItem, index: number) => (
+                  <motion.div
+                    layout
+                    key={item.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.5, delay: (index % 4) * 0.1 }}
+                    className={`flex flex-col ${index % 4 === 1 ? "lg:mt-32" :
+                      index % 4 === 3 ? "lg:mt-16" : ""
+                      }`}
+                  >
+                    <div className="relative aspect-[3/4] overflow-hidden bg-stone-200 dark:bg-slate-900 mb-6 group">
+                      <ImageWithFallback
+                        src={item.image_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 dark:group-hover:bg-white/5 transition-colors" />
+                    </div>
 
-                  <div className="space-y-1">
-                    <span className="font-sans text-[10px] uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500">
-                      {item.category}
-                    </span>
-                    <h4 className="text-xl font-medium leading-snug text-slate-900 dark:text-slate-200">{item.title}</h4>
-                    <p className="font-sans text-xs italic text-stone-500 dark:text-slate-500">
-                      Available from {item.year}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                    <div className="space-y-1">
+                      <span className="font-sans text-[10px] uppercase tracking-[0.2em] text-stone-400 dark:text-slate-500">
+                        {item.category === 'General' ? 'ROOM' : item.category.toUpperCase()}
+                      </span>
+                      <h4 className="text-xl font-medium font-serif leading-snug text-slate-900 dark:text-slate-200">{item.title}</h4>
+                      <p className="font-sans text-xs italic text-stone-500 dark:text-slate-500">
+                        Available from {item.year}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           )}
         </div>
 
         {/* --- LOAD MORE SECTION --- */}
-        {!isLoadedMore && (
+        {!isLoadedMore && hasMore && (
           <div className="mt-32 flex flex-col items-center gap-6">
             <div className="w-px h-20 bg-stone-300 dark:bg-slate-800 animate-bounce" />
             <button
@@ -170,14 +145,14 @@ export function Gallery() {
             </button>
           </div>
         )}
-
+        
         {/* --- FOOTER DECORATION --- */}
-        <div className="mt-40 pt-16 border-t border-stone-200 dark:border-slate-900 flex justify-between items-center text-stone-400 dark:text-slate-600 font-sans text-[10px] uppercase tracking-[0.3em]">
-          <p>© 2026 LuxeStay Premium Residence</p>
-          <div className="flex gap-8">
-            <span className="cursor-pointer hover:text-black dark:hover:text-white transition-colors">Instagram</span>
-            <span className="cursor-pointer hover:text-black dark:hover:text-white transition-colors">WhatsApp</span>
-          </div>
+        <div className="mt-40 border-t border-stone-100 dark:border-slate-900 pt-10 flex justify-between items-center text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+           <p>© 2026 LUXESTAY PREMIUM RESIDENCE</p>
+           <div className="flex gap-8">
+             <span className="cursor-pointer hover:text-slate-600 transition-colors">Instagram</span>
+             <span className="cursor-pointer hover:text-slate-600 transition-colors">WhatsApp</span>
+           </div>
         </div>
       </div>
     </section>

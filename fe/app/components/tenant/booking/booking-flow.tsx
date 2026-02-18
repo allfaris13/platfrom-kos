@@ -163,23 +163,19 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
 
       setLoading(true);
       try {
-        // 1. Create Booking Record
-        const booking = await api.createBooking({
-          kamar_id: parseInt(roomId),
-          tanggal_mulai: formData.moveInDate,
-          durasi_sewa: parseInt(formData.duration),
-        });
-
-        // 2. Create Payment Session (Manual)
-        const paymentRes = await api.createPayment({
-          pemesanan_id: booking.id,
-          payment_type: formData.paymentType as 'full' | 'dp',
-        });
+        const fd = new FormData();
+        fd.append('kamar_id', roomId);
+        fd.append('tanggal_mulai', formData.moveInDate);
+        fd.append('durasi_sewa', formData.duration);
+        fd.append('payment_type', formData.paymentType);
+        fd.append('payment_method', formData.paymentMethod);
         
-        // 3. Upload Proof Immediately (Only if Transfer)
         if (formData.paymentMethod === 'transfer' && proofFile) {
-             await api.uploadPaymentProof(paymentRes.payment.id, proofFile);
+          fd.append('proof', proofFile);
         }
+
+        // Atomic Booking Creation
+        const booking = await api.createBookingWithProof(fd);
 
         // 4. Success
         setBookingId(`#BK${booking.id}`);
