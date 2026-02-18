@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Homepage } from './homepage';
-import { RoomDetail } from './RoomDetail';
-import { BookingFlow } from './booking-flow';
+import { Homepage } from '../home/homepage';
+import { RoomDetail } from '../room-detail/RoomDetail';
+import { BookingFlow } from '../booking/booking-flow';
 import { BookingHistory } from './booking-history';
 
 import { ContactUs } from './contact-us';
-import { Gallery } from './Gallery';
+import { Gallery } from '../room-detail/Gallery';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, History, User, Menu, LogOut, Mail, Phone, MapPin, CreditCard, X, XCircle, MessageCircle, ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
-import { Card, CardContent } from "@/app/components/ui/card";
+import { Card } from "@/app/components/ui/card";
 import { getImageUrl } from "@/app/utils/api-url";
 import { Badge } from '@/app/components/ui/badge';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
@@ -604,7 +604,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
                   </div>
                 </div>
               ) : (
-                <BookingHistory onViewRoom={navigateToRoomDetail} />
+                <BookingHistory />
               )
             )}
 

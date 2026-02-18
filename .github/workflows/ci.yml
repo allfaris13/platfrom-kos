@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.24"
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
@@ -23,6 +23,5 @@ jobs:
           working-directory: be
 
       - name: Test
-        run: |
-          cd be
-          go test -v ./...
+        working-directory: ./be
+        run: go test -v ./...

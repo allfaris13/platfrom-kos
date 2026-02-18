@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useCallback } from 'react';
 import { AppContextType, Room, Booking, User, RoomStatus, BookingStatus, ExtendBookingRequest } from './types';
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);

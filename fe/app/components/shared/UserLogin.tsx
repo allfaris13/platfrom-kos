@@ -6,9 +6,9 @@ import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Home, ArrowLeft } from 'lucide-react';
-import { api } from '@/app/services/api';
+import { api, LoginResponse } from '@/app/services/api';
 import { ImageWithFallback } from './ImageWithFallback';
-import { GoogleButton } from '../tenant/GoogleButton';
+import { GoogleButton } from './GoogleButton';
 
 interface UserLoginProps {
   onLoginSuccess: () => void;
@@ -29,7 +29,7 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
     setIsLoading(true);
     setError('');
     try {
-      await api.login({ username, password }, rememberMe);
+      await api.login({ username, password });
       onLoginSuccess();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -205,11 +205,11 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
           <GoogleButton
             isLoading={isLoading}
             onSuccess={(data) => {
-              // Standard behavior for Google Login is usually Session persistence or same as unchecked.
-              // We'll treat it as session storage by default unless we add logic, but code assumes explicit choice.
-              // Let's default Google Login to LocalStorage (Persistent) as is common for OAuth
-              localStorage.setItem('token', data.token);
-              localStorage.setItem('user', JSON.stringify(data.user));
+              // Store user data only (token is in HttpOnly cookie)
+              const loginData = data as LoginResponse;
+              if (loginData.user) {
+                localStorage.setItem('user', JSON.stringify(loginData.user));
+              }
               onLoginSuccess();
             }}
           />

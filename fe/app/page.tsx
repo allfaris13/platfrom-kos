@@ -18,7 +18,7 @@ import { LuxuryPaymentConfirmation } from "@/app/components/admin/LuxuryPaymentC
 import { LuxuryReports } from "@/app/components/admin/LuxuryReports";
 
 // Tenant Components
-import { UserPlatform } from "@/app/components/tenant/user-platform";
+import { UserPlatform } from "@/app/components/tenant/dashboard/DashboardLayout";
 import { Loader2 } from "lucide-react";
 
 type ViewMode = "login" | "register" | "forgot-password" | "home" | "admin" | "tenant";

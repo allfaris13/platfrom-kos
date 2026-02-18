@@ -1,0 +1,71 @@
++ BASE_URL=http://localhost:8081/api
++ echo =============================================
+=============================================
++ echo 'Security Verification Script'
+Security Verification Script
++ echo =============================================
+=============================================
++ echo -e '\n1. Registering Victim...'
+
+1. Registering Victim...
++ curl -s -X POST http://localhost:8081/api/auth/register -H 'Content-Type: application/json' -d '{
+    "username": "victim",
+    "password": "password123",
+    "email": "victim@example.com",
+    "phone": "081234567890",
+    "address": "Jl. Victim No. 1",
+    "role": "tenant"
+  }'
++ echo -e '\n2. Logging in Victim...'
+
+2. Logging in Victim...
++ curl -s -c cookies_victim.txt -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{
+    "username": "victim",
+    "password": "password123"
+  '
++ echo -e '\n3. Registering Attacker...'
+
+3. Registering Attacker...
++ curl -s -X POST http://localhost:8081/api/auth/register -H 'Content-Type: application/json' -d '{
+    "username": "attacker",
+    "password": "password123",
+    "email": "attacker@example.com",
+    "phone": "081234567891",
+    "address": "Jl. Attacker No. 1",
+    "role": "tenant"
+  }'
++ echo -e '\n4. Logging in Attacker...'
+
+4. Logging in Attacker...
++ curl -s -c cookies_attacker.txt -X POST http://localhost:8081/api/auth/login -H 'Content-Type: application/json' -d '{
+    "username": "attacker",
+    "password": "password123"
+  '
++ echo -e '\n5. Getting Rooms...'
+
+5. Getting Rooms...
++ curl -s http://localhost:8081/api/kamar
+++ grep -o '"id":[0-9]*' rooms.json
+++ head -1
+++ cut -d: -f2
++ KAMAR_ID=5
++ '[' -z 5 ']'
++ echo -e '\n6. Creating Booking as Victim for Room 5...'
+
+6. Creating Booking as Victim for Room 5...
++ curl -s -b cookies_victim.txt -X POST http://localhost:8081/api/bookings -H 'Content-Type: application/json' -d '{
+    "kamar_id": 5,
+    "tanggal_mulai": "2026-03-01",
+    "durasi_sewa": 1
+  }'
+++ grep -o '"id":[0-9]*' booking_victim.json
+++ head -1
+++ cut -d: -f2
++ BOOKING_ID=
++ echo 'Created Booking ID: '
+Created Booking ID: 
++ '[' -z '' ']'
++ echo 'Failed to create booking. Response:'
+Failed to create booking. Response:
++ cat booking_victim.json
+{"success":false,"message":"Missing authentication token","errors":["Missing authentication token"]}+ exit 1

@@ -10,44 +10,90 @@ export function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'guest' | 'tenant'>('all');
+  
+  // Stats State
+  const [stats, setStats] = useState({ total: 0, guest: 0, tenant: 0 });
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      // Call API with pagination and filters
+      // Note: activeTab 'all' means no role filter
+      const roleFilter = activeTab === 'all' ? undefined : activeTab;
+      
+      const response = await api.getAllTenants({
+        page,
+        limit,
+        search: searchQuery,
+        role: roleFilter
+      });
+
+      // API now returns PaginatedResponse
+      // But we need to check if the type definition update in api.ts is picked up.
+      // Assuming response is PaginatedResponse<Tenant[]>
+      // We need to cast or access .data and .meta
+      // Since api.ts update might not be fully propagated in my view, I assume the structure:
+      
+      if ('data' in response && 'meta' in response) {
+         setAllUsers(response.data); // Actually this is just the current page data
+         setFilteredUsers(response.data);
+         setTotalPages(response.meta.total_pages);
+      } else {
+         // Fallback if API is not updated yet (for safety)
+         const data = response as unknown as Tenant[];
+         setAllUsers(data);
+         setFilteredUsers(data);
+      }
+
+    } catch (e) {
+      console.error(e);
+      setFilteredUsers([]); 
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setIsLoading(true);
+    // Debounce search
+    const timer = setTimeout(() => {
+       void fetchUsers();
+    }, 500); // 500ms delay for search
+    return () => clearTimeout(timer);
+  }, [page, activeTab, searchQuery]); // Re-fetch when these change
+
+  useEffect(() => {
+    const fetchStats = async () => {
       try {
-        const data = await api.getAllTenants();
-        setAllUsers(data);
-        setFilteredUsers(data);
+        const [totalRes, guestRes, tenantRes] = await Promise.all([
+          api.getAllTenants({ limit: 1 }),
+          api.getAllTenants({ limit: 1, role: 'guest' }),
+          api.getAllTenants({ limit: 1, role: 'tenant' })
+        ]);
+
+        const getTotal = (res: any) => res.meta?.total_rows || 0;
+
+        setStats({
+          total: getTotal(totalRes),
+          guest: getTotal(guestRes),
+          tenant: getTotal(tenantRes)
+        });
       } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
+        console.error("Failed to fetch stats", e);
       }
     };
-    void fetchUsers();
-  }, []);
+    void fetchStats();
+  }, []); // Run once on mount
 
-  useEffect(() => {
-    let filtered = allUsers;
-    
-    // Filter by role based on active tab
-    if (activeTab === 'guest') {
-      filtered = filtered.filter(u => u.role === 'guest');
-    } else if (activeTab === 'tenant') {
-      filtered = filtered.filter(u => u.role === 'tenant');
-    }
+  // Remove the old client-side filtering useEffect
 
-    // Filter by search query
-    if (searchQuery) {
-      filtered = filtered.filter(user =>
-        user.nama_lengkap?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.nomor_hp?.includes(searchQuery)
-      );
-    }
 
-    setFilteredUsers(filtered);
-  }, [activeTab, searchQuery, allUsers]);
+  // Client-side filtering removed in favor of Server-Side Pagination
+
 
   const guestCount = allUsers.filter(u => u.role === 'guest').length;
   const tenantCount = allUsers.filter(u => u.role === 'tenant').length;
@@ -97,7 +143,7 @@ export function UserManagement() {
             </div>
             <div>
               <p className="text-slate-400 text-xs uppercase font-bold tracking-widest">Total Users</p>
-              <p className="text-2xl font-bold text-white">{allUsers.length}</p>
+              <p className="text-2xl font-bold text-white">{stats.total}</p>
             </div>
           </div>
         </div>
@@ -109,7 +155,7 @@ export function UserManagement() {
             </div>
             <div>
               <p className="text-slate-400 text-xs uppercase font-bold tracking-widest">Guest Users</p>
-              <p className="text-2xl font-bold text-white">{guestCount}</p>
+              <p className="text-2xl font-bold text-white">{stats.guest}</p>
             </div>
           </div>
         </div>
@@ -121,7 +167,7 @@ export function UserManagement() {
             </div>
             <div>
               <p className="text-slate-400 text-xs uppercase font-bold tracking-widest">Active Tenants</p>
-              <p className="text-2xl font-bold text-white">{tenantCount}</p>
+              <p className="text-2xl font-bold text-white">{stats.tenant}</p>
             </div>
           </div>
         </div>
@@ -130,34 +176,34 @@ export function UserManagement() {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-800 overflow-x-auto">
         <button
-          onClick={() => setActiveTab('all')}
+          onClick={() => { setActiveTab('all'); setPage(1); }}
           className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
             activeTab === 'all'
               ? 'text-amber-500 border-b-2 border-amber-500'
               : 'text-slate-500 hover:text-slate-300'
           }`}
         >
-          All Users ({allUsers.length})
+          All Users ({stats.total})
         </button>
         <button
-          onClick={() => setActiveTab('guest')}
+          onClick={() => { setActiveTab('guest'); setPage(1); }}
           className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
             activeTab === 'guest'
               ? 'text-amber-500 border-b-2 border-amber-500'
               : 'text-slate-500 hover:text-slate-300'
           }`}
         >
-          Guest Users ({guestCount})
+          Guest Users ({stats.guest})
         </button>
         <button
-          onClick={() => setActiveTab('tenant')}
+          onClick={() => { setActiveTab('tenant'); setPage(1); }}
           className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
             activeTab === 'tenant'
               ? 'text-amber-500 border-b-2 border-amber-500'
               : 'text-slate-500 hover:text-slate-300'
           }`}
         >
-          Active Tenants ({tenantCount})
+          Active Tenants ({stats.tenant})
         </button>
       </div>
 
@@ -226,6 +272,27 @@ export function UserManagement() {
               </div>
             ))
           )}
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center mt-6 pt-6 border-t border-slate-800">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1 || isLoading}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
+          >
+            Previous
+          </button>
+          <span className="text-slate-400 text-sm">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages || isLoading}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { Card } from '@/app/components/ui/card';
 import useSWR from 'swr';
 import { getImageUrl } from '@/app/utils/api-url';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,7 +38,6 @@ export function Gallery() {
   const { data: galleryData, isLoading } = useSWR('api/galleries', api.getGalleries);
   const [isLoadedMore, setIsLoadedMore] = useState(false);
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   const displayItems = useMemo<GalleryItem[]>(() => {
     if (!galleryData || !Array.isArray(galleryData) || galleryData.length === 0) return fallbackKosData;
 

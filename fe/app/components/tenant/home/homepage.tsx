@@ -25,13 +25,8 @@ import { ImageWithFallback } from "@/app/components/shared/ImageWithFallback";
 import { SkeletonGrid } from "@/app/components/ui/loading-screen";
 import {
   MapPin,
-  Wifi,
-  Wind,
-  Tv,
-  Coffee,
   Star,
   Home,
-  LucideIcon,
   Search,
   ArrowRight,
   X,
@@ -111,7 +106,7 @@ interface UIRoom {
   status?: string;
 }
 
-const facilityIcons: { [key: string]: LucideIcon } = { WiFi: Wifi, AC: Wind, TV: Tv, 'Coffee Maker': Coffee };
+
 
 interface ReviewUI {
   name: string;

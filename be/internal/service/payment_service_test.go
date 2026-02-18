@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"koskosan-be/internal/models"
+	"koskosan-be/internal/repository"
 	"testing"
 	"time"
 
@@ -50,26 +51,17 @@ func (m *MockPaymentRepository) FindByBookingID(bookingID uint) (*models.Pembaya
 	return args.Get(0).(*models.Pembayaran), args.Error(1)
 }
 
-func (m *MockPaymentRepository) WithTx(tx *gorm.DB) interface{} {
+func (m *MockPaymentRepository) WithTx(tx *gorm.DB) repository.PaymentRepository {
 	return m
 }
 
-// MockEmailSender implements utils.EmailSender interface
-type MockEmailSender struct {
-	mock.Mock
-}
-
-func (m *MockEmailSender) SendEmail(to, subject, body string) error {
-	args := m.Called(to, subject, body)
-	return args.Error(0)
-}
 
 // MockWhatsAppSender implements utils.WhatsAppSender interface
 type MockWhatsAppSender struct {
 	mock.Mock
 }
 
-func (m *MockWhatsAppSender) SendMessage(to, message string) error {
+func (m *MockWhatsAppSender) SendWhatsApp(to, message string) error {
 	args := m.Called(to, message)
 	return args.Error(0)
 }
@@ -279,3 +271,22 @@ func TestPaymentService_UploadPaymentProof_UpdateError(t *testing.T) {
 	assert.Equal(t, "database update failed", err.Error())
 	mockRepo.AssertExpectations(t)
 }
+
+func (m *MockPaymentRepository) CreateReminder(reminder *models.PaymentReminder) error {
+	args := m.Called(reminder)
+	return args.Error(0)
+}
+
+func (m *MockPaymentRepository) DeleteByBookingID(bookingID uint) error {
+	args := m.Called(bookingID)
+	return args.Error(0)
+}
+
+func (m *MockPaymentRepository) FindByOrderID(orderID string) (*models.Pembayaran, error) {
+	args := m.Called(orderID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Pembayaran), args.Error(1)
+}
+

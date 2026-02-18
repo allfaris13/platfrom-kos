@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { getImageUrl } from '@/app/utils/api-url';
 import { Search, Plus, Edit, Trash2, Eye, Download, ChevronUp, ChevronDown } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getImageUrl } from '@/app/utils/api-url';
 import { Check, X, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';

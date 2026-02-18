@@ -6,6 +6,7 @@ import (
 	"koskosan-be/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	ginprometheus "github.com/zsais/go-gin-prometheus"
 )
 
 // Routes structure untuk organization yang lebih baik
@@ -53,6 +54,10 @@ func NewRoutes(
 func (r *Routes) Register(router *gin.Engine, cfg *config.Config) {
 	// Static files
 	router.Static("/uploads", "./uploads")
+
+	// Prometheus Monitoring
+	p := ginprometheus.NewPrometheus("gin")
+	p.Use(router)
 
 	api := router.Group("/api")
 	{

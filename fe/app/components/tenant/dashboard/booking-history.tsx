@@ -32,8 +32,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/ta
 import { toast } from 'sonner';
 
 
-import { UploadProofModal } from './upload-proof-modal';
-import { BookingDetailsModal } from './booking-details-modal';
+import { UploadProofModal } from '../booking/upload-proof-modal';
+import { BookingDetailsModal } from '../booking/booking-details-modal';
 
 interface Booking {
   id: string;
@@ -63,11 +63,7 @@ interface KamarData {
 }
 
 
-interface BookingHistoryProps {
-  onViewRoom: (roomId: string) => void;
-}
-
-export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
+export function BookingHistory() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [activeTab, setActiveTab] = useState("bookings");
   const [isLoading, setIsLoading] = useState(true);
@@ -276,7 +272,7 @@ export function BookingHistory({ onViewRoom }: BookingHistoryProps) {
               icon: <Wallet className="w-6 h-6" />,
               delay: 0.3
             },
-          ].map((stat, index) => (
+          ].map((stat) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}

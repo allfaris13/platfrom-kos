@@ -1,7 +1,7 @@
 "use client";
 // Force update
 
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { getImageUrl } from '@/app/utils/api-url';
 import { toast } from 'sonner';
 import Image from 'next/image';

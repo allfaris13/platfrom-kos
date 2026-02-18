@@ -173,7 +173,7 @@ export function AdminDashboard() {
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
                   <p className="text-2xl font-semibold text-orange-600">
-                    {rooms.filter(r => r.status === 'Maintenance').length}
+                    {rooms.filter(r => r.status === 'Perbaikan').length}
                   </p>
                   <p className="text-sm text-slate-600 mt-1">Perbaikan</p>
                 </div>

@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
         // Not an admin, redirect to home
         return NextResponse.redirect(new URL('/', request.url));
       }
-    } catch (error) {
+    } catch {
       // Invalid user data, redirect to login
       return NextResponse.redirect(new URL('/login', request.url));
     }

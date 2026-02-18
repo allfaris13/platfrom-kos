@@ -3,6 +3,7 @@ package handlers
 import (
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/service"
+	"koskosan-be/internal/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,26 +18,27 @@ func NewTenantHandler(s service.TenantService) *TenantHandler {
 }
 
 func (h *TenantHandler) GetAllTenants(c *gin.Context) {
-	// Check if role filter is provided
+	pagination := utils.GeneratePaginationFromRequest(c)
+	search := c.Query("search")
 	role := c.Query("role")
-	
-	var tenants []models.Penyewa
-	var err error
-	
-	if role != "" {
-		// Filter by role if provided
-		tenants, err = h.service.GetTenantsByRole(role)
-	} else {
-		// Get all tenants
-		tenants, err = h.service.GetAllTenants()
-	}
-	
+
+	tenants, totalRows, err := h.service.GetTenantsPaginated(&pagination, search, role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	
 	if tenants == nil {
 		tenants = []models.Penyewa{}
 	}
-	c.JSON(http.StatusOK, tenants)
+
+	pagination.TotalRows = totalRows
+	pagination.TotalPages = int((totalRows + int64(pagination.Limit) - 1) / int64(pagination.Limit))
+
+	response := utils.PaginatedResponse{
+		Data: tenants,
+		Meta: pagination,
+	}
+
+	c.JSON(http.StatusOK, response)
 }

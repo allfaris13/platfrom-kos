@@ -66,6 +66,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Frontend (Next.js)
   frontend:
@@ -88,6 +93,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Nginx Reverse Proxy
   nginx:
@@ -107,6 +117,11 @@ services:
       - frontend
     networks:
       - koskosan-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   koskosan-network:

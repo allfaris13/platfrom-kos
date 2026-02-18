@@ -2,6 +2,7 @@ package repository
 
 import (
 	"koskosan-be/internal/models"
+	"koskosan-be/internal/utils"
 
 	"gorm.io/gorm"
 )
@@ -14,6 +15,7 @@ type PenyewaRepository interface {
 	Create(penyewa *models.Penyewa) error
 	Update(penyewa *models.Penyewa) error
 	UpdateRole(penyewaID uint, role string) error
+	FindAllPaginated(pagination *utils.Pagination, search, role string) ([]models.Penyewa, int64, error)
 }
 
 type penyewaRepository struct {
@@ -58,4 +60,26 @@ func (r *penyewaRepository) FindByRole(role string) ([]models.Penyewa, error) {
 
 func (r *penyewaRepository) UpdateRole(penyewaID uint, role string) error {
 	return r.db.Model(&models.Penyewa{}).Where("id = ?", penyewaID).Update("role", role).Error
+}
+
+func (r *penyewaRepository) FindAllPaginated(pagination *utils.Pagination, search, role string) ([]models.Penyewa, int64, error) {
+	var penyewas []models.Penyewa
+	var totalRows int64
+
+	query := r.db.Model(&models.Penyewa{}).Preload("User")
+
+	if role != "" {
+		query = query.Where("role = ?", role)
+	}
+
+	if search != "" {
+		searchLike := "%" + search + "%"
+		query = query.Where("nama_lengkap ILIKE ? OR email ILIKE ? OR nomor_hp ILIKE ? OR nik ILIKE ?", searchLike, searchLike, searchLike, searchLike)
+	}
+
+	query.Count(&totalRows)
+
+	err := query.Scopes(utils.Paginate(models.Penyewa{}, pagination, query)).Find(&penyewas).Error
+
+	return penyewas, totalRows, err
 }

@@ -1,0 +1,10 @@
+
+C:\Users\Arkan\Documents\coding\platfrom-kos\fe\app\components\tenant\dashboard\booking-history.tsx
+  27:3   warning  'Wallet' is defined but never used                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  66:11  error    An empty interface declaration allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowInterfaces' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+
+✖ 2 problems (1 error, 1 warning)
+

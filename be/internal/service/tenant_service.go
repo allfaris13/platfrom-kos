@@ -1,13 +1,18 @@
 package service
 
 import (
+	"errors"
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/repository"
+	"koskosan-be/internal/utils"
+	"strings"
 )
 
 type TenantService interface {
 	GetAllTenants() ([]models.Penyewa, error)
 	GetTenantsByRole(role string) ([]models.Penyewa, error)
+	GetTenantsPaginated(pagination *utils.Pagination, search, role string) ([]models.Penyewa, int64, error)
+	ValidateTenant(penyewa *models.Penyewa) error
 }
 
 type tenantService struct {
@@ -24,4 +29,18 @@ func (s *tenantService) GetAllTenants() ([]models.Penyewa, error) {
 
 func (s *tenantService) GetTenantsByRole(role string) ([]models.Penyewa, error) {
 	return s.repo.FindByRole(role)
+}
+
+func (s *tenantService) GetTenantsPaginated(pagination *utils.Pagination, search, role string) ([]models.Penyewa, int64, error) {
+	return s.repo.FindAllPaginated(pagination, search, role)
+}
+
+func (s *tenantService) ValidateTenant(penyewa *models.Penyewa) error {
+	if len(penyewa.NIK) != 16 {
+		return errors.New("NIK must be 16 digits")
+	}
+	if !strings.HasPrefix(penyewa.NomorHP, "08") && !strings.HasPrefix(penyewa.NomorHP, "62") {
+		return errors.New("phone number must start with 08 or 62")
+	}
+	return nil
 }

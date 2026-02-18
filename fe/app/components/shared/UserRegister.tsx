@@ -43,7 +43,7 @@ export function UserRegister({
 
     setIsLoading(true);
     try {
-      await api.register({ username, password, email, phone, address, birthdate, nik, role: "tenant" });
+      await api.register({ username, password, email, nomor_hp: phone, alamat_asal: address, tanggal_lahir: birthdate, nik, role: "tenant" });
       toast.success("Akun berhasil dibuat!", {
         description: "Silakan masuk dengan akun baru Anda untuk melanjutkan.",
         duration: 5000,

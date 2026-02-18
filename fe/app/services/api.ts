@@ -12,6 +12,18 @@ export interface User {
   is_google_user?: boolean;
 }
 
+export interface Pagination {
+  page: number;
+  limit: number;
+  total_rows: number;
+  total_pages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T;
+  meta: Pagination;
+}
+
 export interface Room {
   id: number;
   nomor_kamar: string;
@@ -153,10 +165,10 @@ export interface DashboardStats {
 }
 
 export interface LoginResponse {
-    token: string;
+    token?: string; // Token is now in HttpOnly cookie, but kept optional for compatibility
     user: User;
-    penyewa?: Tenant; // Added this
-    is_google_user?: boolean; // Added this
+    penyewa?: Tenant;
+    is_google_user?: boolean;
 }
 
 export interface MessageResponse {
@@ -183,21 +195,7 @@ class ApiErrorClass extends Error implements ApiError {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
 
 // 2. Helper Functions
-// 2. Helper Functions
-const getHeaders = () => {
-  let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token && typeof window !== 'undefined') {
-    token = sessionStorage.getItem('token');
-  }
-  
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-};
+
 
 const safeJson = async (res: Response) => {
   const text = await res.text();
@@ -394,7 +392,7 @@ export const api = {
       method: 'POST',
       body: formData,
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        // 'Authorization': `Bearer ${localStorage.getItem('token')}`, // Removed: cookie auth
       },
     });
 
@@ -436,8 +434,14 @@ export const api = {
   },
 
   // --- ADMIN ---
-  getAllTenants: async () => {
-    return apiCall<Tenant[]>('GET', '/tenants');
+  getAllTenants: async (params?: { page?: number; limit?: number; search?: string; role?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.search) query.append('search', params.search);
+    if (params?.role) query.append('role', params.role);
+    
+    return apiCall<PaginatedResponse<Tenant[]>>('GET', `/tenants?${query.toString()}`);
   },
 
   getAllPayments: async () => {
