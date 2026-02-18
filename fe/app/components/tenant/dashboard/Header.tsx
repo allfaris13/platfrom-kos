@@ -3,6 +3,8 @@ import { Home, LogIn, LogOut, MessageCircle, Menu, LucideIcon } from 'lucide-rea
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/components/ui/button';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
+import { LanguageSwitcher } from '@/app/components/shared/LanguageSwitcher';
+import { useTranslations } from 'next-intl';
 
 interface MenuItem {
   id: string;
@@ -31,6 +33,8 @@ export function Header({
   setMobileMenuOpen
 }: HeaderProps) {
   const router = useRouter();
+  const t = useTranslations('nav');
+  const tc = useTranslations('common');
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-md hover:shadow-lg transition-shadow">
@@ -43,7 +47,7 @@ export function Header({
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tighter">Rahmat ZAW</h1>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black">Malang Prime Stay</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black">{t('malangPrimeStay')}</p>
             </div>
           </div>
 
@@ -74,7 +78,7 @@ export function Header({
                 className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-stone-900 text-white hover:bg-stone-800 transition-all duration-200 ml-2 shadow-lg"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Masuk</span>
+                <span>{tc('login')}</span>
               </motion.button>
             )}
 
@@ -86,7 +90,7 @@ export function Header({
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900 transition-all duration-200 ml-2"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>Hubungi Kami</span>
+              <span>{t('contactUs')}</span>
             </motion.button>
 
             {/* Logout Button */}
@@ -98,9 +102,12 @@ export function Header({
                 className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all duration-200 ml-2"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Keluar</span>
+                <span>{t('logout')}</span>
               </motion.button>
             )}
+
+            {/* Language Switcher */}
+            <LanguageSwitcher />
 
             {/* Theme Toggle Button */}
             <ThemeToggleButton />

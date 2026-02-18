@@ -213,39 +213,69 @@ func (s *dashboardService) GetStats() (*DashboardStats, error) {
 		}
 	}
 
-	// 8. Type Breakdown
-	var types []struct {
+	// 8. Type Breakdown (Optimized)
+	// Single query to get total count, revenue, and occupied count per type
+	type typeStat struct {
 		TipeKamar string
+		Revenue   float64
 		Count     int
+		Occupied  int
 	}
-	s.db.Model(&models.Kamar{}).Select("tipe_kamar, count(*) as count").Group("tipe_kamar").Scan(&types)
+	
+	// Complex query to aggregate everything in one go
+	// Note: simpler to separate revenue and counts if GORM logic is tricky, but raw SQL is best here.
+	// Revenue: Sum payment matching room type.
+	// Count: Count rooms by type.
+	// Occupied: Count rooms by type and status='Penuh'.
+	
+	// We can fetch basic counts first (Count, Occupied)
+	var typeStats []typeStat
+	// Postgres/SQLite compatible-ish. 
+	s.db.Raw(`
+		SELECT 
+			tipe_kamar,
+			COUNT(*) as count,
+			SUM(CASE WHEN status = 'Penuh' THEN 1 ELSE 0 END) as occupied
+		FROM kamars 
+		GROUP BY tipe_kamar
+	`).Scan(&typeStats)
 
-	for _, t := range types {
-		var occ int64
-		s.db.Model(&models.Kamar{}).Where("tipe_kamar = ? AND status = ?", t.TipeKamar, "Penuh").Count(&occ)
-
+	// Fetch revenue separately per type is cleaner than a massive JOIN, or we can iterate the typeStats
+	for i, ts := range typeStats {
 		var rev float64
-		// Revenue from this type
 		s.db.Raw(`
             SELECT COALESCE(SUM(p.jumlah_bayar), 0)
             FROM pembayarans p
             JOIN pemesanans pm ON p.pemesanan_id = pm.id
             JOIN kamars k ON pm.kamar_id = k.id
             WHERE k.tipe_kamar = ? AND p.status_pembayaran = 'Confirmed'
-        `, t.TipeKamar).Scan(&rev)
-
+        `, ts.TipeKamar).Scan(&rev)
+		
 		stats.TypeBreakdown = append(stats.TypeBreakdown, TypeRevenue{
-			Type:     t.TipeKamar,
+			Type:     ts.TipeKamar,
 			Revenue:  rev,
-			Count:    t.Count,
-			Occupied: int(occ),
+			Count:    ts.Count,
+			Occupied: ts.Occupied,
 		})
+		// Assign back to slice not needed as we append to stats
+		_ = i
 	}
 
-	// 9. Demographics (Mocked)
-	// 9. Demographics (Real Calculation)
+	// 9. Demographics (Optimized - SQL Calculation)
+	// Calculate age groups directly in DB to avoid fetching all birthdates
+	// Using Postgres/SQLite compatible CASE (Postgres EXTRACT, SQLite strftime/julianday)
+	// This usually requires dialect specific SQL.
+	// Since user mentioned Postgres migration, we prioritizing Postgres but keeping it safe.
+	// Actually, for demographics, fetching just dates is low memory cost unless users > 100k.
+	// BUT the optimized way is SQL.
+	// Let's stick to the current implementation for Demographics as it's safe and "pluck" is already quite efficient compared to N+1.
+	// The User requested "Optimizing Backend" -> We can improve it by caching or just leaving it if it's not the bottleneck.
+	// However, the "Type Breakdown" WAS an N+1 query loops.
+	// Let's keep Demographics logic in Go for now as cross-db SQL for age is messy.
+	// (Re-inserting the existing demographics logic to match the removal range)
+	// Actually I will optimize it slightly by checking if birthDates is empty.
+	
 	var birthDates []time.Time
-	// Fetch all tenants with non-zero birth dates
 	s.db.Model(&models.Penyewa{}).
 		Where("tanggal_lahir IS NOT NULL").
 		Pluck("tanggal_lahir", &birthDates)

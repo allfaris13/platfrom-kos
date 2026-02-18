@@ -9,6 +9,7 @@ import { SWRProvider } from "@/app/components/providers/swr-provider";
 import { GoogleAuthProvider } from "@/app/components/providers/google-auth-provider";
 import { NotificationProvider } from "@/app/components/providers/notification-provider";
 import { ErrorBoundary } from "@/app/components/shared/ErrorBoundary";
+import { LanguageProvider } from "./context/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,18 +45,20 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-300`}
       >
         <ThemeProvider>
-          <AppProvider>
-            <SWRProvider>
-              <GoogleAuthProvider>
-                <NotificationProvider>
-                  <ErrorBoundary>
-                      {children}
-                  </ErrorBoundary>
-                </NotificationProvider>
-              </GoogleAuthProvider>
-            </SWRProvider>
-            <Toaster position="top-center" richColors />
-          </AppProvider>
+          <LanguageProvider>
+            <AppProvider>
+              <SWRProvider>
+                <GoogleAuthProvider>
+                  <NotificationProvider>
+                    <ErrorBoundary>
+                        {children}
+                    </ErrorBoundary>
+                  </NotificationProvider>
+                </GoogleAuthProvider>
+              </SWRProvider>
+              <Toaster position="top-center" richColors />
+            </AppProvider>
+          </LanguageProvider>
         </ThemeProvider>
         <Script
           src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

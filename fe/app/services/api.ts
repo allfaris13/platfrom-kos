@@ -434,6 +434,10 @@ export const api = {
     return apiCall<PaginatedResponse<Tenant[]>>('GET', `/tenants?${query.toString()}`);
   },
 
+  deleteTenant: async (id: string | number) => {
+    return apiCall<MessageResponse>('DELETE', `/tenants/${id}`);
+  },
+
   getAllPayments: async () => {
     return apiCall<Payment[]>('GET', '/payments');
   },

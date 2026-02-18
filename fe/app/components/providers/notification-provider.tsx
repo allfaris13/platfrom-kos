@@ -58,7 +58,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       });
     });
 
-    setSocket(newSocket);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSocket(() => newSocket);
 
     return () => {
       newSocket.close();

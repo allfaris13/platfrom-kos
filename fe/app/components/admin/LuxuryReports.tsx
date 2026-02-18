@@ -7,8 +7,10 @@ import { api, Room, Payment as ApiPayment, DashboardStats } from '@/app/services
 import { Button } from '@/app/components/ui/button';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useTranslations } from 'next-intl';
 
 export function LuxuryReports() {
+  const t = useTranslations('admin');
   const [payments, setPayments] = useState<ApiPayment[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -64,15 +66,15 @@ export function LuxuryReports() {
   const handleExport = () => {
     const doc = new jsPDF();
 
-    const tableColumn = ["Date", "Tenant Name", "Room Type", "Room No", "Amount", "Status"];
+    const tableColumn = [t('date'), t('tenantName'), t('roomType'), t('roomNo'), t('amount'), t('status')];
     const tableRows: (string | number)[][] = [];
 
     payments.forEach(p => {
       const rowData = [
         new Date(p.created_at || new Date().toISOString()).toLocaleDateString("id-ID"),
-        p.pemesanan?.penyewa?.nama_lengkap || "Unknown",
-        p.pemesanan?.kamar?.tipe_kamar || "Unknown",
-        p.pemesanan?.kamar?.nomor_kamar || "Unknown",
+        p.pemesanan?.penyewa?.nama_lengkap || t('unknown'),
+        p.pemesanan?.kamar?.tipe_kamar || t('unknown'),
+        p.pemesanan?.kamar?.nomor_kamar || t('unknown'),
         formatPrice(p.jumlah_bayar),
         p.status_pembayaran
       ];
@@ -83,9 +85,9 @@ export function LuxuryReports() {
     
     // Add title
     doc.setFontSize(18);
-    doc.text("Financial Report", 14, 22);
+    doc.text(t('financialReportsHead'), 14, 22);
     doc.setFontSize(11);
-    doc.text(`Date: ${dateStr}`, 14, 30);
+    doc.text(`${t('date')}: ${dateStr}`, 14, 30);
     doc.setTextColor(100);
 
     // Add table using autoTable
@@ -121,12 +123,12 @@ export function LuxuryReports() {
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipPayload[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-xl">
-          <p className="text-slate-400 text-xs mb-1">{label}</p>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 shadow-xl">
+          <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">{label}</p>
           {payload.map((entry, index: number) => {
             const val = entry.value;
             return (
-              <p key={index} className="text-white font-semibold flex items-center gap-2">
+              <p key={index} className="text-slate-900 dark:text-white font-semibold flex items-center gap-2">
                 <span className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />
                 {entry.name || 'Value'}: {formatPrice(val)}
               </p>
@@ -140,92 +142,92 @@ export function LuxuryReports() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 gap-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-slate-950 gap-4">
         <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
-        <p className="text-slate-400 font-medium italic">Preparing financial reports...</p>
+        <p className="text-slate-500 dark:text-slate-400 font-medium italic">{t('reportsLoading')}</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 min-h-screen">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 min-h-screen">
       {/* Header - Responsif stack di mobile */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 bg-clip-text text-transparent mb-2">
-            Laporan Keuangan
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600 bg-clip-text text-transparent mb-2">
+            {t('reportsTitle')}
           </h1>
-          <p className="text-slate-400 text-sm md:text-base">Comprehensive financial analytics and reports</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">{t('reportsSubtitle')}</p>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
           <Button
             variant="outline"
-            className="flex-1 sm:flex-none bg-slate-800/50 border-slate-700 text-white hover:bg-slate-800 text-xs md:text-sm"
+            className="flex-1 sm:flex-none bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-xs md:text-sm"
           >
             <Calendar className="size-4 mr-2" />
-            Last 6 Months
+            {t('last6Months')}
           </Button>
           <Button
             onClick={handleExport}
             className="flex-1 sm:flex-none bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 text-xs md:text-sm"
           >
             <Download className="size-4 mr-2" />
-            Export Report
+            {t('exportReport')}
           </Button>
         </div>
       </div>
 
       {/* Key Metrics - Grid responsif (2 kolom mobile, 4 kolom desktop) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        <div className="group relative overflow-hidden bg-gradient-to-br from-green-500/10 to-green-600/10 border border-green-500/20 rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-green-500/10 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-2xl" />
+        <div className="group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-green-500/10 dark:to-green-600/10 border border-green-200 dark:border-green-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-green-500/10 transition-all shadow-sm dark:shadow-none">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-full blur-2xl dark:from-green-500/20" />
           <div className="relative">
-            <div className="p-2 md:p-3 bg-green-500/20 rounded-xl w-fit mb-2 md:mb-4">
-              <DollarSign className="size-4 md:size-6 text-green-400" />
+            <div className="p-2 md:p-3 bg-green-100 dark:bg-green-500/20 rounded-xl w-fit mb-2 md:mb-4">
+              <DollarSign className="size-4 md:size-6 text-green-600 dark:text-green-400" />
             </div>
-            <p className="text-slate-400 text-[10px] md:text-sm mb-1">Total Revenue</p>
-            <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">{formatPrice(totalRevenue)}</p>
-            <p className="text-[10px] text-green-400">+12.5% from last mth</p>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm mb-1">{t('totalRevenue')}</p>
+            <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">{formatPrice(totalRevenue)}</p>
+            <p className="text-[10px] text-green-600 dark:text-green-400">+12.5% {t('revenueGrowth')}</p>
           </div>
         </div>
 
-        <div className="group relative overflow-hidden bg-gradient-to-br from-orange-500/10 to-orange-600/10 border border-orange-500/20 rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-orange-500/10 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/20 to-transparent rounded-full blur-2xl" />
+        <div className="group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-orange-500/10 dark:to-orange-600/10 border border-orange-200 dark:border-orange-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-orange-500/10 transition-all shadow-sm dark:shadow-none">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-full blur-2xl dark:from-orange-500/20" />
           <div className="relative">
-            <div className="p-2 md:p-3 bg-orange-500/20 rounded-xl w-fit mb-2 md:mb-4">
-              <TrendingUp className="size-4 md:size-6 text-orange-400" />
+            <div className="p-2 md:p-3 bg-orange-100 dark:bg-orange-500/20 rounded-xl w-fit mb-2 md:mb-4">
+              <TrendingUp className="size-4 md:size-6 text-orange-600 dark:text-orange-400" />
             </div>
-            <p className="text-slate-400 text-[10px] md:text-sm mb-1">Pending rev.</p>
-            <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">{formatPrice(pendingRevenue)}</p>
-            <p className="text-[10px] text-orange-400">Wait confirm</p>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm mb-1">{t('pendingRevenue')}</p>
+            <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">{formatPrice(pendingRevenue)}</p>
+            <p className="text-[10px] text-orange-600 dark:text-orange-400">{t('waitConfirm')}</p>
           </div>
         </div>
 
-        <div className="group relative overflow-hidden bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl" />
+        <div className="group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-blue-500/10 dark:to-blue-600/10 border border-blue-200 dark:border-blue-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-blue-500/10 transition-all shadow-sm dark:shadow-none">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full blur-2xl dark:from-blue-500/20" />
           <div className="relative">
-            <div className="p-2 md:p-3 bg-blue-500/20 rounded-xl w-fit mb-2 md:mb-4">
-              <BarChart3 className="size-4 md:size-6 text-blue-400" />
+            <div className="p-2 md:p-3 bg-blue-100 dark:bg-blue-500/20 rounded-xl w-fit mb-2 md:mb-4">
+              <BarChart3 className="size-4 md:size-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <p className="text-slate-400 text-[10px] md:text-sm mb-1">Avg. Rate</p>
-            <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm mb-1">{t('avgRate')}</p>
+            <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
               {formatPrice(rooms.length > 0 ? rooms.reduce((sum, r) => sum + (r.harga_per_bulan || 0), 0) / rooms.length : 0)}
             </p>
-            <p className="text-[10px] text-blue-400">Per month</p>
+            <p className="text-[10px] text-blue-600 dark:text-blue-400">{t('perMonth')}</p>
           </div>
         </div>
 
-        <div className="group relative overflow-hidden bg-gradient-to-br from-purple-500/10 to-purple-600/10 border border-purple-500/20 rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-purple-500/10 transition-all">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-2xl" />
+        <div className="group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-purple-500/10 dark:to-purple-600/10 border border-purple-200 dark:border-purple-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-purple-500/10 transition-all shadow-sm dark:shadow-none">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-2xl dark:from-purple-500/20" />
           <div className="relative">
-            <div className="p-2 md:p-3 bg-purple-500/20 rounded-xl w-fit mb-2 md:mb-4">
-              <Activity className="size-4 md:size-6 text-purple-400" />
+            <div className="p-2 md:p-3 bg-purple-100 dark:bg-purple-500/20 rounded-xl w-fit mb-2 md:mb-4">
+              <Activity className="size-4 md:size-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <p className="text-slate-400 text-[10px] md:text-sm mb-1">Occupancy</p>
-            <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm mb-1">{t('occupancy')}</p>
+            <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
               {rooms.length > 0 ? Math.round((rooms.filter(r => r.status === 'Terisi').length / rooms.length) * 100) : 0}%
             </p>
-            <p className="text-[10px] text-purple-400">{rooms.filter(r => r.status === 'Terisi').length}/{rooms.length} rooms</p>
+            <p className="text-[10px] text-purple-600 dark:text-purple-400">{rooms.filter(r => r.status === 'Terisi').length}/{rooms.length} rooms</p>
           </div>
         </div>
       </div>
@@ -233,10 +235,10 @@ export function LuxuryReports() {
       {/* Charts Section - Stack di mobile, grid di desktop */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Revenue by Room Type */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-4 md:p-6">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
           <div className="mb-6">
-            <h3 className="text-xl font-semibold text-white mb-1">Revenue by Room Type</h3>
-            <p className="text-sm text-slate-400">Monthly revenue breakdown</p>
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">{t('revenueByRoomType')}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('revenueByRoomTypeSubtitle')}</p>
           </div>
           <div className="h-64 md:h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -247,7 +249,7 @@ export function LuxuryReports() {
                     <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.3} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.2} vertical={false} />
                 <XAxis dataKey="type" stroke="#64748b" style={{ fontSize: '10px' }} tickLine={false} axisLine={false} />
                 <YAxis stroke="#64748b" style={{ fontSize: '10px' }} tickLine={false} axisLine={false} tickFormatter={(value) => formatPrice(value)} />
                 <Tooltip content={<CustomTooltip />} />
@@ -258,10 +260,10 @@ export function LuxuryReports() {
         </div>
 
         {/* Tenant Demographics - Pie Chart Responsif */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-4 md:p-6">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
           <div className="mb-6">
-            <h3 className="text-xl font-semibold text-white mb-1">Tenant Demographics</h3>
-            <p className="text-sm text-slate-400">Age distribution</p>
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">{t('tenantDemographics')}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('ageDistribution')}</p>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="w-full sm:w-1/2 h-64">
@@ -288,12 +290,12 @@ export function LuxuryReports() {
             </div>
             <div className="w-full sm:w-1/2 space-y-2 md:space-y-3">
               {tenantDemographics.map((item) => (
-                <div key={item.name} className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
+                <div key={item.name} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg border border-slate-200 dark:border-slate-700/50">
                   <div className="flex items-center gap-3">
                     <div className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-xs md:text-sm text-slate-300">{item.name} years</span>
+                    <span className="text-xs md:text-sm text-slate-600 dark:text-slate-300">{item.name} {t('years')}</span>
                   </div>
-                  <span className="text-sm font-semibold text-white">{item.value}%</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.value}%</span>
                 </div>
               ))}
             </div>
@@ -302,32 +304,32 @@ export function LuxuryReports() {
       </div>
 
       {/* Year-over-Year Comparison */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-4 md:p-6">
+      <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white mb-1">Monthly Revenue Trend</h3>
-            <p className="text-sm text-slate-400">Last 6 months performance</p>
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">{t('monthlyRevenueTrend')}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('monthlyRevenueTrendSubtitle')}</p>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="size-3 bg-amber-500 rounded-full" />
-              <span className="text-[10px] md:text-xs text-slate-400">This Year</span>
+              <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">{t('thisYear')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="size-3 bg-blue-500 rounded-full" />
-              <span className="text-[10px] md:text-xs text-slate-400">Last Year</span>
+              <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">{t('lastYear')}</span>
             </div>
           </div>
         </div>
         <div className="h-64 md:h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyComparison}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.1} vertical={false} />
               <XAxis dataKey="month" stroke="#64748b" style={{ fontSize: '10px' }} axisLine={false} tickLine={false} />
               <YAxis stroke="#64748b" style={{ fontSize: '10px' }} axisLine={false} tickLine={false} tickFormatter={(value) => formatPrice(value)} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="thisYear" name="This Year" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={30} />
-              <Bar dataKey="lastYear" name="Last Year" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={30} />
+              <Bar dataKey="thisYear" name={t('thisYear')} fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={30} />
+              <Bar dataKey="lastYear" name={t('lastYear')} fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -335,19 +337,19 @@ export function LuxuryReports() {
 
       {/* Detailed Breakdown Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
-        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-4 md:p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">Revenue Breakdown</h3>
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">{t('revenueBreakdown')}</h3>
           <div className="space-y-4">
             {revenueByType.map((item) => (
-              <div key={item.type} className="p-5 bg-slate-800/40 border border-slate-700/50 rounded-xl hover:border-amber-500/30 transition-all">
+              <div key={item.type} className="p-5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:border-amber-500/30 transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="font-semibold text-white text-sm md:text-base">{item.type} Rooms</p>
-                    <p className="text-[10px] md:text-xs text-slate-400">{item.occupied}/{item.count || 0} occupied</p>
+                    <p className="font-semibold text-slate-900 dark:text-white text-sm md:text-base">{item.type} Rooms</p>
+                    <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">{item.occupied}/{item.count || 0} {t('occupiedCount')}</p>
                   </div>
-                  <p className="text-base md:text-lg font-bold text-amber-400">{formatPrice(item.revenue)}</p>
+                  <p className="text-base md:text-lg font-bold text-amber-600 dark:text-amber-400">{formatPrice(item.revenue)}</p>
                 </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
                     style={{ width: `${item.count > 0 ? (item.occupied / item.count) * 100 : 0}%` }}
@@ -358,29 +360,29 @@ export function LuxuryReports() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-4 md:p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">Payment Status</h3>
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">{t('paymentStatus')}</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-200 dark:border-green-500/20 rounded-xl">
               <div>
-                <p className="font-semibold text-white text-sm">Confirmed</p>
-                <p className="text-[10px] text-slate-400">{payments.filter(p => p.status_pembayaran === 'Confirmed').length} transactions</p>
+                <p className="font-semibold text-slate-900 dark:text-white text-sm">{t('confirmed')}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">{payments.filter(p => p.status_pembayaran === 'Confirmed').length} {t('transactionCount')}</p>
               </div>
-              <p className="text-lg md:text-xl font-bold text-green-400">{formatPrice(totalRevenue)}</p>
+              <p className="text-lg md:text-xl font-bold text-green-600 dark:text-green-400">{formatPrice(totalRevenue)}</p>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 border border-orange-500/20 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-500/10 to-orange-600/10 border border-orange-200 dark:border-orange-500/20 rounded-xl">
               <div>
-                <p className="font-semibold text-white text-sm">Pending</p>
-                <p className="text-[10px] text-slate-400">{payments.filter(p => p.status_pembayaran === 'Pending').length} transactions</p>
+                <p className="font-semibold text-slate-900 dark:text-white text-sm">{t('pending')}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">{payments.filter(p => p.status_pembayaran === 'Pending').length} {t('transactionCount')}</p>
               </div>
-              <p className="text-lg md:text-xl font-bold text-orange-400">{formatPrice(pendingRevenue)}</p>
+              <p className="text-lg md:text-xl font-bold text-orange-600 dark:text-orange-400">{formatPrice(pendingRevenue)}</p>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-500/20 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-200 dark:border-blue-500/20 rounded-xl">
               <div>
-                <p className="font-semibold text-white text-sm">Total Potential</p>
-                <p className="text-[10px] text-slate-400">If fully occupied</p>
+                <p className="font-semibold text-slate-900 dark:text-white text-sm">{t('totalPotential')}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('ifFullyOccupied')}</p>
               </div>
-              <p className="text-lg md:text-xl font-bold text-blue-400">
+              <p className="text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400">
                 {formatPrice(rooms.reduce((sum, r) => sum + (r.harga_per_bulan || 0), 0))}
               </p>
             </div>

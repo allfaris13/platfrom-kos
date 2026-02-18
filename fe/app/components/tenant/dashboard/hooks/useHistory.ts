@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import useSWR from 'swr';
-import { api, PaymentReminder, Payment } from '@/app/services/api';
+import { api, PaymentReminder, Payment, Booking } from '@/app/services/api';
 import { getImageUrl } from '@/app/utils/api-url';
 
 export interface UIBooking {
@@ -15,7 +15,7 @@ export interface UIBooking {
   monthlyRent: number;
   totalPaid: number;
   duration: string;
-  rawStatus: string;
+  rawStatus?: string;
   pendingPaymentId?: number;
   payments?: Payment[];
   startDate: Date;
@@ -51,12 +51,12 @@ export function useHistory() {
   const mappedBookings = useMemo(() => {
     if (!bookingsData || !Array.isArray(bookingsData)) return [];
     
-    return bookingsData.map((b: any) => {
+    return bookingsData.map((b: Booking) => {
       const moveIn = new Date(b.tanggal_mulai);
       const moveOut = new Date(moveIn);
       moveOut.setMonth(moveOut.getMonth() + b.durasi_sewa);
 
-      const pendingPayment = b.pembayaran?.find((p: any) => p.status_pembayaran === 'Pending');
+      const pendingPayment = b.pembayaran?.find((p: Payment) => p.status_pembayaran === 'Pending');
 
       const start = new Date(b.tanggal_mulai);
       const end = new Date(moveOut);

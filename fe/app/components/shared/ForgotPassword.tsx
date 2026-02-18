@@ -8,6 +8,7 @@ import { Label } from '@/app/components/ui/label';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { api } from '@/app/services/api';
 import { ImageWithFallback } from './ImageWithFallback';
+import { useTranslations } from 'next-intl';
 
 interface ForgotPasswordProps {
   onBack: () => void;
@@ -18,6 +19,8 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const t = useTranslations('auth');
+  const tc = useTranslations('common');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +33,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Failed to send reset link');
+        setError(t('failedToSend'));
       }
     } finally {
       setIsLoading(false);
@@ -39,7 +42,6 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-white overflow-auto md:overflow-hidden">
-        {/* Left Side: Reuse Visual Feature Section or Simplify */}
        <div className="flex-shrink-0 md:w-1/2 lg:w-[55%] relative overflow-hidden bg-stone-900 min-h-[400px] md:min-h-0 hidden md:block">
         <motion.div
            initial={{ scale: 1.1 }}
@@ -69,7 +71,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
              onClick={onBack}
              className="mb-10 p-0 hover:bg-transparent text-slate-500 hover:text-stone-900 transition-colors group"
            >
-            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Back to Login
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> {tc('backToLogin')}
           </Button>
 
           {success ? (
@@ -78,24 +80,24 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
                       <CheckCircle2 className="w-8 h-8 text-green-600" />
                   </div>
                   <div>
-                      <h2 className="text-3xl font-bold text-stone-900 mb-2">Check your email</h2>
+                      <h2 className="text-3xl font-bold text-stone-900 mb-2">{t('checkEmail')}</h2>
                       <p className="text-slate-500">
-                          We have sent a password reset link to <strong>{email}</strong>.
+                          {t('resetLinkSent')} <strong>{email}</strong>.
                       </p>
                   </div>
                   <Button
                     onClick={onBack}
                     className="w-full bg-stone-900 hover:bg-stone-800 text-white h-11 font-semibold"
                   >
-                    Back to Login
+                    {tc('backToLogin')}
                   </Button>
               </div>
           ) : (
               <>
                 <div className="mb-10">
-                    <h2 className="text-4xl font-bold text-stone-900 tracking-tight mb-3">Forgot Password?</h2>
+                    <h2 className="text-4xl font-bold text-stone-900 tracking-tight mb-3">{t('forgotPasswordTitle')}</h2>
                     <p className="text-slate-500 font-medium leading-relaxed">
-                        Enter your email address to reset your password.
+                        {t('forgotPasswordSubtitle')}
                     </p>
                 </div>
 
@@ -107,13 +109,13 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="email">{t('emailLabel')}</Label>
                     <Input
                         id="email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your email"
+                        placeholder={t('emailPlaceholder')}
                         className="mt-1"
                         required
                     />
@@ -124,7 +126,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
                     disabled={isLoading}
                     className="w-full bg-stone-900 hover:bg-stone-800 text-white h-11 font-semibold mt-6"
                     >
-                    {isLoading ? 'Sending...' : 'Send Reset Link'}
+                    {isLoading ? t('sending') : t('sendResetLink')}
                     </Button>
                 </form>
               </>

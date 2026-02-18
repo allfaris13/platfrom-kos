@@ -3,6 +3,7 @@
 import { useState, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/app/components/ui/button";
+import { useTranslations } from "next-intl";
 
 // Login Components
 import { UserLogin } from "@/app/components/shared/UserLogin";
@@ -46,6 +47,7 @@ export default function App() {
     null,
   );
   const [isClient, setIsClient] = useState(false);
+  const t = useTranslations('common');
 
   useLayoutEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -148,7 +150,7 @@ export default function App() {
           <div className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10">
             <Loader2 className="size-4 text-amber-500 animate-spin" />
             <p className="text-slate-300 text-[10px] font-medium tracking-[0.3em] uppercase">
-                Initializing Platform
+                {t('initializingPlatform')}
             </p>
           </div>
           <motion.p 
@@ -157,7 +159,7 @@ export default function App() {
             transition={{ delay: 0.4 }}
             className="text-slate-500 text-xs font-light"
           >
-            Rahmat ZAW &bull; Premium Housing Experience
+            {t('premiumExperience')}
           </motion.p>
         </div>
       </div>
@@ -177,8 +179,8 @@ export default function App() {
         {/* Default Login Screen (User/Tenant) */}
         {viewMode === "login" && (
           <UserLogin
-            onLoginSuccess={(user: any) => {
-              if (user?.role === 'admin') {
+            onLoginSuccess={(user) => {
+              if (user?.user?.role === 'admin') {
                   setUserRole("admin");
                   setViewMode("admin");
               } else {
@@ -209,25 +211,25 @@ export default function App() {
 
         {/* Admin Portal */}
         {(viewMode === "admin" || userRole === "admin") && (
-          <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+          <div className="flex h-screen bg-gray-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             <AdminSidebar
               currentPage={adminPage}
               onNavigate={(page) => setAdminPage(page as AdminPage)}
             />
             <div className="flex-1 overflow-auto">
-              <div className="sticky top-0 z-10 p-4 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div className="sticky top-0 z-10 p-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => setViewMode("home")} className="text-slate-600 dark:text-slate-400">
-                        Back to Home
+                    <Button variant="ghost" size="sm" onClick={() => setViewMode("home")} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        {t('backToHome')}
                     </Button>
                     <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
                     <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setViewMode("tenant")}
-                    className="text-slate-600 dark:text-slate-400 hover:text-amber-500"
+                    className="text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-500"
                     >
-                    Switch to Tenant View
+                    {t('switchToTenantView')}
                     </Button>
                 </div>
                 <Button
@@ -239,10 +241,10 @@ export default function App() {
                     setAdminPage("dashboard");
                     setViewMode("login");
                   }}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 font-medium"
+                  className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950 font-medium"
                 >
                   <LogOut className="size-4 mr-2" />
-                  Sign Out
+                  {t('signOut')}
                 </Button>
               </div>
               <div className="p-6">

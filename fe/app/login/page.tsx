@@ -8,11 +8,10 @@ export default function LoginPage() {
 
   return (
     <UserLogin 
-      onLoginSuccess={(user: any) => {
+      onLoginSuccess={(user) => {
         // Handle role-based redirection
-        let role = 'tenant';
-        if (user?.role === 'admin') {
-           role = 'admin';
+        const role = user?.user?.role;
+        if (role === 'admin') {
            // Set local storage for app state persistence
            localStorage.setItem('app_user_role', 'admin');
            localStorage.setItem('app_view_mode', 'admin');
@@ -20,7 +19,6 @@ export default function LoginPage() {
            router.push('/'); 
         } else {
            // Tenant or Guest
-           role = 'tenant';
            localStorage.setItem('app_user_role', 'tenant');
            localStorage.setItem('app_view_mode', 'tenant');
            router.push('/');

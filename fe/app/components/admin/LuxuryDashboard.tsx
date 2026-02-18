@@ -1,3 +1,5 @@
+"use client";
+
 import {
   TrendingUp,
   Users,
@@ -21,6 +23,7 @@ import {
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { api, DashboardStats as DashboardStatResponse, Tenant, Payment } from "@/app/services/api";
+import { useTranslations } from "next-intl";
 
 interface TooltipPayload {
   payload: {
@@ -45,11 +48,11 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
       }).format(price);
     };
     return (
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 shadow-xl">
-        <p className="text-slate-400 text-xs mb-1">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 shadow-xl">
+        <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">
           {payload[0].payload.month}
         </p>
-        <p className="text-white font-semibold">
+        <p className="text-slate-900 dark:text-white font-semibold">
           {formatPrice(payload[0].value)}
         </p>
       </div>
@@ -59,6 +62,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export function LuxuryDashboard() {
+  const t = useTranslations('admin');
   const [stats, setStats] = useState<DashboardStatResponse>({
     total_revenue: 0,
     active_tenants: 0,
@@ -76,22 +80,26 @@ export function LuxuryDashboard() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [roomsCount, setRoomsCount] = useState(0);
+  // Suppress unused warnings — these setters are used indirectly below
+  void setStats; void setPayments;
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [statsData, tenantsData, paymentsData, roomsData] =
+        const [dashStats, tenantsData, paymentsRes, roomsData] =
           await Promise.all([
             api.getDashboardStats(),
             api.getAllTenants(),
             api.getAllPayments(),
             api.getRooms(),
           ]);
+        setStats(dashStats);
         if (Array.isArray(tenantsData)) {
             setTenants(tenantsData);
         } else if (tenantsData && tenantsData.data) {
             setTenants(tenantsData.data);
         }
+        setPayments(Array.isArray(paymentsRes) ? paymentsRes : []);
         setRoomsCount(roomsData.length);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -126,8 +134,8 @@ export function LuxuryDashboard() {
 
   // Occupancy data for donut chart
   const occupancyData = [
-    { name: "Tersedia", value: Number(availableRooms), color: "#10b981" },
-    { name: "Terisi", value: Number(occupiedRooms), color: "#f59e0b" },
+    { name: t('available'), value: Number(availableRooms), color: "#10b981" },
+    { name: t('occupied'), value: Number(occupiedRooms), color: "#f59e0b" },
   ];
 
   const formatPrice = (price: number) => {
@@ -140,24 +148,24 @@ export function LuxuryDashboard() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 min-h-screen">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 bg-clip-text text-transparent mb-1 md:mb-2">
-            Ringkasan Dashboard
+            {t('dashboardTitle')}
           </h1>
-          <p className="text-slate-400 text-sm md:text-base">
-            Selamat datang kembali, Administrator
+          <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base">
+            {t('dashboardSubtitle')}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-800/50 border border-slate-700 rounded-lg">
+          <div className="px-3 py-1.5 md:px-4 md:py-2 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm dark:shadow-none">
             <p className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wider">
-              Terakhir diperbarui
+              {t('lastUpdated')}
             </p>
-            <p className="text-xs md:text-sm text-white font-medium">
-              Baru saja
+            <p className="text-xs md:text-sm text-slate-900 dark:text-white font-medium">
+              {t('justNow')}
             </p>
           </div>
         </div>
@@ -195,13 +203,13 @@ export function LuxuryDashboard() {
                 <span className="font-medium">+12.5%</span>
               </div>
             </div>
-            <p className="text-slate-400 text-[10px] md:text-sm mb-1">
-              Total Pendapatan
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm mb-1">
+              {t('totalRevenue')}
             </p>
-            <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">
+            <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
               {formatPrice(totalRevenue)}
             </p>
-            <p className="text-[10px] text-slate-500">Bulan ini</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">{t('thisMonth')}</p>
           </div>
         </motion.div>
 
@@ -225,13 +233,13 @@ export function LuxuryDashboard() {
               </div>
             </div>
             <p className="text-slate-400 text-[10px] md:text-sm mb-1">
-              Penyewa Aktif
+              {t('activeTenants')}
             </p>
-            <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">
+            <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
               {activeTenants}
             </p>
-            <p className="text-[10px] text-slate-500">
-              {tenants.length} total pendaftaran
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+              {tenants.length} {t('totalRegistrations')}
             </p>
           </div>
         </motion.div>
@@ -252,18 +260,18 @@ export function LuxuryDashboard() {
               </div>
               <div className="px-1.5 md:px-2 py-0.5 md:py-1 bg-green-500/20 rounded-lg">
                 <span className="text-[10px] text-green-400 font-medium">
-                  Tersedia
+                  {t('available')}
                 </span>
               </div>
             </div>
             <p className="text-slate-400 text-[10px] md:text-sm mb-1">
-              Kamar Tersedia
+              {t('availableRooms')}
             </p>
-            <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">
+            <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
               {availableRooms}
             </p>
-            <p className="text-[10px] text-slate-500">
-              Dari {roomsCount} kamar
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+              {t('ofTotalRooms', {count: roomsCount})}
             </p>
           </div>
         </motion.div>
@@ -284,17 +292,17 @@ export function LuxuryDashboard() {
               </div>
               <div className="px-1.5 md:px-2 py-0.5 md:py-1 bg-red-500/20 rounded-lg">
                 <span className="text-[10px] text-red-400 font-medium">
-                  Perlu Tindakan
+                  {t('payments')}
                 </span>
               </div>
             </div>
             <p className="text-slate-400 text-[10px] md:text-sm mb-1">
-              Pembayaran Menunggu
+              {t('pendingPayments')}
             </p>
-            <p className="text-xl md:text-3xl font-bold text-white mb-0.5 md:mb-1">
+            <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
               {pendingPayments}
             </p>
-            <p className="text-[10px] text-slate-500">Perlu konfirmasi</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">{t('needsConfirmation')}</p>
           </div>
         </motion.div>
       </motion.div>
@@ -302,24 +310,24 @@ export function LuxuryDashboard() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Revenue Trend Chart */}
-        <div className="xl:col-span-2 bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
+        <div className="xl:col-span-2 bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-white mb-1">
-                Tren Pendapatan Bulanan
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">
+                {t('monthlyRevenueTrend')}
               </h3>
-              <p className="text-sm text-slate-400">
-                Kinerja 6 bulan terakhir
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {t('last6MonthsPerformance')}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
                 <div className="size-3 bg-amber-500 rounded-full" />
-                <span className="text-xs text-slate-400">Pendapatan</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">{t('revenue')}</span>
               </div>
               <div className="flex items-center gap-2 ml-4">
                 <div className="size-3 bg-blue-500 rounded-full" />
-                <span className="text-xs text-slate-400">Target</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">{t('target')}</span>
               </div>
             </div>
           </div>
@@ -377,12 +385,12 @@ export function LuxuryDashboard() {
         </div>
 
         {/* Occupancy Donut Chart */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
           <div className="mb-6">
-            <h3 className="text-xl font-semibold text-white mb-1">
-              Tingkat Okupansi
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">
+              {t('occupancyRate')}
             </h3>
-            <p className="text-sm text-slate-400">Status kamar saat ini</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('currentRoomStatus')}</p>
           </div>
           <div className="h-64 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -415,13 +423,13 @@ export function LuxuryDashboard() {
               <p className="text-2xl font-bold text-green-400">
                 {availableRooms}
               </p>
-              <p className="text-xs text-slate-400 mt-1">Tersedia</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('available')}</p>
             </div>
             <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
               <p className="text-2xl font-bold text-orange-400">
                 {occupiedRooms}
               </p>
-              <p className="text-xs text-slate-400 mt-1">Terisi</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('occupied')}</p>
             </div>
           </div>
         </div>
@@ -432,14 +440,14 @@ export function LuxuryDashboard() {
         {/* Recent Registrations */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">
-            Pendaftaran Baru
+            {t('newRegistrations')}
           </h3>
           <div className="space-y-3">
             {tenants.length > 0 ? (
               tenants.slice(0, 4).map((tenant) => (
                 <div
                   key={tenant.id}
-                  className="flex items-center gap-4 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl hover:bg-slate-800/50 transition-all duration-200"
+                  className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-200"
                 >
                   <div className="size-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
                     <span className="text-lg font-bold text-white">
@@ -447,15 +455,15 @@ export function LuxuryDashboard() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">
+                    <p className="font-medium text-slate-900 dark:text-white truncate">
                       {tenant.nama_lengkap || tenant.user?.username || "Guest"}
                     </p>
-                    <p className="text-sm text-slate-400 truncate">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
                       {tenant.kamar?.nomor_kamar
                         ? `Kamar ${tenant.kamar.nomor_kamar}`
                         : tenant.user?.username
                           ? `@${tenant.user.username}`
-                          : "User Baru"}
+                          : t('newUser')}
                     </p>
                   </div>
                   <span
@@ -471,7 +479,7 @@ export function LuxuryDashboard() {
               ))
             ) : (
               <p className="text-slate-500 text-center py-4">
-                Tidak ada pendaftaran ditemukan
+                {t('noRegistrationsFound')}
               </p>
             )}
           </div>
@@ -480,28 +488,28 @@ export function LuxuryDashboard() {
         {/* Recent Checkouts */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">
-            Riwayat Check-out
+            {t('checkoutHistory')}
           </h3>
           <div className="space-y-3">
             {stats.recent_checkouts && stats.recent_checkouts.length > 0 ? (
               stats.recent_checkouts.map((checkout, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-4 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl hover:bg-slate-800/50 transition-all duration-200"
+                  className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-200"
                 >
                   <div className="size-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/20">
                     <LogOut className="text-white size-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">
+                    <p className="font-medium text-slate-900 dark:text-white truncate">
                       {checkout.room_name} 
                     </p>
-                    <p className="text-sm text-slate-400 truncate">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
                       {checkout.tenant_name}
                     </p>
                   </div>
                   <div className="text-right">
-                     <p className="text-xs text-slate-400">
+                     <p className="text-xs text-slate-500 dark:text-slate-400">
                         {new Date(checkout.checkout_date).toLocaleDateString()}
                      </p>
                      <span className="text-[10px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
@@ -512,26 +520,26 @@ export function LuxuryDashboard() {
               ))
             ) : (
               <p className="text-slate-500 text-center py-4">
-                Belum ada data check-out terbaru
+                {t('noCheckoutsFound')}
               </p>
             )}
           </div>
         </div>
 
         {/* Progress Metrics */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">
-            Metrik Kinerja
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+            {t('performanceMetrics')}
           </h3>
           <div className="space-y-5">
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-slate-400">Tingkat Okupansi</span>
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm text-slate-500 dark:text-slate-400">{t('occupancyRate')}</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
                   {Math.round((occupiedRooms / (roomsCount || 1)) * 100)}%
                 </span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
+              <div className="h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                 <div
                   className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(245,158,11,0.4)]"
                   style={{
@@ -543,10 +551,10 @@ export function LuxuryDashboard() {
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-slate-400">
-                  Penyelesaian Pembayaran
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {t('paymentCompletion')}
                 </span>
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
                   {payments.length > 0
                     ? Math.round(
                         (payments.filter(
@@ -559,7 +567,7 @@ export function LuxuryDashboard() {
                   %
                 </span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
+              <div className="h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                 <div
                   className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
                   style={{
@@ -571,12 +579,12 @@ export function LuxuryDashboard() {
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-slate-400">
-                  Kepuasan Penyewa
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {t('tenantSatisfaction')}
                 </span>
-                <span className="text-sm font-semibold text-white">95%</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">95%</span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
+              <div className="h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                 <div
                   className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(37,99,235,0.4)]"
                   style={{ width: "95%" }}
@@ -586,10 +594,10 @@ export function LuxuryDashboard() {
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-slate-400">Target Bulanan</span>
-                <span className="text-sm font-semibold text-white">88%</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">{t('monthlyTarget')}</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">88%</span>
               </div>
-              <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
+              <div className="h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                 <div
                   className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(147,51,234,0.4)]"
                   style={{ width: "88%" }}

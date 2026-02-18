@@ -203,8 +203,8 @@ export function useProfile(isClient: boolean, isLoggedIn: boolean, activeView: s
       toast.success('Password berhasil diperbarui!');
       setIsChangingPassword(false);
       setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (err: any) {
-      const msg = (err as Error).message || 'Gagal mengganti password';
+    } catch (err: unknown) {
+      const msg = (err instanceof Error ? err.message : null) || 'Gagal mengganti password';
       setPasswordError(msg);
       toast.error(msg);
     } finally {

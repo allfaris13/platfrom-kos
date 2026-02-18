@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { useHome } from "../dashboard/hooks/useHome";
+import { useTranslations } from 'next-intl';
 
 // --- Komponen Counter untuk Trust Indicators ---
 function Counter({
@@ -116,6 +117,8 @@ export function Homepage({
     resetFilters,
     reviews
   } = useHome();
+  const t = useTranslations('home');
+  const tc = useTranslations('common');
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -141,21 +144,21 @@ export function Homepage({
               // Logged In View
               <>
                 <Badge variant="outline" className="mb-4 lg:mb-6 px-3 lg:px-4 py-1 lg:py-1.5 text-emerald-600 border-emerald-200 bg-emerald-50 rounded-full font-bold uppercase tracking-wider text-[9px] lg:text-xs">
-                  👋 Welcome Back
+                  {t('welcomeBadge')}
                 </Badge>
                 <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-[1.15] mb-4 lg:mb-6 text-slate-900 dark:text-white">
-                  Hi, <span className="text-amber-500 inline-block max-w-[200px] md:max-w-[400px] lg:max-w-[600px] truncate align-bottom">{userName || 'User'}!</span> <br />
-                  <span className="text-slate-900 dark:text-white text-2xl md:text-4xl lg:text-5xl font-bold">Ready to relax?</span>
+                  {t('hiUser', { name: userName || 'User' })} <br />
+                  <span className="text-slate-900 dark:text-white text-2xl md:text-4xl lg:text-5xl font-bold">{t('readyToRelax')}</span>
                 </h1>
                 <p className="text-sm md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 mb-6 lg:mb-10 max-w-xl leading-relaxed">
-                  Kelola hunianmu, cek tagihan, atau cari kamar baru langsung dari sini. Nikmati kemudahan hidup di Rahmat ZAW.
+                  {t('loggedInSubtitle')}
                 </p>
                 <div className="flex flex-row gap-3 lg:gap-4">
                   <Button 
                     onClick={onViewHistory} 
                     className="flex-1 md:flex-none bg-stone-900 hover:bg-stone-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl"
                   >
-                    Cek Tagihan & Pesanan
+                    {t('checkBills')}
                   </Button>
                   <Button 
                     variant="ghost" 
@@ -165,7 +168,7 @@ export function Homepage({
                     }}
                     className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200"
                   >
-                    Lihat Kamar
+                    {t('viewRooms')}
                   </Button>
                 </div>
               </>
@@ -173,19 +176,18 @@ export function Homepage({
               // Guest View
               <>
                 <Badge variant="outline" className="mb-4 lg:mb-6 px-3 lg:px-4 py-1 lg:py-1.5 text-amber-600 border-amber-200 bg-amber-50 rounded-full font-bold uppercase tracking-wider text-[9px] lg:text-xs">
-                  🏠 Best Boarding House in Malang
+                  {t('guestBadge')}
                 </Badge>
                 <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-[1.15] mb-4 lg:mb-6 text-slate-900 dark:text-white">
-                  Find Your Dream <br className="hidden md:block" />
-                  <span className="text-amber-500">Home With Ease.</span>
+                  {t('findDreamHome')} <br className="hidden md:block" />
+                  <span className="text-amber-500">{t('findDreamHomeHighlight')}</span>
                 </h1>
                 <p className="text-sm md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 mb-6 lg:mb-10 max-w-xl leading-relaxed">
-                  Temukan kenyamanan eksklusif dan fasilitas premium di Kos Putra
-                  Rahmat ZAW.
+                  {t('guestSubtitle')}
                 </p>
                 <div className="flex flex-row gap-3 lg:gap-4">
-                  <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">Explore</Button>
-                  <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200">Learn</Button>
+                  <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">{tc('explore')}</Button>
+                  <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200">{tc('learn')}</Button>
                 </div>
               </>
             )}
@@ -217,7 +219,7 @@ export function Homepage({
               <div className="w-full md:col-span-2 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder="Cari kamar..."
+                  placeholder={t('searchPlaceholder')}
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
                   className="pl-10 h-12 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base pr-10"
@@ -234,15 +236,15 @@ export function Homepage({
               <div className="w-full md:col-span-1">
                 <Select value={selectedPrice} onValueChange={setSelectedPrice}>
                   <SelectTrigger className="h-12 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base focus:ring-amber-500">
-                    <SelectValue placeholder="Harga" />
+                    <SelectValue placeholder={t('priceLabel')} />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                    <SelectItem value="all">Semua Harga</SelectItem>
+                    <SelectItem value="all">{t('allPrices')}</SelectItem>
                     <SelectItem value="1jt">
-                      Rp 1.000.000 (Kamar Mandi Dalam)
+                      {t('priceWithBathroom')}
                     </SelectItem>
                     <SelectItem value="800rb">
-                      Rp 800.000 (Kamar Mandi Luar)
+                      {t('priceWithoutBathroom')}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -255,7 +257,7 @@ export function Homepage({
                   }}
                   className="flex-1 h-12 lg:h-14 bg-slate-900 hover:bg-slate-800 text-white rounded-xl lg:rounded-2xl font-bold text-sm lg:text-base transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-slate-900/10"
                 >
-                  Cari
+                  {tc('search')}
                 </Button>
                 {(searchLocation || selectedPrice !== 'all' || selectedType !== 'all') && (
                   <Button
@@ -282,20 +284,20 @@ export function Homepage({
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 lg:mb-16">
             <div className="text-left">
               <h2 className="text-xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-1">
-                Pilihan Kamar
+                {t('roomSelection')}
               </h2>
               <p className="text-[10px] lg:text-base text-slate-500">
-                Fasilitas terlengkap.
+                {t('completeFacilities')}
               </p>
             </div>
             <div className="flex bg-white dark:bg-slate-900 p-0.5 lg:p-1 rounded-lg lg:rounded-2xl shadow-sm border border-slate-100 scale-90 lg:scale-100 origin-right overflow-x-auto no-scrollbar max-w-[60vw]">
-              {["Semua", "Standard", "Premium"].map((tab) => (
+              {[t('all'), "Standard", "Premium"].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setSelectedType(tab === "Semua" ? "all" : tab)}
+                  onClick={() => setSelectedType(tab === t('all') ? "all" : tab)}
                   className={`px-3 lg:px-6 py-1.5 lg:py-2.5 rounded-md lg:rounded-xl text-[10px] lg:text-sm font-semibold transition-all whitespace-nowrap ${
                     selectedType === tab ||
-                    (tab === "Semua" && selectedType === "all")
+                    (tab === t('all') && selectedType === "all")
                       ? "bg-slate-900 text-white shadow-md"
                       : "text-slate-500 hover:bg-slate-50"
                   }`}
@@ -375,7 +377,7 @@ export function Homepage({
                             {formatCurrency(room.price).replace(",00", "")}
                           </p>
                           <span className="text-[8px] lg:text-sm font-normal text-slate-400">
-                            per bulan
+                            {tc('perMonth')}
                           </span>
                         </div>
                         <Button
@@ -387,7 +389,7 @@ export function Homepage({
                             onRoomClick(room.id);
                           }}
                         >
-                          Pilih Kamar <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
+                          {t('selectRoom')} <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
                         </Button>
                       </CardFooter>
                     </Card>
@@ -401,18 +403,17 @@ export function Homepage({
                 >
                   <Home className="w-16 h-16 text-slate-300 mb-4" />
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                    Tidak ada kamar ditemukan
+                    {t('noRoomsFound')}
                   </h3>
                   <p className="text-slate-500 max-w-xs mx-auto text-center">
-                    Coba cari dengan kriteria lain atau kembali ke kategori
-                    &quot;Semua&quot;.
+                    {t('tryOtherCriteria')}
                   </p>
                   <Button
                     variant="outline"
                     className="mt-6 rounded-full border-slate-300"
                     onClick={resetFilters}
                   >
-                    Reset Filter
+                    {tc('resetFilter')}
                   </Button>
                 </motion.div>
               )}
@@ -425,35 +426,35 @@ export function Homepage({
       <section className="px-4 py-20 lg:py-32 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 items-center gap-10 lg:gap-20">
           <div className="col-span-1 md:col-span-7 lg:col-span-6 w-full">
-            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 mb-6 px-4 py-1.5 rounded-full font-bold text-[10px] lg:text-xs">SIMPLE STEPS</Badge>
+            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 mb-6 px-4 py-1.5 rounded-full font-bold text-[10px] lg:text-xs">{t('simpleSteps')}</Badge>
             <h2 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-tight mb-8 lg:mb-12 text-slate-900 dark:text-white">
-              User guide for <br />
-              <span className="text-amber-500">first timer</span>
+              {t('userGuide')} <br />
+              <span className="text-amber-500">{t('userGuideHighlight')}</span>
             </h2>
             <div className="grid grid-cols-1 gap-4 lg:gap-8">
               {[
                 {
                   step: "01",
-                  title: "Pilih Kamar",
-                  desc: "Pilih tipe kamar sesuai kebutuhan.",
+                  title: t('step01'),
+                  desc: t('step01Desc'),
                   color: "bg-blue-500",
                 },
                 {
                   step: "02",
-                  title: "Survey Lokasi",
-                  desc: "Jadwalkan kunjungan fasilitas.",
+                  title: t('step02'),
+                  desc: t('step02Desc'),
                   color: "bg-purple-500",
                 },
                 {
                   step: "03",
-                  title: "Lakukan Bayar",
-                  desc: "Proses pembayaran aman.",
+                  title: t('step03'),
+                  desc: t('step03Desc'),
                   color: "bg-amber-500",
                 },
                 {
                   step: "04",
-                  title: "Check-in",
-                  desc: "Nikmati hunian baru Anda.",
+                  title: t('step04'),
+                  desc: t('step04Desc'),
                   color: "bg-emerald-500",
                 },
               ].map((item, idx) => (
@@ -491,10 +492,10 @@ export function Homepage({
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10 lg:mb-16">
             <Badge className="bg-slate-900 text-white mb-2 lg:mb-4 px-4 lg:px-6 py-1 lg:py-2 rounded-full text-[10px]">
-              OUR LEGACY
+              {t('ourLegacy')}
             </Badge>
             <h2 className="text-2xl lg:text-5xl font-bold mb-2 lg:mb-4 text-slate-900 dark:text-white">
-              Sejarah Rahmat ZAW
+              {t('historyTitle')}
             </h2>
             <div className="w-16 lg:w-24 h-1 lg:h-1.5 bg-amber-500 mx-auto rounded-full" />
           </div>
@@ -521,12 +522,10 @@ export function Homepage({
             <div className="col-span-12 lg:col-span-6 space-y-4 lg:space-y-8 order-1 lg:order-2">
               <div className="space-y-3 lg:space-y-6 text-sm lg:text-xl text-slate-600 dark:text-slate-400 leading-relaxed italic border-l-4 border-amber-500 pl-4 lg:pl-8">
                 <p>
-                  Didirikan pada tahun 2018, Kos Putra Rahmat ZAW menyediakan
-                  ekosistem pendukung prestasi mahasiswa.
+                  {t('historyText1')}
                 </p>
                 <p className="hidden md:block">
-                  Kini bertransformasi memberikan standar hunian modern dengan
-                  menggabungkan kenyamanan hotel dan kehangatan rumah.
+                  {t('historyText2')}
                 </p>
               </div>
               <div className="flex gap-3 lg:gap-4">
@@ -535,7 +534,7 @@ export function Homepage({
                     6++
                   </p>
                   <p className="text-[8px] lg:text-sm text-slate-500 font-bold uppercase tracking-wider">
-                    Tahun Excellence
+                    {t('yearsExcellence')}
                   </p>
                 </div>
                 <div className="p-4 lg:p-6 bg-white dark:bg-slate-900 rounded-[1.2rem] lg:rounded-[2rem] shadow-sm border border-slate-100 flex-1">
@@ -543,7 +542,7 @@ export function Homepage({
                     200++
                   </p>
                   <p className="text-[8px] lg:text-sm text-slate-500 font-bold uppercase tracking-wider">
-                    Alumni
+                    {t('alumni')}
                   </p>
                 </div>
               </div>
@@ -561,7 +560,7 @@ export function Homepage({
                 <Counter value={4.9} decimals={1} />
               </h2>
               <p className="text-slate-400 font-bold tracking-widest uppercase text-[8px] lg:text-sm">
-                Rating
+                {t('rating')}
               </p>
               <div className="flex gap-0.5 mt-2 justify-center text-amber-500">
                 {[...Array(5)].map((_, i) => (
@@ -577,7 +576,7 @@ export function Homepage({
                 <Counter value={98} suffix="%" />
               </h2>
               <p className="text-slate-400 font-bold tracking-widest uppercase text-[8px] lg:text-sm">
-                Satisfaction
+                {t('satisfaction')}
               </p>
             </div>
             <div className="px-2 border-l border-slate-100 dark:border-slate-800 lg:border-l-0">
@@ -585,7 +584,7 @@ export function Homepage({
                 <Counter value={2500} suffix="+" />
               </h2>
               <p className="text-slate-400 font-bold tracking-widest uppercase text-[8px] lg:text-sm">
-                Residents
+                {t('residents')}
               </p>
             </div>
             <div className="px-2 border-l border-slate-100 dark:border-slate-800">
@@ -593,7 +592,7 @@ export function Homepage({
                 24/7
               </h2>
               <p className="text-slate-400 font-bold tracking-widest uppercase text-[8px] lg:text-sm">
-                Support
+                {t('support')}
               </p>
             </div>
           </div>
@@ -604,13 +603,13 @@ export function Homepage({
       <section className="py-16 lg:py-24 bg-slate-50 dark:bg-slate-950 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 mb-10 lg:mb-16 text-center">
           <Badge className="bg-amber-500 text-white mb-2 lg:mb-4 px-4 py-1 rounded-full text-[10px]">
-            COMMUNITY
+            {t('community')}
           </Badge>
           <h2 className="text-2xl lg:text-5xl font-bold mb-2 lg:mb-4 text-slate-900 dark:text-white">
-            Ulasan Penghuni
+            {t('residentReviews')}
           </h2>
           <p className="text-slate-500 text-xs lg:text-lg">
-            Suara jujur dari keluarga Rahmat ZAW.
+            {t('reviewsSubtitle')}
           </p>
         </div>
 
@@ -658,7 +657,7 @@ export function Homepage({
 
       {/* Footer Decoration */}
       <div className="mt-20 py-10 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-slate-400 text-[10px] uppercase tracking-widest px-8">
-        <p>© 2026 Rahmat ZAW Residence</p>
+        <p>{t('footerCopyright')}</p>
         <div className="flex gap-6">
           <span className="cursor-pointer hover:text-black dark:hover:text-white transition-colors">Instagram</span>
           <span className="cursor-pointer hover:text-black dark:hover:text-white transition-colors">WhatsApp</span>

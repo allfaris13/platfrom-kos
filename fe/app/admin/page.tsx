@@ -5,11 +5,12 @@ import { LuxuryDashboard } from "@/app/components/admin/LuxuryDashboard";
 import { LuxuryReports } from "@/app/components/admin/LuxuryReports";
 import { LuxuryRoomManagement } from "@/app/components/admin/LuxuryRoomManagement";
 import { TenantData } from "@/app/components/admin/TenantData";
-import { UserManagement } from "@/app/components/admin/UserManagement";
 import { LuxuryPaymentConfirmation } from "@/app/components/admin/LuxuryPaymentConfirmation";
 import { GalleryData } from "@/app/components/admin/GalleryData";
 import { AdminLogin } from "@/app/components/shared/AdminLogin";
 import { Button } from "@/app/components/ui/button";
+import { LanguageSwitcher } from "@/app/components/shared/LanguageSwitcher";
+import { ThemeToggle } from "@/app/components/shared/ThemeToggle";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -56,8 +57,6 @@ export default function AdminPage() {
         return <LuxuryRoomManagement key="rooms" />;
       case "tenants":
         return <TenantData key="tenants" />;
-      case "users":
-        return <UserManagement key="users" />;
       case "payments":
         return <LuxuryPaymentConfirmation key="payments" />;
       case "reports":
@@ -70,30 +69,37 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden font-['Poppins']">
+    <div className="flex h-screen bg-gray-50 dark:bg-slate-950 overflow-hidden font-['Poppins'] transition-colors duration-300">
       <AdminSidebar currentPage={currentPage} onNavigate={setCurrentPage} />
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Subtle Decorative Background */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] rounded-full -z-10" />
 
-        <header className="sticky top-0 z-20 p-4 border-b border-slate-900/50 flex justify-between items-center bg-slate-950/80 backdrop-blur-xl shrink-0">
+        <header className="sticky top-0 z-20 p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shrink-0 transition-colors duration-300">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild className="text-slate-400 hover:text-white hover:bg-slate-900 rounded-xl transition-all">
+            <Button variant="ghost" asChild className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all">
               <Link href="/">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline font-medium">Back to Site</span>
               </Link>
             </Button>
-            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-            <h2 className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] hidden md:block">
-              Control Panel / <span className="text-slate-300">{currentPage}</span>
+            <div className="h-4 w-px bg-slate-300 dark:bg-slate-800 hidden sm:block" />
+            <h2 className="text-slate-500 dark:text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] hidden md:block">
+              Control Panel / <span className="text-slate-900 dark:text-slate-300">{currentPage}</span>
             </h2>
           </div>
 
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 mr-2">
+              <ThemeToggle />
+              <LanguageSwitcher />
+            </div>
+            
+            <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-800 mx-1" />
+
             <div className="hidden sm:flex flex-col items-end mr-2">
-              <span className="text-white text-xs font-bold leading-tight">Administrator</span>
+              <span className="text-slate-900 dark:text-white text-xs font-bold leading-tight">Administrator</span>
               <span className="text-emerald-500 text-[10px] font-medium flex items-center gap-1">
                 <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse" /> Online
               </span>
@@ -106,7 +112,7 @@ export default function AdminPage() {
                 localStorage.removeItem('user');
                 setIsAdminAuthenticated(false);
               }}
-              className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-xl px-4 py-2 font-bold text-[10px] transition-all"
+              className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 dark:border-red-500/30 rounded-xl px-4 py-2 font-bold text-[10px] transition-all"
             >
               Logout
             </Button>

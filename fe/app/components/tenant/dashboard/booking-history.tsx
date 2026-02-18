@@ -47,7 +47,6 @@ export function BookingHistory() {
     viewDetailsModalOpen,
     setViewDetailsModalOpen,
     selectedBooking,
-    setSelectedBooking,
     selectedPaymentId,
     setSelectedPaymentId,
     bookings,
@@ -617,7 +616,7 @@ export function BookingHistory() {
         <BookingDetailsModal
           isOpen={viewDetailsModalOpen}
           onClose={() => setViewDetailsModalOpen(false)}
-          booking={selectedBooking as any}
+          booking={selectedBooking as unknown as Parameters<typeof BookingDetailsModal>[0]['booking']}
         />
       )}
 

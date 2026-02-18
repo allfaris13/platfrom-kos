@@ -3,9 +3,14 @@ package utils
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"sync"
 
 	socketio "github.com/googollee/go-socket.io"
+	"github.com/googollee/go-socket.io/engineio"
+	"github.com/googollee/go-socket.io/engineio/transport"
+	"github.com/googollee/go-socket.io/engineio/transport/polling"
+	"github.com/googollee/go-socket.io/engineio/transport/websocket"
 )
 
 type SocketServer struct {
@@ -18,8 +23,21 @@ type SocketServer struct {
 var GlobalSocket *SocketServer
 
 func InitSocketServer() (*SocketServer, error) {
-	server := socketio.NewServer(nil)
-
+	server := socketio.NewServer(&engineio.Options{
+		Transports: []transport.Transport{
+			&polling.Transport{
+				CheckOrigin: func(r *http.Request) bool {
+					return true
+				},
+			},
+			&websocket.Transport{
+				CheckOrigin: func(r *http.Request) bool {
+					return true
+				},
+			},
+		},
+	})
+	
 	ss := &SocketServer{
 		Server:      server,
 		UserSockets: make(map[uint]map[string]bool),
@@ -78,5 +96,5 @@ func (ss *SocketServer) BroadcastToUser(userID uint, event string, data interfac
 }
 
 func (ss *SocketServer) BroadcastToAll(event string, data interface{}) {
-	ss.Server.BroadcastToNamespace("/", event, data)
+	ss.Server.BroadcastToRoom("/", "", event, data)
 }

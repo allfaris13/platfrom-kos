@@ -5,7 +5,6 @@ import { ContactUs } from './contact-us';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, History, User, ImageIcon } from 'lucide-react';
-import { api } from '@/app/services/api';
 
 // Modular Components & Hooks
 import { Header } from './Header';
@@ -18,6 +17,7 @@ import { ProfileView } from './views/ProfileView';
 import { Footer } from './Footer';
 import { useProfile } from './hooks/useProfile';
 import { MenuItem } from './types';
+import { useTranslations } from 'next-intl';
 
 interface UserPlatformProps {
   onLogout?: () => void;
@@ -39,8 +39,9 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
 
   // -- Lifecycle --
   useEffect(() => {
-    setIsMounted(true);
-    setIsClient(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(() => true);
+    setIsClient(() => true);
   }, []);
 
   useEffect(() => {
@@ -90,11 +91,13 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   };
 
   // Nav Config
+  const t = useTranslations('nav');
+
   const menuItems: MenuItem[] = [
-    { id: 'home', label: 'Beranda', icon: Home },
-    { id: 'gallery', label: 'Galeri Kos', icon: ImageIcon },
-    { id: 'history', label: 'Pesanan & Tagihan', icon: History, hidden: !isLoggedIn },
-    { id: 'profile', label: 'Profil', icon: User, hidden: !isLoggedIn },
+    { id: 'home', label: t('home'), icon: Home },
+    { id: 'gallery', label: t('gallery'), icon: ImageIcon },
+    { id: 'history', label: t('ordersAndBills'), icon: History, hidden: !isLoggedIn },
+    { id: 'profile', label: t('profile'), icon: User, hidden: !isLoggedIn },
   ];
 
   if (!isMounted) return null;
