@@ -104,9 +104,28 @@ Uses React Context API for global state. See [State Management Guide](./docs/STA
 
 ### Dark Mode
 
-- All components support dark mode
-- Use `dark:` prefix for dark mode variants
-- Primary colors adjust automatically
+- All components support dark mode via `dark:` Tailwind prefix
+- Theme state is managed by `ThemeContext` and persisted in `localStorage`
+- Global CSS transition (`globals.css`) ensures **all elements animate simultaneously** at `500ms ease-in-out`
+- Avoid `transition-all` on UI components (use `transition-colors`) to prevent font rendering artifacts
+
+### Animation Guidelines (Framer Motion)
+
+- **Page transitions**: Use `AnimatePresence` + `motion.div` with a unique `key` prop
+- **Entrance animations**: Use `initial/animate` with `opacity: 0→1` and `y: 20→0`
+- **Staggered lists**: Use `variants` with `staggerChildren` on the parent container
+- **Exit handled by**: `AnimatePresence mode="wait"` — waits for exit to complete before entering
+
+```tsx
+// Standard entrance animation pattern
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.2, duration: 0.4 }}
+>
+  ...content
+</motion.div>
+```
 
 ## Adding New Features
 
@@ -241,7 +260,10 @@ const reviews = await api.getReviews(roomId);
 - [ ] Room search and filters work
 - [ ] Booking flow completes
 - [ ] Admin dashboard displays data
-- [ ] Dark mode toggle works
+- [ ] Dark mode toggle works (all sections transition simultaneously)
+- [ ] No typography glitch on buttons upon theme change
+- [ ] Admin page transitions animate correctly
+- [ ] Staggered animations appear for admin content
 - [ ] Mobile responsive on all pages
 - [ ] Images load with fallbacks
 

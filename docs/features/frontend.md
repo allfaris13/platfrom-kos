@@ -212,7 +212,105 @@ File `middleware.ts` di root frontend memeriksa keberadaan cookie autentikasi da
 | **Contoh** | `LuxuryDashboard`, `LuxuryRoomManagement` | `BookingFlow`, `RoomDetail` |
 | **Bundle** | Hanya di-load di `/admin` | Di-load di halaman publik |
 
+## Animasi: Framer Motion
+
+Seluruh transisi dan animasi dibuat dengan **framer-motion** untuk pengalaman premium.
+
+### Page Transitions (`page.tsx`)
+
+Perpindahan antar-tab Admin menggunakan `AnimatePresence` dengan `mode="wait"`:
+
+```tsx
+<AnimatePresence mode="wait">
+  <motion.div
+    key={adminPage}
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+  >
+    {/* Konten admin */}
+  </motion.div>
+</AnimatePresence>
+```
+
+### Staggered Entrance Animations
+
+Komponen yang menggunakan animasi entrance staggered:
+
+| Komponen | Elemen yang Dianimasi |
+|----------|-----------------------|
+| `LuxuryDashboard.tsx` | Stat cards, Charts, Recent Activity |
+| `LuxuryRoomManagement.tsx` | Header, Filter Bar, Table |
+| `TenantData.tsx` | Header, Tabs, Content |
+| `LuxuryPaymentConfirmation.tsx` | Header, Stats Cards, Timeline |
+| `GalleryData.tsx` | Header, Filter, Grid |
+| `LuxuryReports.tsx` | Header, Metrics, Charts, Breakdown |
+
+**Contoh pola staggered:**
+
+```tsx
+// Parent (container)
+<motion.div
+  initial="hidden"
+  animate="visible"
+  variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
+>
+  {/* Child items */}
+  <motion.div
+    variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+  >
+    ...
+  </motion.div>
+</motion.div>
+```
+
+## Dark/Light Theme System
+
+### Global Transition (`globals.css`)
+
+Untuk memastikan seluruh halaman beralih tema secara **bersamaan dan mulus**, transisi CSS diterapkan secara global di `globals.css`:
+
+```css
+body {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
+}
+```
+
+> [!TIP]
+> Dengan pendekatan ini, **semua child elements** akan mewarisi transisi yang seragam saat kelas `.dark` pada `<html>` berubah, tanpa perlu menambahkan `transition-colors` di tiap elemen secara manual.
+
+### Button Variant Stability
+
+Komponen `Button` menggunakan `transition-colors` (bukan `transition-all`) untuk mencegah glitch tipografi saat tema berubah:
+
+```tsx
+// fe/app/components/ui/button.tsx
+const buttonVariants = cva(
+  "... transition-colors ...",  // ✅ Bukan transition-all
+  { ... }
+)
+```
+
+### Hero Section Buttons
+
+Tombol "Lihat Kamar" dan "Pelajari" di Hero section menggunakan dark mode styles eksplisit:
+
+```tsx
+<Button
+  variant="ghost"
+  className="... border-2 border-slate-200 dark:border-slate-700
+             text-slate-900 dark:text-white
+             hover:bg-slate-100 dark:hover:bg-slate-800"
+>
+  Lihat Kamar
+</Button>
+```
+
 ---
 
 > [!NOTE]
 > Next.js secara otomatis melakukan **code splitting** berdasarkan route. Komponen admin tidak akan ter-bundle ke halaman publik, menjaga performa untuk user biasa.
+

@@ -132,7 +132,7 @@ export function Homepage({
     <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors overflow-x-hidden font-sans">
 
       {/* 1. Hero Section */}
-      <section className="relative px-4 pt-12 pb-10 lg:pt-32 lg:pb-32 overflow-hidden bg-white dark:bg-slate-950">
+      <section className="relative px-4 pt-12 pb-10 lg:pt-32 lg:pb-32 overflow-hidden bg-white dark:bg-slate-950 transition-colors duration-500 ease-in-out">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 items-center gap-8 lg:gap-16">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -173,7 +173,7 @@ export function Homepage({
                         const el = document.getElementById('featured-rooms');
                         if (el) el.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200"
+                    className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     {t('viewRooms')}
                   </Button>
@@ -194,7 +194,7 @@ export function Homepage({
                 </p>
                 <div className="flex flex-row gap-3 lg:gap-4">
                   <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">{tc('explore')}</Button>
-                  <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200">{tc('learn')}</Button>
+                  <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">{tc('learn')}</Button>
                 </div>
               </>
             )}
@@ -221,7 +221,7 @@ export function Homepage({
       {/* 2. Search & Filter Section */}
       <section className="relative z-20 -mt-8 md:-mt-10 px-4">
         <div className="max-w-5xl mx-auto">
-          <Card className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 shadow-2xl rounded-[1.5rem] lg:rounded-[2.5rem] p-4 lg:p-6">
+          <Card className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 shadow-2xl rounded-[1.5rem] lg:rounded-[2.5rem] p-4 lg:p-6 transition-all duration-500 ease-in-out">
             <div className="flex flex-col md:grid md:grid-cols-4 gap-4 items-center">
               <div className="w-full md:col-span-2 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -285,7 +285,7 @@ export function Homepage({
       {/* 3. Featured Rooms Section (Force 2 Columns on Mobile) */}
       <section
         id="featured-rooms"
-        className="px-4 py-20 lg:py-32 bg-slate-50 dark:bg-slate-950"
+        className="px-4 py-20 lg:py-32 bg-slate-50 dark:bg-slate-950 transition-colors duration-500 ease-in-out"
       >
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 lg:mb-16">

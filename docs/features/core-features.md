@@ -270,7 +270,32 @@ Dashboard menampilkan:
 - **Payments** — Pembayaran pending yang perlu dikonfirmasi
 - **Demographics** — Statistik penyewa
 
+### Admin Dashboard UX Enhancements
+
+#### Page Transitions
+Perpindahan antar tab admin (Dashboard, Kamar, Penyewa, dll.) menggunakan `AnimatePresence` dari `framer-motion`, menghasilkan transisi fade/slide yang halus dengan durasi 300ms.
+
+#### Staggered Content Animations
+Setiap halaman admin memiliki animasi entrance bertahap:
+1. **Header** muncul pertama (delay 0ms)
+2. **Filter / Stats Cards** muncul berikutnya (delay 100–200ms)
+3. **Table / Charts / Grid** muncul terakhir (delay 200–400ms)
+
+#### Dark/Light Mode Support
+Semua komponen admin support dark mode penuh lewat kelas `dark:` Tailwind CSS. Mode tema disimpan di `localStorage` via `ThemeContext`.
+
+#### Internationalization (i18n)
+Seluruh teks di admin dashboard di-load dari file `messages/id.json` dan `messages/en.json` via `next-intl`, mendukung bahasa **Indonesia** dan **Inggris**.
+
+#### PDF Export (Laporan)
+Halaman `LuxuryReports.tsx` memiliki fitur export laporan ke **PDF** menggunakan `jspdf` + `jspdf-autotable` dengan:
+- Header perusahaan (nama, alamat, tanggal)
+- Executive summary (total revenue, pending revenue, occupancy)
+- Tabel transaksi berwarna dengan status color-coded
+- Footer dengan nomor halaman
+
 ---
 
 > [!IMPORTANT]
 > Semua upload gambar (kamar, galeri, profil, bukti transfer) diproses melalui **Cloudinary**. Gambar disimpan di cloud folder `koskosan/rooms`, bukan di server lokal.
+
