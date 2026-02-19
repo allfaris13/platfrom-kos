@@ -23,7 +23,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
 
   frontend:
@@ -34,6 +34,7 @@ services:
         NEXT_PUBLIC_API_URL: https://rahmadzaw.busines.biz.id/api
         NEXT_PUBLIC_APP_NAME: "Rahmat ZAW Prime Stay"
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+        NEXT_PUBLIC_GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL}
         NEXT_PUBLIC_MIDTRANS_CLIENT_KEY: ${NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
     container_name: senvanda-app-rahmatzaw-frontend
     restart: unless-stopped
@@ -46,7 +47,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
 
 networks:
