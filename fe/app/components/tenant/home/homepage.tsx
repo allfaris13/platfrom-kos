@@ -147,7 +147,14 @@ export function Homepage({
                   {t('welcomeBadge')}
                 </Badge>
                 <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-[1.15] mb-4 lg:mb-6 text-slate-900 dark:text-white">
-                  {t('hiUser', { name: userName || 'User' })} <br />
+                  {t.rich('hiUser', { 
+                    name: userName || 'User',
+                    nameWrapper: (chunks) => (
+                      <span className="inline-block truncate max-w-[250px] md:max-w-[450px] align-bottom" title={userName || 'User'}>
+                        {chunks}
+                      </span>
+                    )
+                  })} <br />
                   <span className="text-slate-900 dark:text-white text-2xl md:text-4xl lg:text-5xl font-bold">{t('readyToRelax')}</span>
                 </h1>
                 <p className="text-sm md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 mb-6 lg:mb-10 max-w-xl leading-relaxed">

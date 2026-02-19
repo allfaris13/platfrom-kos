@@ -19,11 +19,15 @@ import { useProfile } from './hooks/useProfile';
 import { MenuItem } from './types';
 import { useTranslations } from 'next-intl';
 
+import { LayoutDashboard } from "lucide-react";
+import { Button } from "@/app/components/ui/button";
+
 interface UserPlatformProps {
   onLogout?: () => void;
+  onBackToAdmin?: () => void;
 }
 
-export function UserPlatform({ onLogout }: UserPlatformProps) {
+export function UserPlatform({ onLogout, onBackToAdmin }: UserPlatformProps) {
   // -- Basic Dashboard State --
   const [activeView, setActiveView] = useState('home');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -32,6 +36,7 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // -- Profile System Hook --
   const profileSystem = useProfile(isClient, isLoggedIn, activeView);
@@ -40,30 +45,37 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
   // -- Lifecycle --
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsMounted(() => true);
-    setIsClient(() => true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
+    setIsMounted(true);
+    setIsClient(true);
     
-    const initStorage = () => {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
-      setIsLoggedIn(!!token || !!userStr);
+    // Check auth immediately
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    setIsLoggedIn(!!token || !!userStr);
 
-      const storedActiveView = localStorage.getItem('user_platform_active_view');
-      if (storedActiveView) setActiveView(storedActiveView || 'home');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role === 'admin') setIsAdmin(true);
+      } catch (e) {
+        // ignore
+      }
+    }
 
-      const storedRoomId = localStorage.getItem('user_platform_selected_room_id');
-      if (storedRoomId) setSelectedRoomId(storedRoomId);
+    // Restore view state if available
+    const storedActiveView = localStorage.getItem('user_platform_active_view');
+    if (storedActiveView) {
+        setActiveView(storedActiveView);
+    } else {
+        setActiveView('home'); // Explicitly set default
+    }
 
-      const storedMobileMenu = localStorage.getItem('user_platform_mobile_menu_open');
-      if (storedMobileMenu) setMobileMenuOpen(storedMobileMenu === 'true');
-    };
+    const storedRoomId = localStorage.getItem('user_platform_selected_room_id');
+    if (storedRoomId) setSelectedRoomId(storedRoomId);
 
-    initStorage();
-  }, [isClient]);
+    const storedMobileMenu = localStorage.getItem('user_platform_mobile_menu_open');
+    if (storedMobileMenu) setMobileMenuOpen(storedMobileMenu === 'true');
+  }, []);
 
   // Sync basic dashboard state to storage
   useEffect(() => {
@@ -123,6 +135,24 @@ export function UserPlatform({ onLogout }: UserPlatformProps) {
         isLoggedIn={isLoggedIn}
         onLogout={onLogout}
       />
+
+      {/* Admin Floating Button */}
+      {isAdmin && onBackToAdmin && (
+        <motion.div
+           initial={{ opacity: 0, scale: 0.8 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="fixed bottom-6 right-6 z-50"
+        >
+          <Button
+            onClick={onBackToAdmin}
+            className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 shadow-2xl rounded-full px-6 py-6 h-auto text-sm font-bold flex items-center gap-2 border-2 border-white dark:border-slate-800"
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="hidden md:inline">Dashboard Admin</span>
+            <span className="md:hidden">Admin</span>
+          </Button>
+        </motion.div>
+      )}
 
       <main className="relative min-h-[60vh]">
         <AnimatePresence>

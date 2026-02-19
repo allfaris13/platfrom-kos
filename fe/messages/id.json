@@ -83,7 +83,7 @@
 
   "home": {
     "welcomeBadge": "👋 Selamat Datang Kembali",
-    "hiUser": "Hai, {name}!",
+    "hiUser": "Hai, <nameWrapper>{name}</nameWrapper>!",
     "readyToRelax": "Siap bersantai?",
     "loggedInSubtitle": "Kelola hunianmu, cek tagihan, atau cari kamar baru langsung dari sini. Nikmati kemudahan hidup di Rahmat ZAW.",
     "checkBills": "Cek Tagihan & Pesanan",

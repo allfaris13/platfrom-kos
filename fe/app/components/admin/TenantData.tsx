@@ -7,8 +7,8 @@ import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import {
-  AlertDialog,
+import { motion } from "framer-motion";
+import {  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
@@ -109,7 +109,12 @@ export function TenantData() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-slate-950 min-h-screen">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-500">
             {t('tenantsTitle')}
@@ -129,10 +134,15 @@ export function TenantData() {
             className="pl-12 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 h-11 md:h-12 rounded-xl"
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+        className="flex gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto"
+      >
         <button
           onClick={() => { setActiveTab('all'); setPage(1); }}
           className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
@@ -163,10 +173,15 @@ export function TenantData() {
         >
           {t('activeTenantsTab')}
         </button>
-      </div>
+      </motion.div>
 
       {/* Content Container */}
-      <div className="bg-white/50 dark:bg-slate-900/20 md:border md:border-slate-200 md:dark:border-slate-800 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-8 backdrop-blur-sm shadow-sm dark:shadow-none">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="bg-white/50 dark:bg-slate-900/20 md:border md:border-slate-200 md:dark:border-slate-800 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-8 backdrop-blur-sm shadow-sm dark:shadow-none"
+      >
         {/* Desktop Header */}
         <div className="hidden md:grid grid-cols-[60px_1.5fr_1fr_1.5fr_100px_80px] gap-4 px-6 mb-8 text-slate-500 text-xs font-bold uppercase tracking-widest">
           <div>{t('id')}</div>
@@ -346,7 +361,7 @@ export function TenantData() {
             Next
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

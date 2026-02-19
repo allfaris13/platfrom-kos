@@ -214,23 +214,13 @@ func (s *dashboardService) GetStats() (*DashboardStats, error) {
 	}
 
 	// 8. Type Breakdown (Optimized)
-	// Single query to get total count, revenue, and occupied count per type
-	type typeStat struct {
+	// Query 1: Room Counts & Occupancy
+	type roomStat struct {
 		TipeKamar string
-		Revenue   float64
 		Count     int
 		Occupied  int
 	}
-	
-	// Complex query to aggregate everything in one go
-	// Note: simpler to separate revenue and counts if GORM logic is tricky, but raw SQL is best here.
-	// Revenue: Sum payment matching room type.
-	// Count: Count rooms by type.
-	// Occupied: Count rooms by type and status='Penuh'.
-	
-	// We can fetch basic counts first (Count, Occupied)
-	var typeStats []typeStat
-	// Postgres/SQLite compatible-ish. 
+	var roomStats []roomStat
 	s.db.Raw(`
 		SELECT 
 			tipe_kamar,
@@ -238,27 +228,38 @@ func (s *dashboardService) GetStats() (*DashboardStats, error) {
 			SUM(CASE WHEN status = 'Penuh' THEN 1 ELSE 0 END) as occupied
 		FROM kamars 
 		GROUP BY tipe_kamar
-	`).Scan(&typeStats)
+	`).Scan(&roomStats)
 
-	// Fetch revenue separately per type is cleaner than a massive JOIN, or we can iterate the typeStats
-	for i, ts := range typeStats {
-		var rev float64
-		s.db.Raw(`
-            SELECT COALESCE(SUM(p.jumlah_bayar), 0)
-            FROM pembayarans p
-            JOIN pemesanans pm ON p.pemesanan_id = pm.id
-            JOIN kamars k ON pm.kamar_id = k.id
-            WHERE k.tipe_kamar = ? AND p.status_pembayaran = 'Confirmed'
-        `, ts.TipeKamar).Scan(&rev)
-		
+	// Query 2: Revenue per Type
+	type revStat struct {
+		TipeKamar string
+		Revenue   float64
+	}
+	var revStats []revStat
+	s.db.Raw(`
+		SELECT 
+			k.tipe_kamar,
+			COALESCE(SUM(p.jumlah_bayar), 0) as revenue
+		FROM pembayarans p
+		JOIN pemesanans pm ON p.pemesanan_id = pm.id
+		JOIN kamars k ON pm.kamar_id = k.id
+		WHERE p.status_pembayaran = 'Confirmed'
+		GROUP BY k.tipe_kamar
+	`).Scan(&revStats)
+
+	// Merge results efficiently in Go
+	revMap := make(map[string]float64)
+	for _, r := range revStats {
+		revMap[r.TipeKamar] = r.Revenue
+	}
+
+	for _, rs := range roomStats {
 		stats.TypeBreakdown = append(stats.TypeBreakdown, TypeRevenue{
-			Type:     ts.TipeKamar,
-			Revenue:  rev,
-			Count:    ts.Count,
-			Occupied: ts.Occupied,
+			Type:     rs.TipeKamar,
+			Count:    rs.Count,
+			Occupied: rs.Occupied,
+			Revenue:  revMap[rs.TipeKamar],
 		})
-		// Assign back to slice not needed as we append to stats
-		_ = i
 	}
 
 	// 9. Demographics (Optimized - SQL Calculation)

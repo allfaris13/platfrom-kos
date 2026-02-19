@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/componen
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { motion } from "framer-motion";
 
 interface Payment {
   id: number;
@@ -104,15 +105,25 @@ export function LuxuryPaymentConfirmation() {
   return (
     <div className="p-4 md:p-8 space-y-6 bg-gray-50 dark:bg-slate-950 min-h-screen">
       {/* Header */}
-      <div className="mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-8"
+      >
         <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600 bg-clip-text text-transparent mb-2">
           {t('paymentsTitle')}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">{t('paymentsSubtitle')}</p>
-      </div>
+      </motion.div>
 
       {/* Stats Cards - 2x2 Grid on Mobile */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+        className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
+      >
         {[
           { label: t('pendingConfirmation'), status: 'Pending', icon: Clock, color: 'orange' },
           { label: t('confirmedPayments'), status: 'Confirmed', icon: CheckCircle2, color: 'green' },
@@ -139,10 +150,15 @@ export function LuxuryPaymentConfirmation() {
             </div>
           </div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Timeline Activity Feed */}
-      <div className="bg-white/50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 backdrop-blur-sm shadow-sm dark:shadow-none">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="bg-white/50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 backdrop-blur-sm shadow-sm dark:shadow-none"
+      >
         <h2 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-6">{t('paymentTimeline')}</h2>
 
         {isLoading ? (
@@ -234,7 +250,7 @@ export function LuxuryPaymentConfirmation() {
             ))}
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Responsive Receipt Dialog */}
       <Dialog open={!!viewingPayment} onOpenChange={() => setViewingPayment(null)}>

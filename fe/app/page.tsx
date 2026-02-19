@@ -17,7 +17,13 @@ import { GalleryData } from "@/app/components/admin/GalleryData";
 import { LuxuryRoomManagement } from "@/app/components/admin/LuxuryRoomManagement";
 import { TenantData } from "@/app/components/admin/TenantData";
 import { LuxuryPaymentConfirmation } from "@/app/components/admin/LuxuryPaymentConfirmation";
-import { LuxuryReports } from "@/app/components/admin/LuxuryReports";
+// import { LuxuryReports } from "@/app/components/admin/LuxuryReports";
+import dynamic from "next/dynamic";
+
+const LuxuryReports = dynamic(
+  () => import("@/app/components/admin/LuxuryReports").then((mod) => mod.LuxuryReports),
+  { ssr: false }
+);
 
 // Tenant Components
 import { UserPlatform } from "@/app/components/tenant/dashboard/DashboardLayout";
@@ -248,24 +254,37 @@ export default function App() {
                 </Button>
               </div>
               <div className="p-6">
-                {adminPage === "dashboard" && <LuxuryDashboard />}
-                {adminPage === "gallery" && <GalleryData />}
-                {adminPage === "rooms" && <LuxuryRoomManagement />}
-                {adminPage === "tenants" && <TenantData />}
-                {adminPage === "payments" && <LuxuryPaymentConfirmation />}
-                {adminPage === "reports" && <LuxuryReports />}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={adminPage}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {adminPage === "dashboard" && <LuxuryDashboard />}
+                    {adminPage === "gallery" && <GalleryData />}
+                    {adminPage === "rooms" && <LuxuryRoomManagement />}
+                    {adminPage === "tenants" && <TenantData />}
+                    {adminPage === "payments" && <LuxuryPaymentConfirmation />}
+                    {adminPage === "reports" && <LuxuryReports />}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
           </div>
         )}
 
         {/* Tenant/Default Portal */}
-        {(viewMode === "tenant" || (!viewMode && isClient)) && (
-            <UserPlatform onLogout={() => {
-                clearStoredState();
-                setUserRole(null);
-                setViewMode("login");
-            }} />
+        {(viewMode === "tenant" || viewMode === "home" || (!viewMode && isClient)) && (
+            <UserPlatform 
+                onLogout={() => {
+                    clearStoredState();
+                    setUserRole(null);
+                    setViewMode("login");
+                }}
+                onBackToAdmin={() => setViewMode("admin")}
+            />
         )}
       </motion.div>
     </AnimatePresence>

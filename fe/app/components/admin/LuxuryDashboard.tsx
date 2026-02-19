@@ -34,7 +34,8 @@ interface TooltipPayload {
 
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: TooltipPayload[];
+  payload?: any[];
+  label?: string;
 }
 
 function CustomTooltip({ active, payload }: CustomTooltipProps) {
@@ -47,13 +48,20 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
         notation: "compact",
       }).format(price);
     };
+
+    const data = payload[0];
+    const isPie = !data.payload.month;
+
     return (
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 shadow-xl">
         <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">
-          {payload[0].payload.month}
+          {isPie ? data.name : data.payload.month}
         </p>
-        <p className="text-slate-900 dark:text-white font-semibold">
-          {formatPrice(payload[0].value)}
+        <p className="text-slate-900 dark:text-white font-semibold flex items-center gap-2">
+          {isPie && (
+            <span className="size-2 rounded-full" style={{ backgroundColor: data.payload.fill || data.color }} />
+          )}
+          {isPie ? data.value : formatPrice(data.value)}
         </p>
       </div>
     );
@@ -190,13 +198,13 @@ export function LuxuryDashboard() {
             hidden: { opacity: 0, y: 20 },
             visible: { opacity: 1, y: 0 }
           }}
-          className="group relative overflow-hidden glass-dark rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300"
+          className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-300"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-2 md:mb-4">
-              <div className="p-2 md:p-3 bg-amber-500/20 rounded-xl">
-                <TrendingUp className="size-4 md:size-6 text-amber-400" />
+              <div className="p-2 md:p-3 bg-amber-500/10 dark:bg-amber-500/20 rounded-xl">
+                <TrendingUp className="size-4 md:size-6 text-amber-500 dark:text-amber-400" />
               </div>
               <div className="flex items-center gap-0.5 md:gap-1 text-green-400 text-[10px] md:text-sm">
                 <ArrowUpRight className="size-3 md:size-4" />
@@ -219,13 +227,13 @@ export function LuxuryDashboard() {
             hidden: { opacity: 0, y: 20 },
             visible: { opacity: 1, y: 0 }
           }}
-          className="group relative overflow-hidden glass-dark rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300"
+          className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-2 md:mb-4">
-              <div className="p-2 md:p-3 bg-blue-500/20 rounded-xl">
-                <Users className="size-4 md:size-6 text-blue-400" />
+              <div className="p-2 md:p-3 bg-blue-500/10 dark:bg-blue-500/20 rounded-xl">
+                <Users className="size-4 md:size-6 text-blue-500 dark:text-blue-400" />
               </div>
               <div className="flex items-center gap-0.5 md:gap-1 text-green-400 text-[10px] md:text-sm">
                 <ArrowUpRight className="size-3 md:size-4" />
@@ -250,16 +258,16 @@ export function LuxuryDashboard() {
             hidden: { opacity: 0, y: 20 },
             visible: { opacity: 1, y: 0 }
           }}
-          className="group relative overflow-hidden glass-dark rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300"
+          className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-300"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-2 md:mb-4">
-              <div className="p-2 md:p-3 bg-green-500/20 rounded-xl">
-                <Home className="size-4 md:size-6 text-green-400" />
+              <div className="p-2 md:p-3 bg-green-500/10 dark:bg-green-500/20 rounded-xl">
+                <Home className="size-4 md:size-6 text-green-500 dark:text-green-400" />
               </div>
-              <div className="px-1.5 md:px-2 py-0.5 md:py-1 bg-green-500/20 rounded-lg">
-                <span className="text-[10px] text-green-400 font-medium">
+              <div className="px-1.5 md:px-2 py-0.5 md:py-1 bg-green-500/10 dark:bg-green-500/20 rounded-lg">
+                <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
                   {t('available')}
                 </span>
               </div>
@@ -282,16 +290,16 @@ export function LuxuryDashboard() {
             hidden: { opacity: 0, y: 20 },
             visible: { opacity: 1, y: 0 }
           }}
-          className="group relative overflow-hidden glass-dark rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-300"
+          className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none rounded-2xl p-4 md:p-6 hover:shadow-2xl hover:shadow-red-500/10 transition-all duration-300"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-transparent rounded-full blur-3xl" />
           <div className="relative">
             <div className="flex items-start justify-between mb-2 md:mb-4">
-              <div className="p-2 md:p-3 bg-red-500/20 rounded-xl">
-                <CreditCard className="size-4 md:size-6 text-red-400" />
+              <div className="p-2 md:p-3 bg-red-500/10 dark:bg-red-500/20 rounded-xl">
+                <CreditCard className="size-4 md:size-6 text-red-500 dark:text-red-400" />
               </div>
-              <div className="px-1.5 md:px-2 py-0.5 md:py-1 bg-red-500/20 rounded-lg">
-                <span className="text-[10px] text-red-400 font-medium">
+              <div className="px-1.5 md:px-2 py-0.5 md:py-1 bg-red-500/10 dark:bg-red-500/20 rounded-lg">
+                <span className="text-[10px] text-red-600 dark:text-red-400 font-medium">
                   {t('payments')}
                 </span>
               </div>
@@ -308,9 +316,15 @@ export function LuxuryDashboard() {
       </motion.div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      {/* Charts Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="grid grid-cols-1 xl:grid-cols-3 gap-6"
+      >
         {/* Revenue Trend Chart */}
-        <div className="xl:col-span-2 bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
+        <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">
@@ -385,7 +399,7 @@ export function LuxuryDashboard() {
         </div>
 
         {/* Occupancy Donut Chart */}
-        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
           <div className="mb-6">
             <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">
               {t('occupancyRate')}
@@ -408,13 +422,7 @@ export function LuxuryDashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1e293b",
-                    border: "1px solid #334155",
-                    borderRadius: "8px",
-                  }}
-                />
+                <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -433,13 +441,19 @@ export function LuxuryDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Recent Activity & Quick Stats */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      {/* Recent Activity & Quick Stats */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.4 }}
+        className="grid grid-cols-1 xl:grid-cols-3 gap-6"
+      >
         {/* Recent Registrations */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none rounded-2xl p-6">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
             {t('newRegistrations')}
           </h3>
           <div className="space-y-3">
@@ -486,8 +500,8 @@ export function LuxuryDashboard() {
         </div>
 
         {/* Recent Checkouts */}
-        <div className="bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800 rounded-2xl p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none rounded-2xl p-6">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
             {t('checkoutHistory')}
           </h3>
           <div className="space-y-3">
@@ -527,7 +541,7 @@ export function LuxuryDashboard() {
         </div>
 
         {/* Progress Metrics */}
-        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
             {t('performanceMetrics')}
           </h3>
@@ -606,7 +620,7 @@ export function LuxuryDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

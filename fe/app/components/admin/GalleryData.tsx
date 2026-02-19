@@ -10,6 +10,7 @@ import { Label } from '@/app/components/ui/label';
 import { api } from '@/app/services/api';
 import { getImageUrl } from '@/app/utils/api-url';
 import { useTranslations } from 'next-intl';
+import { motion } from "framer-motion";
 
 interface Gallery {
   id: number;
@@ -85,7 +86,12 @@ export function GalleryData() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-slate-950 min-h-screen">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-500">{t('galleryTitle')}</h2>
           <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm">{t('gallerySubtitle')}</p>
@@ -173,10 +179,15 @@ export function GalleryData() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+      </motion.div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+        className="flex flex-col sm:flex-row items-center gap-4"
+      >
         <div className="relative flex-1 w-full max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 dark:text-slate-500" />
           <Input
@@ -186,10 +197,15 @@ export function GalleryData() {
             className="pl-12 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 h-10 md:h-12 rounded-xl"
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Gallery Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 pb-20 md:pb-0">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 pb-20 md:pb-0"
+      >
         {filteredImages.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-slate-100 dark:bg-slate-900/40 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800">
             <Search className="size-12 text-slate-400 dark:text-slate-700 mx-auto mb-4" />
@@ -226,7 +242,7 @@ export function GalleryData() {
             </div>
           </div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }

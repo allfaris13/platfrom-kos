@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { api } from '@/app/services/api';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { motion } from "framer-motion";
 
 interface Room {
   id: string;
@@ -220,7 +221,12 @@ export function LuxuryRoomManagement() {
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-slate-950 min-h-screen">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-500 mb-1">
             {t('roomsTitle')}
@@ -463,10 +469,15 @@ export function LuxuryRoomManagement() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
+      </motion.div>
 
       {/* Filter Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+        className="flex flex-col lg:flex-row lg:items-center gap-4"
+      >
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 dark:text-slate-400" />
           <Input
@@ -501,10 +512,15 @@ export function LuxuryRoomManagement() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </motion.div>
 
       {/* Table Container */}
-      <div className="bg-white/50 dark:bg-slate-900/20 md:border md:border-slate-200 md:dark:border-slate-800 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-8 backdrop-blur-sm shadow-xl dark:shadow-xl">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="bg-white/50 dark:bg-slate-900/20 md:border md:border-slate-200 md:dark:border-slate-800 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-8 backdrop-blur-sm shadow-xl dark:shadow-xl"
+      >
         {/* Table Header Row - Desktop Only */}
         <div className="hidden md:grid grid-cols-[100px_1fr_1fr_1.2fr_0.6fr_1.2fr_100px] gap-4 px-6 mb-8 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest">
           <div>{t('thumbnail')}</div>
@@ -613,7 +629,7 @@ export function LuxuryRoomManagement() {
             ))
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* View Dialog - Responsive */}
       <Dialog open={!!viewingRoom} onOpenChange={() => setViewingRoom(null)}>

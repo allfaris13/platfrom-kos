@@ -83,7 +83,7 @@
 
   "home": {
     "welcomeBadge": "👋 Welcome Back",
-    "hiUser": "Hi, {name}!",
+    "hiUser": "Hi, <nameWrapper>{name}</nameWrapper>!",
     "readyToRelax": "Ready to relax?",
     "loggedInSubtitle": "Manage your stay, check bills, or find a new room right from here. Enjoy the ease of living at Rahmat ZAW.",
     "checkBills": "Check Bills & Orders",

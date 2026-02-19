@@ -5,28 +5,37 @@ import { TrendingUp, Download, Calendar, DollarSign, Loader2, BarChart3, Activit
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { api, Room, Payment as ApiPayment, DashboardStats } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// import jsPDF from 'jspdf';
+// import autoTable from 'jspdf-autotable';
 import { useTranslations } from 'next-intl';
+import { motion } from "framer-motion";
 
 export function LuxuryReports() {
   const t = useTranslations('admin');
   const [payments, setPayments] = useState<ApiPayment[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [tenants, setTenants] = useState<any[]>([]); // Add tenants state
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pData, rData, sData] = await Promise.all([
+        const [pData, rData, sData, tData] = await Promise.all([
           api.getAllPayments(),
           api.getRooms(),
-          api.getDashboardStats()
+          api.getDashboardStats(),
+          api.getAllTenants() // Fetch tenants
         ]);
         setPayments(pData);
         setRooms(rData);
         setStats(sData);
+        // Handle paginated response for tenants
+        if ('data' in tData) {
+            setTenants(tData.data);
+        } else {
+            setTenants(tData as any[]);
+        }
       } catch (e) {
         console.error("Failed to fetch reports data:", e);
       } finally {
@@ -63,44 +72,227 @@ export function LuxuryReports() {
     { month: 'Jun', thisYear: 5900000, lastYear: 5200000 }
   ];
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const jsPDF = (await import('jspdf')).default;
+    const autoTable = (await import('jspdf-autotable')).default;
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    
+    // --- Header Section ---
+    // Company Logo/Name
+    doc.setFontSize(22);
+    doc.setTextColor(245, 158, 11); // Amber 500
+    doc.setFont("helvetica", "bold");
+    doc.text("Kost Putra Rahmat ZAW", 14, 20);
+    
+    // Company Address (Subtext)
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.setFont("helvetica", "normal");
+    doc.text("Pondok Alam, Jl. Sigura - Gura No.21 Blok A2,", 14, 26);
+    doc.text("Karangbesuki, Kec. Sukun, Kota Malang, Jawa Timur 65149", 14, 30);
+    doc.text("Phone: 08124911926", 14, 34);
 
-    const tableColumn = [t('date'), t('tenantName'), t('roomType'), t('roomNo'), t('amount'), t('status')];
+    // Report Title & Date
+    doc.setFontSize(16);
+    doc.setTextColor(51, 65, 85); // Slate 700
+    doc.setFont("helvetica", "bold");
+    doc.text(t('financialReportsHead'), pageWidth - 14, 20, { align: "right" });
+    
+    const dateStr = new Date().toLocaleDateString("id-ID", { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(dateStr, pageWidth - 14, 26, { align: "right" });
+
+    // Divider Line
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(203, 213, 225); // Slate 300
+    doc.line(14, 40, pageWidth - 14, 40);
+
+    // --- Executive Summary Section ---
+    const summaryY = 48;
+    const boxWidth = (pageWidth - 28 - 10) / 3; // 3 boxes with gap
+    const boxHeight = 25;
+
+    // Box 1: Total Revenue
+    doc.setFillColor(240, 253, 244); // Green 50
+    doc.setDrawColor(220, 252, 231); // Green 100
+    doc.roundedRect(14, summaryY, boxWidth, boxHeight, 3, 3, "FD");
+    
+    doc.setFontSize(9);
+    doc.setTextColor(22, 163, 74); // Green 600
+    doc.text(t('totalRevenue').toUpperCase(), 14 + 5, summaryY + 8);
+    
+    doc.setFontSize(14);
+    doc.setTextColor(21, 128, 61); // Green 700
+    doc.setFont("helvetica", "bold");
+    doc.text(formatPrice(totalRevenue), 14 + 5, summaryY + 18);
+
+    // Box 2: Pending Revenue
+    doc.setFillColor(255, 251, 235); // Amber 50
+    doc.setDrawColor(254, 243, 199); // Amber 100
+    doc.roundedRect(14 + boxWidth + 5, summaryY, boxWidth, boxHeight, 3, 3, "FD");
+
+    doc.setFontSize(9);
+    doc.setTextColor(217, 119, 6); // Amber 600
+    doc.setFont("helvetica", "normal");
+    doc.text(t('pendingRevenue').toUpperCase(), 14 + boxWidth + 10, summaryY + 8);
+
+    doc.setFontSize(14);
+    doc.setTextColor(180, 83, 9); // Amber 700
+    doc.setFont("helvetica", "bold");
+    doc.text(formatPrice(pendingRevenue), 14 + boxWidth + 10, summaryY + 18);
+
+    // Box 3: Occupancy Rate
+    const occupancyRate = rooms.length > 0 ? Math.round((rooms.filter(r => r.status === 'Terisi').length / rooms.length) * 100) : 0;
+    doc.setFillColor(239, 246, 255); // Blue 50
+    doc.setDrawColor(219, 234, 254); // Blue 100
+    doc.roundedRect(14 + (boxWidth * 2) + 10, summaryY, boxWidth, boxHeight, 3, 3, "FD");
+
+    doc.setFontSize(9);
+    doc.setTextColor(37, 99, 235); // Blue 600
+    doc.setFont("helvetica", "normal");
+    doc.text(t('occupancy').toUpperCase(), 14 + (boxWidth * 2) + 15, summaryY + 8);
+
+    doc.setFontSize(14);
+    doc.setTextColor(29, 78, 216); // Blue 700
+    doc.setFont("helvetica", "bold");
+    doc.text(`${occupancyRate}%`, 14 + (boxWidth * 2) + 15, summaryY + 18);
+
+    // --- Transaction Details Table ---
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42); // Slate 900
+    doc.text(t('transactionDetails'), 14, 80);
+
+    const tableColumn = [t('date'), t('tenantName'), t('roomType'), t('roomNo'), t('status'), t('amount')];
     const tableRows: (string | number)[][] = [];
 
-    payments.forEach(p => {
+    // Sort payments by date desc
+    const sortedPayments = [...payments].sort((a, b) => 
+      new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+    );
+
+    sortedPayments.forEach(p => {
       const rowData = [
         new Date(p.created_at || new Date().toISOString()).toLocaleDateString("id-ID"),
         p.pemesanan?.penyewa?.nama_lengkap || t('unknown'),
-        p.pemesanan?.kamar?.tipe_kamar || t('unknown'),
-        p.pemesanan?.kamar?.nomor_kamar || t('unknown'),
-        formatPrice(p.jumlah_bayar),
-        p.status_pembayaran
+        p.pemesanan?.kamar?.tipe_kamar || '-',
+        p.pemesanan?.kamar?.nomor_kamar || '-',
+        p.status_pembayaran,
+        formatPrice(p.jumlah_bayar)
       ];
       tableRows.push(rowData);
     });
 
-    const dateStr = new Date().toISOString().split('T')[0];
-    
-    // Add title
-    doc.setFontSize(18);
-    doc.text(t('financialReportsHead'), 14, 22);
-    doc.setFontSize(11);
-    doc.text(`${t('date')}: ${dateStr}`, 14, 30);
-    doc.setTextColor(100);
-
-    // Add table using autoTable
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 40,
+      startY: 85,
       theme: 'grid',
-      headStyles: { fillColor: [245, 158, 11] }, // Amber 500
-      styles: { fontSize: 8 },
+      headStyles: { 
+        fillColor: [245, 158, 11], // Amber 500
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      columnStyles: {
+        0: { cellWidth: 30 }, // Date
+        1: { cellWidth: 40 }, // Name
+        2: { cellWidth: 25 }, // Type
+        3: { cellWidth: 20, halign: 'center' }, // Room
+        4: { cellWidth: 25, halign: 'center' }, // Status
+        5: { cellWidth: 40, halign: 'right', fontStyle: 'bold' } // Amount
+      },
+      styles: { 
+        fontSize: 9,
+        cellPadding: 3,
+        overflow: 'linebreak'
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252] // Slate 50
+      },
+      didParseCell: function(data) {
+        // Color code status column
+        if (data.section === 'body' && data.column.index === 4) {
+          const status = data.cell.raw;
+          if (status === 'Confirmed') {
+            data.cell.styles.textColor = [22, 163, 74]; // Green
+          } else if (status === 'Pending') {
+            data.cell.styles.textColor = [217, 119, 6]; // Amber
+          } else {
+            data.cell.styles.textColor = [220, 38, 38]; // Red
+          }
+        }
+      },
+      // Add footer to each page
+      didDrawPage: function (data) {
+        const str = 'Page ' + doc.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(str, pageWidth - 20, pageHeight - 10, { align: "right" });
+        doc.text(`Generated by System on ${new Date().toLocaleString('id-ID')}`, 14, pageHeight - 10);
+      }
     });
 
-    doc.save(`financial_report_${dateStr}.pdf`);
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    
+    // --- Page 2: Tenant & Guest Data ---
+    doc.addPage();
+    
+    // Header for Page 2
+    doc.setFontSize(22);
+    doc.setTextColor(245, 158, 11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Kost Putra Rahmat ZAW", 14, 20);
+    
+    doc.setFontSize(16);
+    doc.setTextColor(51, 65, 85);
+    doc.text("Tenant & Guest Data", pageWidth - 14, 20, { align: "right" });
+    
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(203, 213, 225);
+    doc.line(14, 25, pageWidth - 14, 25);
+    
+    const tenantColumn = [t('id'), t('name'), t('role'), t('roomNo'), t('contact'), t('status')];
+    const tenantRows: (string | number)[][] = [];
+
+    tenants.forEach((tenant: any) => {
+        const row = [
+            tenant.id,
+            tenant.nama_lengkap || tenant.user?.username || '-',
+            tenant.role || 'Guest',
+            tenant.kamar?.nomor_kamar || '-',
+            tenant.nomor_hp || tenant.email || '-',
+            tenant.status || 'Active'
+        ];
+        tenantRows.push(row);
+    });
+
+    autoTable(doc, {
+        head: [tenantColumn],
+        body: tenantRows,
+        startY: 35,
+        theme: 'grid',
+        headStyles: { 
+            fillColor: [37, 99, 235], // Blue 600
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+        },
+        styles: { fontSize: 9, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        didDrawPage: function (data) {
+            const str = 'Page ' + doc.getNumberOfPages();
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(str, pageWidth - 20, pageHeight - 10, { align: "right" });
+            doc.text(`Generated by System on ${new Date().toLocaleString('id-ID')}`, 14, pageHeight - 10);
+        }
+    });
+
+    doc.save(`Financial_Report_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const formatPrice = (price: number) => {
@@ -152,7 +344,12 @@ export function LuxuryReports() {
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 min-h-screen">
       {/* Header - Responsif stack di mobile */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div>
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600 bg-clip-text text-transparent mb-2">
             {t('reportsTitle')}
@@ -175,11 +372,16 @@ export function LuxuryReports() {
             {t('exportReport')}
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Key Metrics - Grid responsif (2 kolom mobile, 4 kolom desktop) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        <div className="group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-green-500/10 dark:to-green-600/10 border border-green-200 dark:border-green-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-green-500/10 transition-all shadow-sm dark:shadow-none">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6"
+      >
+        <div className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-green-200 dark:border-green-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-green-900/10 transition-all shadow-sm dark:shadow-none">
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-full blur-2xl dark:from-green-500/20" />
           <div className="relative">
             <div className="p-2 md:p-3 bg-green-100 dark:bg-green-500/20 rounded-xl w-fit mb-2 md:mb-4">
@@ -191,7 +393,7 @@ export function LuxuryReports() {
           </div>
         </div>
 
-        <div className="group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-orange-500/10 dark:to-orange-600/10 border border-orange-200 dark:border-orange-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-orange-500/10 transition-all shadow-sm dark:shadow-none">
+        <div className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-orange-900/10 transition-all shadow-sm dark:shadow-none">
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-full blur-2xl dark:from-orange-500/20" />
           <div className="relative">
             <div className="p-2 md:p-3 bg-orange-100 dark:bg-orange-500/20 rounded-xl w-fit mb-2 md:mb-4">
@@ -203,7 +405,7 @@ export function LuxuryReports() {
           </div>
         </div>
 
-        <div className="group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-blue-500/10 dark:to-blue-600/10 border border-blue-200 dark:border-blue-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-blue-500/10 transition-all shadow-sm dark:shadow-none">
+        <div className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-blue-900/10 transition-all shadow-sm dark:shadow-none">
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full blur-2xl dark:from-blue-500/20" />
           <div className="relative">
             <div className="p-2 md:p-3 bg-blue-100 dark:bg-blue-500/20 rounded-xl w-fit mb-2 md:mb-4">
@@ -217,7 +419,7 @@ export function LuxuryReports() {
           </div>
         </div>
 
-        <div className="group relative overflow-hidden bg-white dark:bg-gradient-to-br dark:from-purple-500/10 dark:to-purple-600/10 border border-purple-200 dark:border-purple-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-purple-500/10 transition-all shadow-sm dark:shadow-none">
+        <div className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-500/20 rounded-2xl p-4 md:p-6 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-purple-900/10 transition-all shadow-sm dark:shadow-none">
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-2xl dark:from-purple-500/20" />
           <div className="relative">
             <div className="p-2 md:p-3 bg-purple-100 dark:bg-purple-500/20 rounded-xl w-fit mb-2 md:mb-4">
@@ -230,12 +432,17 @@ export function LuxuryReports() {
             <p className="text-[10px] text-purple-600 dark:text-purple-400">{rooms.filter(r => r.status === 'Terisi').length}/{rooms.length} rooms</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Charts Section - Stack di mobile, grid di desktop */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="grid grid-cols-1 xl:grid-cols-2 gap-6"
+      >
         {/* Revenue by Room Type */}
-        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
           <div className="mb-6">
             <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">{t('revenueByRoomType')}</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('revenueByRoomTypeSubtitle')}</p>
@@ -260,7 +467,7 @@ export function LuxuryReports() {
         </div>
 
         {/* Tenant Demographics - Pie Chart Responsif */}
-        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
           <div className="mb-6">
             <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">{t('tenantDemographics')}</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('ageDistribution')}</p>
@@ -282,9 +489,7 @@ export function LuxuryReports() {
                       <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
-                  />
+                  <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -301,10 +506,15 @@ export function LuxuryReports() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Year-over-Year Comparison */}
-      <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.4 }}
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">{t('monthlyRevenueTrend')}</h3>
@@ -333,11 +543,16 @@ export function LuxuryReports() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
       {/* Detailed Breakdown Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
-        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.4 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8"
+      >
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">{t('revenueBreakdown')}</h3>
           <div className="space-y-4">
             {revenueByType.map((item) => (
@@ -360,7 +575,7 @@ export function LuxuryReports() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">{t('paymentStatus')}</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-200 dark:border-green-500/20 rounded-xl">
@@ -388,7 +603,7 @@ export function LuxuryReports() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
