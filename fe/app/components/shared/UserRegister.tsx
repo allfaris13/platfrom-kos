@@ -97,7 +97,7 @@ export function UserRegister({
           className="absolute inset-0 z-0"
         >
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2000"
+            src="/koskosan/tampilandalam/tampilandalamkosbalkon2.jpeg"
             alt="Registration Background"
             className="w-full h-full object-cover opacity-50"
           />

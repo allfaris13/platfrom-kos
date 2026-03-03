@@ -230,7 +230,7 @@ export function Homepage({
           >
             <div className="relative z-10 rounded-[1.5rem] lg:rounded-[3rem] overflow-hidden shadow-2xl border-[4px] lg:border-[12px] border-white dark:border-slate-800">
               <ImageWithFallback
-                src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080"
+                src="/koskosan/tampilandepankos/tampilandaridepankos.jpg"
                 alt="Main Interior"
                 className="w-full aspect-[4/3] md:aspect-square lg:aspect-[4/3] object-cover"
               />
@@ -598,7 +598,7 @@ export function Homepage({
           </div>
           <div className="col-span-1 md:col-span-5 lg:col-span-6 relative flex items-center justify-center">
             <div className="relative z-10 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] lg:rounded-[5rem] p-3 lg:p-12 aspect-square w-full max-w-lg">
-              <ImageWithFallback src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000" alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
+              <ImageWithFallback src="/koskosan/fasilitaskos/fasilitaslemaridanmejabelajarkos.jpg" alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
             </div>
             {/* Decorative blob */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-amber-500/5 rounded-full blur-[60px] lg:blur-[120px] -z-10" />
@@ -623,14 +623,14 @@ export function Homepage({
             <motion.div className="col-span-12 lg:col-span-6 relative order-2 lg:order-1">
               <div className="aspect-square bg-white dark:bg-slate-900 rounded-[2rem] lg:rounded-[3rem] p-4 lg:p-8 shadow-2xl relative z-10">
                 <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000"
+                  src="/koskosan/tampilandalam/tampilandalamkoslantaikedua2.jpeg"
                   className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[2rem]"
                   alt="History Image"
                 />
               </div>
               <div className="absolute -bottom-4 -right-4 lg:-bottom-6 lg:-right-6 bg-amber-500 text-white p-4 lg:p-8 rounded-[1.5rem] lg:rounded-[2rem] shadow-xl z-20">
                 <p className="text-xl lg:text-5xl font-black italic leading-none">
-                  EST. 2018
+                  EST. 2024
                 </p>
                 <p className="uppercase tracking-widest font-bold text-[8px] lg:text-sm text-white/80">
                   Malang

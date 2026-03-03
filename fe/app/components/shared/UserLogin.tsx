@@ -65,8 +65,8 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
           className="absolute inset-0 z-0"
         >
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2000"
-            alt="Premium Interior"
+            src="/koskosan/tampilandepankos/tampilandaridepankos2.jpeg"
+            alt="Tampilan Depan Kos"
             className="w-full h-full object-cover opacity-50"
             priority
           />
