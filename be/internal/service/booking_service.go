@@ -241,18 +241,24 @@ func (s *bookingService) CreateBookingWithProof(userID uint, kamarID uint, tangg
 			return err
 		}
 
-		// Create reminder for DP if needed
+		// Create reminder for BOTH full and dp payments so it shows up in "My Bills"
+		var reminderAmount float64
 		if paymentType == "dp" {
-			reminder := models.PaymentReminder{
-				PembayaranID:    payment.ID,
-				JumlahBayar:     totalAmount - dpAmount,
-				TanggalReminder: time.Now().AddDate(0, 0, 30),
-				StatusReminder:  "Pending",
-				IsSent:          false,
-			}
-			if err := txPaymentRepo.CreateReminder(&reminder); err != nil {
-				fmt.Printf("Warning: Failed to create reminder for payment %d: %v\n", payment.ID, err)
-			}
+			reminderAmount = totalAmount - dpAmount // Sisa bayar setelah DP
+		} else {
+			reminderAmount = totalAmount // Full amount
+		}
+
+		reminderDate := time.Now().AddDate(0, 0, 3) // Due in 3 days
+		reminder := models.PaymentReminder{
+			PembayaranID:    payment.ID,
+			JumlahBayar:     reminderAmount,
+			TanggalReminder: reminderDate,
+			StatusReminder:  "Pending",
+			IsSent:          false,
+		}
+		if err := txPaymentRepo.CreateReminder(&reminder); err != nil {
+			fmt.Printf("Warning: Failed to create reminder for payment %d: %v\n", payment.ID, err)
 		}
 
 		// 3. Role Transition
