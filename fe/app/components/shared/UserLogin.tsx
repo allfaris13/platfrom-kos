@@ -161,7 +161,7 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder={t('usernamePlaceholder')}
-                className="mt-1"
+                className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]"
                 required
               />
             </div>
@@ -173,7 +173,7 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1"
+                className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]"
                 required
               />
             </div>

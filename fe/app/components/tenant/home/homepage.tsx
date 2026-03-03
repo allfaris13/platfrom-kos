@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   motion,
   useInView,
@@ -29,7 +29,9 @@ import {
   Search,
   ArrowRight,
   X,
-  RotateCcw
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { getImageUrl } from '@/app/utils/api-url';
 import {
@@ -119,6 +121,25 @@ export function Homepage({
   } = useHome();
   const t = useTranslations('home');
   const tc = useTranslations('common');
+
+  // --- Pagination ---
+  const ROOMS_PER_PAGE = 6;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset page when filters change — calling setState in effect is intentional here
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setCurrentPage(1); }, [searchLocation, selectedPrice, selectedType]); // NOSONAR
+
+  const totalPages = Math.ceil(displayRooms.length / ROOMS_PER_PAGE);
+  const paginatedRooms = displayRooms.slice(
+    (currentPage - 1) * ROOMS_PER_PAGE,
+    currentPage * ROOMS_PER_PAGE
+  );
+
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(page);
+    document.getElementById('featured-rooms')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -326,8 +347,8 @@ export function Homepage({
                 <div className="col-span-full">
                   <SkeletonGrid count={6} />
                 </div>
-              ) : displayRooms.length > 0 ? (
-                displayRooms.map((room) => (
+              ) : paginatedRooms.length > 0 ? (
+                paginatedRooms.map((room) => (
                   <motion.div
                     key={room.id}
                     layout
@@ -445,6 +466,78 @@ export function Homepage({
               )}
             </AnimatePresence>
           </motion.div>
+
+          {/* Pagination Controls */}
+          {!isLoadingRooms && totalPages > 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-10 lg:mt-14 flex items-center justify-center gap-2"
+            >
+              {/* Prev Button */}
+              <button
+                onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center justify-center w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1.5">
+                {(() => {
+                  const pages: (number | 'ellipsis')[] = [];
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (currentPage > 3) pages.push('ellipsis');
+                    const start = Math.max(2, currentPage - 1);
+                    const end = Math.min(totalPages - 1, currentPage + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (currentPage < totalPages - 2) pages.push('ellipsis');
+                    pages.push(totalPages);
+                  }
+                  return pages.map((page, idx) =>
+                    page === 'ellipsis' ? (
+                      <span key={`ellipsis-${idx}`} className="w-9 h-9 lg:w-11 lg:h-11 flex items-center justify-center text-slate-400 text-sm font-bold">…</span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => goToPage(page as number)}
+                        className={`w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl text-sm font-bold transition-all duration-200 ${
+                          currentPage === page
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg shadow-slate-900/20 scale-110'
+                            : 'border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white'
+                        }`}
+                        aria-label={`Page ${page}`}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    )
+                  );
+                })()}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center justify-center w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              {/* Page Info */}
+              <span className="ml-3 text-xs lg:text-sm text-slate-400 font-medium hidden sm:block">
+                {(currentPage - 1) * ROOMS_PER_PAGE + 1}–{Math.min(currentPage * ROOMS_PER_PAGE, displayRooms.length)} dari {displayRooms.length} kamar
+              </span>
+            </motion.div>
+          )}
         </div>
       </section>
 

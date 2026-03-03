@@ -85,10 +85,10 @@ func (h *KamarHandler) CreateKamar(c *gin.Context) {
 			return
 		}
 
-		url, err := utils.SaveUploadedFile(fileHeader, "rooms")
+		url, err := utils.UploadToCloudinary(fileHeader, "rooms")
 		if err != nil {
-			utils.GlobalLogger.Error("Failed to save image locally: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save image: %v", err)})
+			utils.GlobalLogger.Error("Failed to upload image: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image: %v", err)})
 			return
 		}
 		uploadedURLs = append(uploadedURLs, url)
@@ -198,10 +198,10 @@ func (h *KamarHandler) UpdateKamar(c *gin.Context) {
 					c.JSON(http.StatusBadRequest, gin.H{"error": "Semua file harus berupa gambar"})
 					return
 				}
-				url, err := utils.SaveUploadedFile(fileHeader, "rooms")
+				url, err := utils.UploadToCloudinary(fileHeader, "rooms")
 				if err != nil {
-					utils.GlobalLogger.Error("Failed to save image locally: %v", err)
-					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save image: %v", err)})
+					utils.GlobalLogger.Error("Failed to upload image: %v", err)
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image: %v", err)})
 					return
 				}
 				uploadedURLs = append(uploadedURLs, url)

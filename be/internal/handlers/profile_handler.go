@@ -94,14 +94,13 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 		file, err := c.FormFile("foto_profil")
 		if err == nil {
 			if utils.IsImageFile(file) {
-				url, err := utils.SaveUploadedFile(file, "profiles")
-				if err == nil {
-					input.FotoProfil = url
-				} else {
-					utils.GlobalLogger.Error("Failed to save profile locally: %v", err)
-					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save profile photo: %v", err)})
+				url, err := utils.UploadToCloudinary(file, "profiles")
+				if err != nil {
+					utils.GlobalLogger.Error("Failed to upload profile photo: %v", err)
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload profile photo: %v", err)})
 					return
 				}
+				input.FotoProfil = url
 			}
 		}
 	} else {

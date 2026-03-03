@@ -118,12 +118,12 @@ func (h *PaymentHandler) UploadPaymentProof(c *gin.Context) {
 	}
 
 	var proofURL string
-	url, err := utils.SaveUploadedFile(file, "proofs")
+	url, err := utils.UploadToCloudinary(file, "proofs")
 	if err == nil {
 		proofURL = url
 	} else {
-		utils.GlobalLogger.Error("Local upload failed: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save proof locally: %v", err)})
+		utils.GlobalLogger.Error("Upload proof failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload proof: %v", err)})
 		return
 	}
 

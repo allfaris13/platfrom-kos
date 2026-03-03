@@ -131,10 +131,10 @@ func (h *BookingHandler) CreateBookingWithProof(c *gin.Context) {
 		}
 
 		var errUpload error
-		proofURL, errUpload = utils.SaveUploadedFile(file, "proofs")
+		proofURL, errUpload = utils.UploadToCloudinary(file, "proofs")
 		if errUpload != nil {
-			utils.GlobalLogger.Error("Local upload failed: %v", errUpload)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save proof locally: %v", errUpload)})
+			utils.GlobalLogger.Error("Upload proof failed: %v", errUpload)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload proof: %v", errUpload)})
 			return
 		}
 	case "cash":

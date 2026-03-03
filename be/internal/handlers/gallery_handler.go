@@ -49,12 +49,12 @@ func (h *GalleryHandler) CreateGallery(c *gin.Context) {
 	}
 
 	var imageURL string
-	url, err := utils.SaveUploadedFile(file, "gallery")
+	url, err := utils.UploadToCloudinary(file, "gallery")
 	if err == nil {
 		imageURL = url
 	} else {
-		utils.GlobalLogger.Error("Local upload failed: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save image to local: %v", err)})
+		utils.GlobalLogger.Error("Upload failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image: %v", err)})
 		return
 	}
 

@@ -25,6 +25,13 @@ postgres_data/
 be/uploads/*
 !be/uploads/.gitkeep
 
+# Local image storage (use Cloudinary in production)
+be/public/rooms/*
+be/public/profiles/*
+be/public/proofs/*
+be/public/gallery/*
+!be/public/**/.gitkeep
+
 # Logs
 *.log
 npm-debug.log*
