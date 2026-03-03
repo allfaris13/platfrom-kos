@@ -120,16 +120,24 @@ func (s *paymentService) ConfirmPayment(paymentID uint) error {
 }
 
 func (s *paymentService) RejectPayment(paymentID uint) error {
-	payment, err := s.repo.FindByID(paymentID)
-	if err != nil {
-		return err
-	}
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		txRepo := s.repo.WithTx(tx)
 
-	payment.StatusPembayaran = "Rejected"
-	// Optional: You can reset the BuktiTransfer so the tenant must re-upload,
-	// but keeping it allows them to see what was rejected.
+		payment, err := txRepo.FindByID(paymentID)
+		if err != nil {
+			return err
+		}
 
-	return s.repo.Update(payment)
+		payment.StatusPembayaran = "Rejected"
+		if err := txRepo.Update(payment); err != nil {
+			return err
+		}
+
+		// Also update the reminder status to Rejected so frontend reflects it
+		return tx.Model(&models.PaymentReminder{}).
+			Where("pembayaran_id = ?", payment.ID).
+			Update("status_reminder", "Rejected").Error
+	})
 }
 
 // CreatePaymentSession now only creates a Pending Manual payment
@@ -210,9 +218,22 @@ func (s *paymentService) UploadPaymentProof(paymentID uint, buktiTransfer string
 	}
 
 	payment.BuktiTransfer = buktiTransfer
-	// We keep status as Pending, but now it has a proof. Admin will see it.
+	// Reset status to Pending so admin can process the new proof.
+	// This handles the re-upload case where payment was previously Rejected.
+	payment.StatusPembayaran = "Pending"
 
-	return s.repo.Update(payment)
+	if err := s.repo.Update(payment); err != nil {
+		return err
+	}
+
+	// Also reset the reminder status to Pending so it shows correctly in My Bills
+	if s.db != nil {
+		s.db.Model(&models.PaymentReminder{}).
+			Where("pembayaran_id = ?", payment.ID).
+			Update("status_reminder", "Pending")
+	}
+
+	return nil
 }
 
 func (s *paymentService) ConfirmCashPayment(paymentID uint, buktiTransfer string) error {

@@ -116,7 +116,7 @@ export interface PaymentReminder {
   pembayaran?: Payment;
   jumlah_bayar: number;
   tanggal_reminder: string;
-  status_reminder: 'Pending' | 'Paid' | 'Expired';
+  status_reminder: 'Pending' | 'Paid' | 'Expired' | 'Rejected';
   is_sent: boolean;
   created_at?: string;
 }

@@ -700,6 +700,31 @@ export function BookingHistory() {
                                  );
                                }
 
+                               // Pembayaran ditolak admin
+                               const isRejected = reminder.status_reminder === 'Rejected' || reminder.pembayaran?.status_pembayaran === 'Rejected';
+                               if (isRejected) {
+                                 return (
+                                   <div className="flex flex-col items-end gap-2">
+                                     <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 px-3 py-1 font-semibold text-sm">
+                                       <XCircle className="w-4 h-4 mr-1.5" /> Ditolak Admin
+                                     </Badge>
+                                     <p className="text-[11px] text-red-500 dark:text-red-400 text-right">Bukti pembayaran ditolak, silakan upload ulang.</p>
+                                     <Button
+                                       size="sm"
+                                       onClick={() => {
+                                         setSelectedPaymentId(reminder.pembayaran_id);
+                                         setUploadModalOpen(true);
+                                       }}
+                                       className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20"
+                                     >
+                                       <Upload className="w-4 h-4 mr-2" />
+                                       Upload Ulang Bukti
+                                     </Button>
+                                   </div>
+                                 );
+                               }
+
+
                                const hasProof = !!reminder.pembayaran?.bukti_transfer;
                                const isCash = (reminder.pembayaran?.metode_pembayaran || '').toLowerCase() === 'cash';
                                const needsPaymentInfo = !hasProof && !isCash;
