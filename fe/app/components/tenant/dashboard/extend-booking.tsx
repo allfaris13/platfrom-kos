@@ -194,6 +194,28 @@ export function ExtendBooking({ isOpen, onClose, bookingData, onSuccess }: Exten
               {/* Upload Proof for Transfer Bank */}
               {paymentMethod === 'transfer' && (
                 <div className="space-y-3">
+                  {/* Bank Account Info */}
+                  <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <Building className="w-3.5 h-3.5" />
+                      Rekening Tujuan Transfer
+                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] text-blue-500 font-medium mb-0.5">Bank BCA</p>
+                        <p className="text-xl font-black text-blue-900 tracking-wider">1234567890</p>
+                        <p className="text-xs text-blue-600 mt-0.5">a.n. <span className="font-semibold">Koskosan Official</span></p>
+                      </div>
+                      <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                        <Building className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-blue-200 flex items-center justify-between text-xs">
+                      <span className="text-blue-500">Nominal transfer</span>
+                      <span className="font-bold text-blue-900">Rp {totalCost.toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+
                   <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                     <Upload className="w-4 h-4" /> Bukti Transfer
                   </label>

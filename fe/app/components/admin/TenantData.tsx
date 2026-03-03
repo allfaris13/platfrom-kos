@@ -8,6 +8,7 @@ import { Button } from '@/app/components/ui/button';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { motion } from "framer-motion";
+import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import {  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,7 +37,7 @@ export function TenantData() {
   // States for deactivate action
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
-  const [tenantPaymentDetail, setTenantPaymentDetail] = useState<{ nama_lengkap: string; email: string; nomor_hp: string; nik: string; alamat_asal: string; jenis_kelamin: string; tanggal_lahir: string; foto_profil: string; role: string; nomor_kamar: string; tipe_kamar: string; harga_per_bulan: number; check_in: string; check_out: string; durasi_sewa: number; payments: { id: number; jumlah_bayar: number; status_pembayaran: string; metode_pembayaran: string; tanggal_bayar: string; payment_month: string }[] } | null>(null);
+  const [tenantPaymentDetail, setTenantPaymentDetail] = useState<{ nama_lengkap: string; email: string; nomor_hp: string; nik: string; alamat_asal: string; jenis_kelamin: string; foto_profil: string; role: string; nomor_kamar: string; tipe_kamar: string; harga_per_bulan: number; check_in: string; check_out: string; durasi_sewa: number; payments: { id: number; jumlah_bayar: number; status_pembayaran: string; metode_pembayaran: string; tanggal_bayar: string; payment_month: string }[] } | null>(null);
   const [loadingTenantDetail, setLoadingTenantDetail] = useState(false);
 
   const fetchUsers = useCallback(async () => {
@@ -416,8 +417,12 @@ export function TenantData() {
               {/* Header with Avatar */}
               <div className="relative bg-gradient-to-br from-amber-500 to-amber-600 p-6 md:p-8">
                 <div className="flex items-center gap-4">
-                  <div className="size-16 md:size-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black text-white uppercase flex-shrink-0">
-                    {viewingTenant.nama_lengkap ? viewingTenant.nama_lengkap.charAt(0) : 'U'}
+                  <div className="size-16 md:size-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black text-white uppercase flex-shrink-0 overflow-hidden">
+                    {tenantPaymentDetail?.foto_profil ? (
+                      <ImageWithFallback src={tenantPaymentDetail.foto_profil} alt="Foto Profil" className="w-full h-full object-cover" />
+                    ) : (
+                      viewingTenant.nama_lengkap ? viewingTenant.nama_lengkap.charAt(0) : 'U'
+                    )}
                   </div>
                   <div>
                     <h2 className="text-xl md:text-2xl font-black text-white">{viewingTenant.nama_lengkap || viewingTenant.user?.username || 'N/A'}</h2>
@@ -445,11 +450,11 @@ export function TenantData() {
                     </div>
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
                       <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Jenis Kelamin</p>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.jenis_kelamin || '-'}</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.jenis_kelamin || viewingTenant.jenis_kelamin || '-'}</p>
                     </div>
                     <div className="col-span-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
                       <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Alamat Asal</p>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.alamat_asal || '-'}</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.alamat_asal || viewingTenant.alamat_asal || '-'}</p>
                     </div>
                   </div>
                 </div>
