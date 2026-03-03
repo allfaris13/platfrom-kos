@@ -9,7 +9,8 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { motion } from "framer-motion";
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
-import {  AlertDialog,
+import {
+  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
@@ -28,7 +29,7 @@ export function TenantData() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'guest' | 'tenant' | 'non_active'>('all');
-  
+
   // Pagination State
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -44,7 +45,7 @@ export function TenantData() {
     setIsLoading(true);
     try {
       const roleFilter = activeTab === 'all' ? undefined : activeTab;
-      
+
       const response = await api.getAllTenants({
         page,
         limit,
@@ -53,17 +54,17 @@ export function TenantData() {
       });
 
       if ('data' in response && 'meta' in response) {
-         setUsers(response.data);
-         setTotalPages(response.meta.total_pages);
+        setUsers(response.data);
+        setTotalPages(response.meta.total_pages);
       } else {
-         // Fallback if API changes
-         const data = response as unknown as Tenant[];
-         setUsers(data);
+        // Fallback if API changes
+        const data = response as unknown as Tenant[];
+        setUsers(data);
       }
 
     } catch (e) {
       console.error(e);
-      setUsers([]); 
+      setUsers([]);
       toast.error('Gagal mengambil data pengguna');
     } finally {
       setIsLoading(false);
@@ -72,7 +73,7 @@ export function TenantData() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-       void fetchUsers();
+      void fetchUsers();
     }, 500);
     return () => clearTimeout(timer);
   }, [fetchUsers]);
@@ -83,7 +84,7 @@ export function TenantData() {
       setLoadingTenantDetail(true);
       api.getPaymentsByTenant(viewingTenant.id).then(data => {
         setTenantPaymentDetail(data);
-      }).catch(() => {}).finally(() => setLoadingTenantDetail(false));
+      }).catch(() => { }).finally(() => setLoadingTenantDetail(false));
     }
   }, [viewingTenant]);
 
@@ -131,7 +132,7 @@ export function TenantData() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-slate-950 min-h-screen">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -159,7 +160,7 @@ export function TenantData() {
       </motion.div>
 
       {/* Tabs */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
@@ -167,48 +168,44 @@ export function TenantData() {
       >
         <button
           onClick={() => { setActiveTab('all'); setPage(1); }}
-          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
-            activeTab === 'all'
-              ? 'text-amber-600 dark:text-amber-500 border-b-2 border-amber-500'
-              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-          }`}
+          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'all'
+            ? 'text-amber-600 dark:text-amber-500 border-b-2 border-amber-500'
+            : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
         >
           {t('allUsers')}
         </button>
         <button
           onClick={() => { setActiveTab('guest'); setPage(1); }}
-          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
-            activeTab === 'guest'
-              ? 'text-amber-600 dark:text-amber-500 border-b-2 border-amber-500'
-              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-          }`}
+          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'guest'
+            ? 'text-amber-600 dark:text-amber-500 border-b-2 border-amber-500'
+            : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
         >
           {t('guestUsers')}
         </button>
         <button
           onClick={() => { setActiveTab('tenant'); setPage(1); }}
-          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
-            activeTab === 'tenant'
-              ? 'text-amber-600 dark:text-amber-500 border-b-2 border-amber-500'
-              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-          }`}
+          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'tenant'
+            ? 'text-amber-600 dark:text-amber-500 border-b-2 border-amber-500'
+            : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
         >
           {t('activeTenantsTab')}
         </button>
         <button
           onClick={() => { setActiveTab('non_active'); setPage(1); }}
-          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
-            activeTab === 'non_active'
-              ? 'text-red-600 dark:text-red-500 border-b-2 border-red-500'
-              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-          }`}
+          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'non_active'
+            ? 'text-red-600 dark:text-red-500 border-b-2 border-red-500'
+            : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
         >
           Non Active
         </button>
       </motion.div>
 
       {/* Content Container */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.4 }}
@@ -242,11 +239,11 @@ export function TenantData() {
                 {/* Desktop Row */}
                 <div className="hidden md:grid grid-cols-[60px_1.5fr_1fr_1.5fr_100px_80px] gap-4 px-6 py-4 items-center bg-slate-50 dark:bg-slate-800/20 hover:bg-slate-100 dark:hover:bg-slate-800/40 rounded-2xl transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-800 group">
                   <div className="text-slate-400 dark:text-slate-500 font-mono text-sm">#{user.id}</div>
-                  
+
                   {/* Real Name Display */}
                   <div className="flex flex-col min-w-0">
-                    <span 
-                      className="text-slate-900 dark:text-white font-bold text-sm md:text-base truncate" 
+                    <span
+                      className="text-slate-900 dark:text-white font-bold text-sm md:text-base truncate"
                       title={user.nama_lengkap || user.user?.username || '-'}
                     >
                       {truncateText(user.nama_lengkap || user.user?.username || '-', 25)}
@@ -257,11 +254,11 @@ export function TenantData() {
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="text-slate-600 dark:text-slate-300 text-sm font-mono truncate" title={user.nik || '-'}>
                     {truncateText(user.nik || '-', 16)}
                   </div>
-                  
+
                   <div className="flex flex-col min-w-0">
                     <span className="text-slate-600 dark:text-slate-300 text-sm truncate" title={user.email || 'N/A'}>
                       {truncateText(user.email || 'N/A', 25)}
@@ -270,7 +267,7 @@ export function TenantData() {
                       {user.nomor_hp || '-'}
                     </span>
                   </div>
-                  
+
                   <div className="flex justify-center">
                     {getRoleBadge(user.role)}
                   </div>
@@ -330,26 +327,26 @@ export function TenantData() {
                         {user.nama_lengkap ? user.nama_lengkap.charAt(0) : (user.user?.username?.charAt(0) || 'U')}
                       </div>
                       <div className="overflow-hidden min-w-0">
-                         <h3 className="text-slate-900 dark:text-white font-bold truncate">
-                            {truncateText(user.nama_lengkap || user.user?.username || 'N/A', 20)}
-                         </h3>
-                         <p className="text-slate-400 dark:text-slate-500 font-mono text-[10px]">ID: #{user.id}</p>
+                        <h3 className="text-slate-900 dark:text-white font-bold truncate">
+                          {truncateText(user.nama_lengkap || user.user?.username || 'N/A', 20)}
+                        </h3>
+                        <p className="text-slate-400 dark:text-slate-500 font-mono text-[10px]">ID: #{user.id}</p>
                       </div>
                     </div>
                     {getRoleBadge(user.role)}
                   </div>
 
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2">
-                     <div className="min-w-0">
-                        <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Email</p>
-                        <p className="text-slate-600 dark:text-slate-300 text-xs truncate" title={user.email || '-'}>
-                          {truncateText(user.email || '-', 25)}
-                        </p>
-                     </div>
-                     <div>
-                        <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Telepon</p>
-                        <p className="text-slate-600 dark:text-slate-300 text-xs truncate">{user.nomor_hp || '-'}</p>
-                     </div>
+                    <div className="min-w-0">
+                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Email</p>
+                      <p className="text-slate-600 dark:text-slate-300 text-xs truncate" title={user.email || '-'}>
+                        {truncateText(user.email || '-', 25)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Telepon</p>
+                      <p className="text-slate-600 dark:text-slate-300 text-xs truncate">{user.nomor_hp || '-'}</p>
+                    </div>
                   </div>
 
                   <div className="flex justify-end pt-2">
@@ -357,7 +354,7 @@ export function TenantData() {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
-                            variant="ghost" 
+                            variant="ghost"
                             size="sm"
                             className="w-full text-amber-600 hover:text-white hover:bg-amber-500 border border-amber-500/20"
                           >
@@ -367,12 +364,12 @@ export function TenantData() {
                         </AlertDialogTrigger>
                         <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                           <AlertDialogHeader>
-                             <AlertDialogTitle className="text-slate-900 dark:text-white">Non-aktifkan Pengguna</AlertDialogTitle>
-                             <AlertDialogDescription className="text-slate-600 dark:text-slate-400">Apakah Anda yakin ingin mengubah status pengguna ini menjadi Non Active?</AlertDialogDescription>
+                            <AlertDialogTitle className="text-slate-900 dark:text-white">Non-aktifkan Pengguna</AlertDialogTitle>
+                            <AlertDialogDescription className="text-slate-600 dark:text-slate-400">Apakah Anda yakin ingin mengubah status pengguna ini menjadi Non Active?</AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                             <AlertDialogCancel className="dark:text-white">{tCommon('cancel')}</AlertDialogCancel>
-                             <AlertDialogAction onClick={() => handleDeactivate(user.id)} className="bg-amber-500 hover:bg-amber-600 text-white">Non-aktifkan</AlertDialogAction>
+                            <AlertDialogCancel className="dark:text-white">{tCommon('cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeactivate(user.id)} className="bg-amber-500 hover:bg-amber-600 text-white">Non-aktifkan</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -502,11 +499,10 @@ export function TenantData() {
                             </div>
                             <div className="text-right">
                               <p className="text-xs font-bold text-slate-900 dark:text-white">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(pay.jumlah_bayar)}</p>
-                              <span className={`text-[9px] font-bold uppercase ${
-                                pay.status_pembayaran === 'Confirmed' ? 'text-green-600' :
+                              <span className={`text-[9px] font-bold uppercase ${pay.status_pembayaran === 'Confirmed' ? 'text-green-600' :
                                 pay.status_pembayaran === 'Pending' ? 'text-yellow-600' :
-                                'text-red-600'
-                              }`}>
+                                  'text-red-600'
+                                }`}>
                                 {pay.status_pembayaran === 'Confirmed' ? 'Lunas' : pay.status_pembayaran}
                               </span>
                             </div>

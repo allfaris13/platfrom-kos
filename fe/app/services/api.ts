@@ -71,8 +71,8 @@ export interface Review {
   komentar?: string; // Alias if needed
   created_at?: string;
   Penyewa?: {
-      nama_lengkap: string;
-      foto_profil: string;
+    nama_lengkap: string;
+    foto_profil: string;
   };
 }
 
@@ -90,8 +90,8 @@ export interface Tenant {
   foto_profil: string;
   role?: 'guest' | 'tenant' | 'former_tenant' | 'non_active';
   created_at?: string;
-  status?: string; 
-  kamar?: { nomor_kamar: string }; 
+  status?: string;
+  kamar?: { nomor_kamar: string };
 }
 
 export interface Payment {
@@ -140,8 +140,8 @@ export interface Booking {
   roomName?: string;
   roomImage?: string;
   monthlyRent?: number;
-  status_bayar?: string; 
-  total_bayar?: number; 
+  status_bayar?: string;
+  total_bayar?: number;
 }
 
 export interface DashboardStats {
@@ -165,14 +165,14 @@ export interface DashboardStats {
 }
 
 export interface LoginResponse {
-    token?: string; // Token is now in HttpOnly cookie, but kept optional for compatibility
-    user: User;
-    penyewa?: Tenant;
-    is_google_user?: boolean;
+  token?: string; // Token is now in HttpOnly cookie, but kept optional for compatibility
+  user: User;
+  penyewa?: Tenant;
+  is_google_user?: boolean;
 }
 
 export interface MessageResponse {
-    message: string;
+  message: string;
 }
 
 interface ApiError extends Error {
@@ -216,7 +216,7 @@ const safeJson = async (res: Response) => {
   } catch (_e) { // eslint-disable-line @typescript-eslint/no-unused-vars
     // If empty response (e.g. 200 OK but no body), return empty object?
     // But safeJson usually expects JSON. If text is empty and status ok, maybe return null?
-    if (!text) return {}; 
+    if (!text) return {};
     throw new Error('Invalid server response format');
   }
 };
@@ -273,7 +273,7 @@ const apiCall = async <T>(method: string, endpoint: string, body?: unknown): Pro
       window.location.href = '/login';
     }
   }
-  
+
   return safeJson(res);
 };
 
@@ -308,7 +308,7 @@ export const api = {
     // Returns created User object or message? Typically user object.
     return apiCall<User>('POST', '/auth/register', userData);
   },
-  
+
   forgotPassword: async (email: string) => {
     return apiCall<MessageResponse>('POST', '/auth/forgot-password', { email });
   },
@@ -327,7 +327,7 @@ export const api = {
     } catch (error) {
       console.error('Logout error:', error);
     }
-    
+
     // Clear local storage and cookies
     localStorage.clear();
     sessionStorage.clear();
@@ -440,7 +440,7 @@ export const api = {
     if (params?.limit) query.append('limit', params.limit.toString());
     if (params?.search) query.append('search', params.search);
     if (params?.role) query.append('role', params.role);
-    
+
     return apiCall<PaginatedResponse<Tenant[]>>('GET', `/tenants?${query.toString()}`);
   },
 
@@ -461,7 +461,7 @@ export const api = {
     // Admin rejection
     return apiCall<MessageResponse>('PUT', `/payments/${paymentId}/reject`);
   },
-  
+
 
   verifyPayment: async (orderId: string) => {
     // Returns { message: "Payment verified successfully" }

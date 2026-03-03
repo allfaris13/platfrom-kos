@@ -2,6 +2,7 @@
 
 import { LayoutDashboard, Image as LucideImageIcon, Home, Users, CreditCard, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import NextImage from 'next/image';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 import { LanguageSwitcher } from '@/app/components/shared/LanguageSwitcher';
@@ -14,10 +15,42 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ currentPage, onNavigate }: AdminSidebarProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollContainer = document.querySelector('.admin-content-area');
+      if (!scrollContainer) return;
+
+      const currentScrollY = scrollContainer.scrollTop;
+
+      if (currentScrollY < 20) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY - 10) {
+        setIsVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    const container = document.querySelector('.admin-content-area');
+    if (container) {
+      container.addEventListener('scroll', handleScroll, { passive: true });
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [lastScrollY]);
 
   const t = useTranslations('admin');
 
@@ -137,32 +170,49 @@ export function AdminSidebar({ currentPage, onNavigate }: AdminSidebarProps) {
       </aside>
 
       {/* Bottom Navigation for Mobile */}
-      <nav className="lg:hidden fixed bottom-1 left-0 right-0 z-50 px-2 pb-2">
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-2xl shadow-2xl flex justify-around items-center p-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentPage === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`
-                  flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all duration-200
-                  ${isActive
-                    ? 'text-amber-500 bg-amber-500/10'
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-                  }
-                `}
-              >
-                <Icon className={`size-6 ${isActive ? 'scale-110' : ''}`} />
-                <span className="text-[10px] font-medium transition-all duration-200">
-                  {item.label.split(' ')[0]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      <AnimatePresence>
+        {isVisible && (
+          <motion.nav
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="lg:hidden fixed bottom-6 left-4 right-4 z-50"
+          >
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex justify-around items-center p-2">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentPage === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id)}
+                    className={`
+                      flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all duration-200 relative
+                      ${isActive
+                        ? 'text-amber-500'
+                        : 'text-slate-400 dark:text-slate-500'
+                      }
+                    `}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-amber-500/10 rounded-xl"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <Icon className={`size-6 relative z-10 ${isActive ? 'scale-110 animate-pulse' : ''}`} />
+                    <span className="text-[10px] font-bold relative z-10">
+                      {item.label.split(' ')[0]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </>
   );
 }

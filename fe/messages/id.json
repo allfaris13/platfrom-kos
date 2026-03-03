@@ -26,7 +26,6 @@
     "switchToTenantView": "Beralih ke Tampilan Penyewa",
     "allRightsReserved": "Hak cipta dilindungi."
   },
-
   "auth": {
     "welcomeBack": "Selamat Datang",
     "welcomeBackHighlight": "Kembali",
@@ -45,7 +44,6 @@
     "loginFailed": "Login gagal",
     "noAccount": "Belum punya akun?",
     "registerHere": "Daftar di sini",
-
     "startJourney": "Mulai Perjalanan",
     "startJourneyHighlight": "Anda",
     "registerSubtitle": "Bergabunglah dengan komunitas premium kami hari ini. Temukan keseimbangan sempurna antara kenyamanan, gaya, dan kemudahan modern.",
@@ -69,7 +67,6 @@
     "accountCreatedToast": "Akun berhasil dibuat!",
     "accountCreatedToastDesc": "Silakan masuk dengan akun baru Anda untuk melanjutkan.",
     "redirectingToLogin": "Registrasi berhasil. Anda akan dialihkan ke halaman login...",
-
     "forgotPasswordTitle": "Lupa Password?",
     "forgotPasswordSubtitle": "Masukkan alamat email Anda untuk mereset password.",
     "emailLabel": "Alamat Email",
@@ -80,7 +77,6 @@
     "checkEmail": "Cek email Anda",
     "resetLinkSent": "Kami telah mengirimkan link reset password ke"
   },
-
   "home": {
     "welcomeBadge": "👋 Selamat Datang Kembali",
     "hiUser": "Hai, <nameWrapper>{name}</nameWrapper>!",
@@ -88,25 +84,21 @@
     "loggedInSubtitle": "Kelola hunianmu, cek tagihan, atau cari kamar baru langsung dari sini. Nikmati kemudahan hidup di Rahmat ZAW.",
     "checkBills": "Cek Tagihan & Pesanan",
     "viewRooms": "Lihat Kamar",
-
     "guestBadge": "🏠 Kos Terbaik di Malang",
     "findDreamHome": "Temukan Hunian",
     "findDreamHomeHighlight": "Impianmu.",
     "guestSubtitle": "Temukan kenyamanan eksklusif dan fasilitas premium di Kos Putra Rahmat ZAW.",
-
     "searchPlaceholder": "Cari kamar...",
     "priceLabel": "Harga",
     "allPrices": "Semua Harga",
     "priceWithBathroom": "Rp 1.000.000 (Kamar Mandi Dalam)",
     "priceWithoutBathroom": "Rp 800.000 (Kamar Mandi Luar)",
-
     "roomSelection": "Pilihan Kamar",
     "completeFacilities": "Fasilitas terlengkap.",
     "all": "Semua",
     "selectRoom": "Pilih Kamar",
     "noRoomsFound": "Tidak ada kamar ditemukan",
     "tryOtherCriteria": "Coba cari dengan kriteria lain atau kembali ke kategori \"Semua\".",
-
     "simpleSteps": "LANGKAH MUDAH",
     "userGuide": "Panduan untuk",
     "userGuideHighlight": "pengguna baru",
@@ -118,26 +110,29 @@
     "step03Desc": "Proses pembayaran aman.",
     "step04": "Check-in",
     "step04Desc": "Nikmati hunian baru Anda.",
-
     "ourLegacy": "SEJARAH KAMI",
     "historyTitle": "Sejarah Rahmat ZAW",
     "historyText1": "Didirikan pada tahun 2018, Kos Putra Rahmat ZAW menyediakan ekosistem pendukung prestasi mahasiswa.",
     "historyText2": "Kini bertransformasi memberikan standar hunian modern dengan menggabungkan kenyamanan hotel dan kehangatan rumah.",
     "yearsExcellence": "Tahun Excellence",
     "alumni": "Alumni",
-
     "rating": "Rating",
     "satisfaction": "Kepuasan",
     "residents": "Penghuni",
     "support": "Dukungan",
-
+    "services": "SERVICES",
+    "whyChooseUsTitle": "Kenapa Memilih Kami?",
+    "facilitiesTitle": "Facilities",
+    "facilitiesDesc": "WiFi, AC, Smart TV premium, dan ruang tamu bersama yang nyaman.",
+    "locationTitle": "Location",
+    "locationDesc": "Pusat Sigura-gura, Malang. Dekat dengan kampus dan pusat kuliner.",
+    "securityTitle": "Security",
+    "securityDesc": "CCTV 24 jam terkontrol dan penjagaan keamanan lingkungan.",
     "community": "KOMUNITAS",
     "residentReviews": "Ulasan Penghuni",
     "reviewsSubtitle": "Suara jujur dari keluarga Rahmat ZAW.",
-
     "footerCopyright": "© 2026 Rahmat ZAW Residence"
   },
-
   "nav": {
     "home": "Beranda",
     "gallery": "Galeri Kos",
@@ -148,7 +143,6 @@
     "login": "Masuk",
     "malangPrimeStay": "Malang Prime Stay"
   },
-
   "admin": {
     "dashboard": "Dashboard",
     "rooms": "Data Kamar",
@@ -161,7 +155,6 @@
     "online": "Online",
     "controlPanel": "Panel Kontrol",
     "backToSite": "Kembali ke Situs",
-
     "dashboardTitle": "Ringkasan",
     "dashboardSubtitle": "Selamat datang kembali, ini ringkasan hari ini.",
     "lastUpdated": "Terakhir diperbarui",
@@ -181,7 +174,6 @@
     "quickActions": "Aksi Cepat",
     "addRoom": "Tambah Kamar",
     "addTenant": "Tambah Penyewa",
-
     "monthlyRevenueTrend": "Tren Pendapatan Bulanan",
     "last6MonthsPerformance": "Kinerja 6 bulan terakhir",
     "revenue": "Pendapatan",
@@ -198,7 +190,6 @@
     "tenantSatisfaction": "Kepuasan Penyewa",
     "monthlyTarget": "Target Bulanan",
     "newUser": "User Baru",
-
     "roomsTitle": "Data Kamar",
     "roomsSubtitle": "Kelola semua kamar dan detailnya.",
     "addNewRoom": "Tambah Kamar Baru",
@@ -256,7 +247,6 @@
     "statMaintenance": "Perbaikan",
     "statRoomTypes": "Tipe Kamar",
     "statTotalPaid": "Total Dibayarkan",
-
     "tenantsTitle": "Data Penyewa",
     "tenantsSubtitle": "Kelola semua pengguna dan penyewa terdaftar.",
     "searchTenants": "Cari pengguna...",
@@ -269,7 +259,6 @@
     "deleteUserConfirm": "Apakah Anda yakin ingin menghapus pengguna ini? Tindakan ini tidak dapat dibatalkan.",
     "noTenantsFound": "Tidak ada pengguna yang cocok dengan kriteria Anda.",
     "id": "ID",
-
     "paymentsTitle": "Konfirmasi Pembayaran",
     "paymentsSubtitle": "Tinjau dan setujui pembayaran masuk.",
     "pending": "Menunggu",
@@ -340,10 +329,8 @@
     "transactionCount": "transaksi",
     "totalPotential": "Potensi Total",
     "ifFullyOccupied": "Jika terisi penuh",
-
     "reportsTitle": "Laporan Keuangan",
     "reportsSubtitle": "Analisis dan laporan keuangan komprehensif.",
-    
     "galleryTitle": "Manajemen Galeri",
     "gallerySubtitle": "Kelola gambar properti dan aset media.",
     "addNewImage": "Tambah Gambar Baru",
@@ -356,7 +343,6 @@
     "searchGallery": "Cari di galeri...",
     "noImagesFound": "Tidak ada gambar ditemukan di galeri"
   },
-
   "footer": {
     "description": "Hunian kost putra premium di kawasan Sigura-gura, Malang. Nyaman, aman, dan strategis.",
     "quickLinks": "Tautan Cepat",
@@ -369,7 +355,6 @@
     "contactTitle": "Kontak",
     "copyright": "© 2026 Kost Putra Rahmat ZAW. Hak cipta dilindungi."
   },
-
   "tenant": {
     "dashboard": "Dashboard Penyewa",
     "home": "Beranda",
@@ -377,7 +362,6 @@
     "history": "Riwayat",
     "profile": "Profil"
   },
-
   "history": {
     "title": "Riwayat Pemesanan",
     "subtitle": "Pantau status transaksi dan riwayat sewa kamar kamu dengan login ke akun personal.",
@@ -502,7 +486,6 @@
     "noDueBillsDesc": "Bagus! Anda tidak memiliki tagihan tertunda saat ini.",
     "backToMyBookings": "Kembali ke Pesanan Saya"
   },
-
   "contact": {
     "getInTouch": "Get In Touch",
     "contactTeam": "Hubungi Tim",
@@ -530,7 +513,6 @@
     "messageSentDesc": "Terima kasih telah menghubungi kami. Tim kami akan segera merespons pesan Anda.",
     "messageSentError": "Gagal mengirim pesan. Silakan coba lagi."
   },
-
   "gallery": {
     "titlePart1": "Elite",
     "titlePart2": "Residences",
@@ -540,7 +522,6 @@
     "availableFrom": "Tersedia mulai",
     "findOtherUnits": "Cari Unit Lainnya"
   },
-
   "profile": {
     "loadingProfile": "Memuat data profil...",
     "editProfile": "Edit Profil",
@@ -579,7 +560,6 @@
     "roomNumber": "Nomor Kamar",
     "totalSpent": "Total Pengeluaran"
   },
-
   "language": {
     "switchTo": "English",
     "current": "Bahasa Indonesia"

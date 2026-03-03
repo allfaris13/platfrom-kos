@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import useSWR from "swr";
 import {
   motion,
   useInView,
@@ -24,18 +25,24 @@ import { ImageWithFallback } from "@/app/components/shared/ImageWithFallback";
 import { SkeletonGrid } from "@/app/components/ui/loading-screen";
 import {
   MapPin,
+  Wifi,
+  Wind,
+  Tv,
+  Coffee,
   Star,
+  CheckCircle2,
+  Calendar,
+  MessageCircle,
   Home,
+  LucideIcon,
   Search,
+  ChevronRight,
+  Sparkles,
   ArrowRight,
   X,
-  RotateCcw,
-  ChevronLeft,
-  ChevronRight,
-  Wifi,
-  Shield
+  RotateCcw
 } from 'lucide-react';
-import { getImageUrl } from '@/app/utils/api-url';
+import { api } from '@/app/services/api';
 import {
   Select,
   SelectContent,
@@ -43,8 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import { useHome } from "../dashboard/hooks/useHome";
-import { useTranslations } from 'next-intl';
+import { IMAGES } from "@/app/services/image";
 
 // --- Komponen Counter untuk Trust Indicators ---
 function Counter({
@@ -85,7 +91,7 @@ const fadeInUp: Variants = {
     y: 0,
     transition: {
       duration: 0.6,
-      ease: "easeOut"
+      ease: "easeOut" as const
     }
   },
 };
@@ -94,6 +100,59 @@ const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
 };
+
+// --- Interfaces & Data ---
+interface Room {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  image: string;
+  location: string;
+  rating: number;
+  reviews: number;
+  facilities: string[];
+  status?: string;
+}
+
+const featuredRooms: Room[] = [];
+
+const facilityIcons: { [key: string]: LucideIcon } = { WiFi: Wifi, AC: Wind, TV: Tv, 'Coffee Maker': Coffee };
+
+const defaultReviews = [
+  {
+    name: "Sarah Chen",
+    role: "Marketing Executive",
+    review:
+      "LuxeStay exceeded all my expectations. The attention to detail is incredible.",
+    image: IMAGES.AVATARS.FEMALE_1,
+    stayDuration: "8 months",
+  },
+  {
+    name: "Ahmad Rahman",
+    role: "University Student",
+    review:
+      "Finding a place that feels like home while being affordable was crucial.",
+    image: IMAGES.AVATARS.MALE_1,
+    stayDuration: "1 year",
+  },
+  {
+    name: "Maria Santos",
+    role: "Business Analyst",
+    review:
+      "The Premium Apartment I'm staying in is absolutely stunning. City view is amazing.",
+    image: IMAGES.AVATARS.FEMALE_2,
+    stayDuration: "6 months",
+  },
+  {
+    name: "David Kim",
+    role: "Software Engineer",
+    review:
+      "The Executive Suite is worth every penny. Workspace is perfect for remote work.",
+    image: IMAGES.AVATARS.MALE_2,
+    stayDuration: "10 months",
+  },
+];
 
 interface HomepageProps {
   onRoomClick: (roomId: string) => void;
@@ -106,42 +165,96 @@ interface HomepageProps {
 export function Homepage({
   onRoomClick,
   isLoggedIn,
+  onLoginPrompt,
   userName,
   onViewHistory,
 }: HomepageProps) {
-  const {
-    searchLocation,
-    setSearchLocation,
-    selectedPrice,
-    setSelectedPrice,
-    selectedType,
-    setSelectedType,
-    isLoadingRooms,
-    displayRooms,
-    resetFilters,
-    reviews
-  } = useHome();
-  const t = useTranslations('home');
-  const tc = useTranslations('common');
+  const [searchLocation, setSearchLocation] = useState("");
+  const [selectedPrice, setSelectedPrice] = useState("all");
+  const [selectedType, setSelectedType] = useState("all");
 
-  // --- Pagination ---
-  const ROOMS_PER_PAGE = 6;
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // Reset page when filters change — calling setState in effect is intentional here
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setCurrentPage(1); }, [searchLocation, selectedPrice, selectedType]); // NOSONAR
-
-  const totalPages = Math.ceil(displayRooms.length / ROOMS_PER_PAGE);
-  const paginatedRooms = displayRooms.slice(
-    (currentPage - 1) * ROOMS_PER_PAGE,
-    currentPage * ROOMS_PER_PAGE
+  const { data: roomsData, isLoading: isLoadingRooms } = useSWR(
+    "api/rooms",
+    api.getRooms,
   );
+  const { data: reviewsDataApi } = useSWR("api/reviews", api.getAllReviews);
 
-  const goToPage = useCallback((page: number) => {
-    setCurrentPage(page);
-    document.getElementById('featured-rooms')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  const realRooms = useMemo(() => {
+    if (!roomsData || !Array.isArray(roomsData)) return [];
+    return roomsData.map((r: any) => {
+      const rawPrice = r.harga_per_bulan;
+      const numericPrice =
+        typeof rawPrice === "number"
+          ? rawPrice
+          : Number(String(rawPrice || "").replace(/[^0-9]/g, "")) || 0;
+
+      return {
+        id: String(r.id), // ID must be the actual numeric string for detail page
+        name: r.nomor_kamar || 'Kamar Tanpa Nama',
+        type: r.tipe_kamar || 'Standard',
+        price: numericPrice,
+        image: r.image_url
+          ? r.image_url.startsWith("http")
+            ? r.image_url
+            : `http://localhost:8080${r.image_url}`
+          : IMAGES.ROOM_STANDARD,
+        location: "Kota Malang, Jawa Timur",
+        rating: 4.8,
+        reviews: 12,
+        facilities: r.fasilitas
+          ? r.fasilitas.split(",").map((f: string) => f.trim())
+          : ["WiFi", "AC"],
+        status: r.status || "Tersedia",
+      };
+    });
+  }, [roomsData]);
+
+  const reviews = useMemo(() => {
+    if (
+      !reviewsDataApi ||
+      !Array.isArray(reviewsDataApi) ||
+      reviewsDataApi.length === 0
+    )
+      return defaultReviews;
+    const mapped = reviewsDataApi.map((r: any) => ({
+      name: r.user?.username || "Anonymous",
+      role: "Resident",
+      review: r.comment,
+      image: IMAGES.AVATARS.USER_DEFAULT,
+      stayDuration: "Verified",
+      rating: r.rating,
+    }));
+    return mapped.length >= 4 ? mapped : [...mapped, ...defaultReviews];
+  }, [reviewsDataApi]);
+
+  const displayRooms = useMemo(() => {
+    // ONLY show real rooms from the backend
+    const all = [...realRooms];
+
+    return all.filter((room: Room) => {
+      // 1. Search Filter
+      const searchLower = (searchLocation || '').trim().toLowerCase();
+      if (searchLower && !room.name.toLowerCase().includes(searchLower)) return false;
+
+      // 2. Type Filter
+      if (selectedType !== 'all') {
+        const filterType = selectedType.toLowerCase();
+        const roomType = (room.type || '').toLowerCase();
+        if (!roomType.includes(filterType)) return false;
+      }
+
+      // 3. Price Filter
+      const p = room.price;
+      if (selectedPrice === '1jt' && p < 900000) return false;
+      if (selectedPrice === '800rb' && p >= 900000) return false;
+
+      // 4. Status Filter
+      const status = (room.status || '').toLowerCase();
+      if (status === 'tidak tersedia' || status === 'penuh') return false;
+
+      return true;
+    });
+  }, [realRooms, searchLocation, selectedType, selectedPrice]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -155,7 +268,7 @@ export function Homepage({
     <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors overflow-x-hidden font-sans">
 
       {/* 1. Hero Section */}
-      <section className="relative px-4 pt-12 pb-10 lg:pt-32 lg:pb-32 overflow-hidden bg-white dark:bg-slate-950 transition-colors duration-500 ease-in-out">
+      <section className="relative px-4 pt-12 pb-10 lg:pt-32 lg:pb-32 overflow-hidden bg-white dark:bg-slate-950">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 items-center gap-8 lg:gap-16">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -167,28 +280,21 @@ export function Homepage({
               // Logged In View
               <>
                 <Badge variant="outline" className="mb-4 lg:mb-6 px-3 lg:px-4 py-1 lg:py-1.5 text-emerald-600 border-emerald-200 bg-emerald-50 rounded-full font-bold uppercase tracking-wider text-[9px] lg:text-xs">
-                  {t('welcomeBadge')}
+                  👋 Welcome Back
                 </Badge>
                 <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-[1.15] mb-4 lg:mb-6 text-slate-900 dark:text-white">
-                  {t.rich('hiUser', {
-                    name: userName || 'User',
-                    nameWrapper: (chunks) => (
-                      <span className="inline-block truncate max-w-[250px] md:max-w-[450px] align-bottom" title={userName || 'User'}>
-                        {chunks}
-                      </span>
-                    )
-                  })} <br />
-                  <span className="text-slate-900 dark:text-white text-2xl md:text-4xl lg:text-5xl font-bold">{t('readyToRelax')}</span>
+                  Hi, <span className="text-amber-500">{userName || 'User'}!</span> <br />
+                  <span className="text-slate-900 dark:text-white text-2xl md:text-4xl lg:text-5xl font-bold">Ready to relax?</span>
                 </h1>
                 <p className="text-sm md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 mb-6 lg:mb-10 max-w-xl leading-relaxed">
-                  {t('loggedInSubtitle')}
+                  Kelola hunianmu, cek tagihan, atau cari kamar baru langsung dari sini. Nikmati kemudahan hidup di Rahmat ZAW.
                 </p>
                 <div className="flex flex-row gap-3 lg:gap-4">
                   <Button
                     onClick={onViewHistory}
                     className="flex-1 md:flex-none bg-stone-900 hover:bg-stone-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl"
                   >
-                    {t('checkBills')}
+                    Cek Tagihan & Pesanan
                   </Button>
                   <Button
                     variant="ghost"
@@ -196,9 +302,9 @@ export function Homepage({
                       const el = document.getElementById('featured-rooms');
                       if (el) el.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200"
                   >
-                    {t('viewRooms')}
+                    Lihat Kamar
                   </Button>
                 </div>
               </>
@@ -206,18 +312,19 @@ export function Homepage({
               // Guest View
               <>
                 <Badge variant="outline" className="mb-4 lg:mb-6 px-3 lg:px-4 py-1 lg:py-1.5 text-amber-600 border-amber-200 bg-amber-50 rounded-full font-bold uppercase tracking-wider text-[9px] lg:text-xs">
-                  {t('guestBadge')}
+                  🏠 Best Boarding House in Malang
                 </Badge>
                 <h1 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-[1.15] mb-4 lg:mb-6 text-slate-900 dark:text-white">
-                  {t('findDreamHome')} <br className="hidden md:block" />
-                  <span className="text-amber-500">{t('findDreamHomeHighlight')}</span>
+                  Find Your Dream <br className="hidden md:block" />
+                  <span className="text-amber-500">Home With Ease.</span>
                 </h1>
                 <p className="text-sm md:text-lg lg:text-xl text-slate-600 dark:text-slate-400 mb-6 lg:mb-10 max-w-xl leading-relaxed">
-                  {t('guestSubtitle')}
+                  Temukan kenyamanan eksklusif dan fasilitas premium di Kos Putra
+                  Rahmat ZAW.
                 </p>
                 <div className="flex flex-row gap-3 lg:gap-4">
-                  <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">{tc('explore')}</Button>
-                  <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">{tc('learn')}</Button>
+                  <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">Explore</Button>
+                  <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200">Learn</Button>
                 </div>
               </>
             )}
@@ -232,9 +339,10 @@ export function Homepage({
           >
             <div className="relative z-10 rounded-[1.5rem] lg:rounded-[3rem] overflow-hidden shadow-2xl border-[4px] lg:border-[12px] border-white dark:border-slate-800">
               <ImageWithFallback
-                src="/koskosan/tampilandepankos/tampilandaridepankos.jpg"
+                src={IMAGES.HERO}
                 alt="Main Interior"
                 className="w-full aspect-[4/3] md:aspect-square lg:aspect-[4/3] object-cover"
+                priority
               />
             </div>
           </motion.div>
@@ -244,12 +352,12 @@ export function Homepage({
       {/* 2. Search & Filter Section */}
       <section className="relative z-20 -mt-8 md:-mt-10 px-4">
         <div className="max-w-5xl mx-auto">
-          <Card className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 shadow-2xl rounded-[1.5rem] lg:rounded-[2.5rem] p-4 lg:p-6 transition-all duration-500 ease-in-out">
+          <Card className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 shadow-2xl rounded-[1.5rem] lg:rounded-[2.5rem] p-4 lg:p-6">
             <div className="flex flex-col md:grid md:grid-cols-4 gap-4 items-center">
               <div className="w-full md:col-span-2 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder={t('searchPlaceholder')}
+                  placeholder="Cari kamar..."
                   value={searchLocation}
                   onChange={(e) => setSearchLocation(e.target.value)}
                   className="pl-10 h-12 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base pr-10"
@@ -266,15 +374,15 @@ export function Homepage({
               <div className="w-full md:col-span-1">
                 <Select value={selectedPrice} onValueChange={setSelectedPrice}>
                   <SelectTrigger className="h-12 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base focus:ring-amber-500">
-                    <SelectValue placeholder={t('priceLabel')} />
+                    <SelectValue placeholder="Harga" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                    <SelectItem value="all">{t('allPrices')}</SelectItem>
+                    <SelectItem value="all">Semua Harga</SelectItem>
                     <SelectItem value="1jt">
-                      {t('priceWithBathroom')}
+                      Rp 1.000.000 (Kamar Mandi Dalam)
                     </SelectItem>
                     <SelectItem value="800rb">
-                      {t('priceWithoutBathroom')}
+                      Rp 800.000 (Kamar Mandi Luar)
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -287,12 +395,16 @@ export function Homepage({
                   }}
                   className="flex-1 h-12 lg:h-14 bg-slate-900 hover:bg-slate-800 text-white rounded-xl lg:rounded-2xl font-bold text-sm lg:text-base transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-slate-900/10"
                 >
-                  {tc('search')}
+                  Cari
                 </Button>
                 {(searchLocation || selectedPrice !== 'all' || selectedType !== 'all') && (
                   <Button
                     variant="outline"
-                    onClick={resetFilters}
+                    onClick={() => {
+                      setSearchLocation('');
+                      setSelectedPrice('all');
+                      setSelectedType('all');
+                    }}
                     className="h-12 lg:h-14 border-2 border-slate-100 rounded-xl lg:rounded-2xl px-4 group hover:bg-slate-50"
                     title="Reset Filter"
                   >
@@ -308,25 +420,25 @@ export function Homepage({
       {/* 3. Featured Rooms Section (Force 2 Columns on Mobile) */}
       <section
         id="featured-rooms"
-        className="px-4 py-20 lg:py-32 bg-slate-50 dark:bg-slate-950 transition-colors duration-500 ease-in-out"
+        className="px-4 py-20 lg:py-32 bg-slate-50 dark:bg-slate-950"
       >
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 lg:mb-16">
             <div className="text-left">
               <h2 className="text-xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-1">
-                {t('roomSelection')}
+                Pilihan Kamar
               </h2>
               <p className="text-[10px] lg:text-base text-slate-500">
-                {t('completeFacilities')}
+                Fasilitas terlengkap.
               </p>
             </div>
             <div className="flex bg-white dark:bg-slate-900 p-0.5 lg:p-1 rounded-lg lg:rounded-2xl shadow-sm border border-slate-100 scale-90 lg:scale-100 origin-right overflow-x-auto no-scrollbar max-w-[60vw]">
-              {[t('all'), "Standard", "Premium"].map((tab) => (
+              {["Semua", "Standard", "Premium"].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setSelectedType(tab === t('all') ? "all" : tab)}
+                  onClick={() => setSelectedType(tab === "Semua" ? "all" : tab)}
                   className={`px-3 lg:px-6 py-1.5 lg:py-2.5 rounded-md lg:rounded-xl text-[10px] lg:text-sm font-semibold transition-all whitespace-nowrap ${selectedType === tab ||
-                    (tab === t('all') && selectedType === "all")
+                    (tab === "Semua" && selectedType === "all")
                     ? "bg-slate-900 text-white shadow-md"
                     : "text-slate-500 hover:bg-slate-50"
                     }`}
@@ -348,39 +460,30 @@ export function Homepage({
                 <div className="col-span-full">
                   <SkeletonGrid count={6} />
                 </div>
-              ) : paginatedRooms.length > 0 ? (
-                paginatedRooms.map((room) => (
+              ) : displayRooms.length > 0 ? (
+                displayRooms.map((room) => (
                   <motion.div
                     key={room.id}
-                    layout
+                    layout // Keep layout for smooth reordering
                     variants={fadeInUp}
                     initial="hidden"
                     animate="visible"
-                    whileHover={room.status?.toLowerCase() === 'penuh' ? {} : { y: -5 }}
-                    className={`group h-full ${room.status?.toLowerCase() === 'penuh' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                    onClick={() => room.status?.toLowerCase() !== 'penuh' && onRoomClick(room.id)}
+                    whileHover={{ y: -5 }}
+                    className="group cursor-pointer h-full"
+                    onClick={() => onRoomClick(room.id)}
                   >
-                    <Card className={`overflow-hidden border-0 bg-white dark:bg-slate-900 shadow-lg lg:shadow-xl lg:shadow-slate-200/50 dark:shadow-none rounded-[1.2rem] lg:rounded-[2.5rem] h-full flex flex-col transition-all duration-300 hover:shadow-2xl ${room.status?.toLowerCase() === 'penuh' ? 'opacity-75 grayscale-[30%]' : ''}`}>
+                    <Card className="overflow-hidden border-0 bg-white dark:bg-slate-900 shadow-lg lg:shadow-xl lg:shadow-slate-200/50 dark:shadow-none rounded-[1.2rem] lg:rounded-[2.5rem] h-full flex flex-col transition-all duration-300 hover:shadow-2xl">
                       <div className="relative aspect-[4/3] overflow-hidden rounded-t-[1.2rem] lg:rounded-t-[2.5rem] transform-gpu">
                         <ImageWithFallback
                           src={room.image}
                           alt={room.name}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
-                        {/* Type Badge */}
                         <div className="absolute top-2 left-2 lg:top-4 lg:left-4">
                           <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-0 px-2 lg:px-4 py-0.5 lg:py-1.5 rounded-full font-bold shadow-sm text-[8px] lg:text-xs">
                             {room.type}
                           </Badge>
                         </div>
-                        {/* PENUH overlay badge */}
-                        {room.status?.toLowerCase() === 'penuh' && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                            <span className="bg-red-600 text-white text-xs lg:text-base font-black uppercase tracking-widest px-4 py-1.5 lg:px-6 lg:py-2 rounded-full shadow-2xl border-2 border-red-400 rotate-[-8deg]">
-                              PENUH
-                            </span>
-                          </div>
-                        )}
                       </div>
                       <CardHeader className="p-3 lg:p-6 pb-2">
                         <div className="flex justify-between items-start mb-1">
@@ -415,30 +518,20 @@ export function Homepage({
                             {formatCurrency(room.price).replace(",00", "")}
                           </p>
                           <span className="text-[8px] lg:text-sm font-normal text-slate-400">
-                            {tc('perMonth')}
+                            per bulan
                           </span>
                         </div>
-                        {room.status?.toLowerCase() === 'penuh' ? (
-                          <Button
-                            size="sm"
-                            disabled
-                            className="h-7 lg:h-12 px-3 lg:px-6 bg-red-100 text-red-500 rounded-lg lg:rounded-xl text-[8px] lg:text-sm font-bold cursor-not-allowed"
-                          >
-                            Penuh
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="h-7 lg:h-12 px-3 lg:px-6 bg-slate-900 hover:bg-amber-500 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-sm font-bold transition-all flex items-center gap-1 group/btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRoomClick(room.id);
-                            }}
-                          >
-                            {t('selectRoom')} <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="h-7 lg:h-12 px-3 lg:px-6 bg-slate-900 hover:bg-amber-500 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-sm font-bold transition-all flex items-center gap-1 group/btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRoomClick(room.id);
+                          }}
+                        >
+                          Pilih Kamar <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        </Button>
                       </CardFooter>
                     </Card>
                   </motion.div>
@@ -451,93 +544,27 @@ export function Homepage({
                 >
                   <Home className="w-16 h-16 text-slate-300 mb-4" />
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                    {t('noRoomsFound')}
+                    Tidak ada kamar ditemukan
                   </h3>
                   <p className="text-slate-500 max-w-xs mx-auto text-center">
-                    {t('tryOtherCriteria')}
+                    Coba cari dengan kriteria lain atau kembali ke kategori
+                    "Semua".
                   </p>
                   <Button
                     variant="outline"
                     className="mt-6 rounded-full border-slate-300"
-                    onClick={resetFilters}
+                    onClick={() => {
+                      setSelectedType("all");
+                      setSelectedPrice("all");
+                      setSearchLocation("");
+                    }}
                   >
-                    {tc('resetFilter')}
+                    Reset Filter
                   </Button>
                 </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
-
-          {/* Pagination Controls */}
-          {!isLoadingRooms && totalPages > 1 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-10 lg:mt-14 flex items-center justify-center gap-2"
-            >
-              {/* Prev Button */}
-              <button
-                onClick={() => goToPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="flex items-center justify-center w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {/* Page Numbers */}
-              <div className="flex items-center gap-1.5">
-                {(() => {
-                  const pages: (number | 'ellipsis')[] = [];
-                  if (totalPages <= 7) {
-                    for (let i = 1; i <= totalPages; i++) pages.push(i);
-                  } else {
-                    pages.push(1);
-                    if (currentPage > 3) pages.push('ellipsis');
-                    const start = Math.max(2, currentPage - 1);
-                    const end = Math.min(totalPages - 1, currentPage + 1);
-                    for (let i = start; i <= end; i++) pages.push(i);
-                    if (currentPage < totalPages - 2) pages.push('ellipsis');
-                    pages.push(totalPages);
-                  }
-                  return pages.map((page, idx) =>
-                    page === 'ellipsis' ? (
-                      <span key={`ellipsis-${idx}`} className="w-9 h-9 lg:w-11 lg:h-11 flex items-center justify-center text-slate-400 text-sm font-bold">…</span>
-                    ) : (
-                      <button
-                        key={page}
-                        onClick={() => goToPage(page as number)}
-                        className={`w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl text-sm font-bold transition-all duration-200 ${currentPage === page
-                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg shadow-slate-900/20 scale-110'
-                          : 'border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white'
-                          }`}
-                        aria-label={`Page ${page}`}
-                        aria-current={currentPage === page ? 'page' : undefined}
-                      >
-                        {page}
-                      </button>
-                    )
-                  );
-                })()}
-              </div>
-
-              {/* Next Button */}
-              <button
-                onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="flex items-center justify-center w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-                aria-label="Next page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              {/* Page Info */}
-              <span className="ml-3 text-xs lg:text-sm text-slate-400 font-medium hidden sm:block">
-                {(currentPage - 1) * ROOMS_PER_PAGE + 1}–{Math.min(currentPage * ROOMS_PER_PAGE, displayRooms.length)} dari {displayRooms.length} kamar
-              </span>
-            </motion.div>
-          )}
         </div>
       </section>
 
@@ -545,35 +572,35 @@ export function Homepage({
       <section className="px-4 py-20 lg:py-32 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 items-center gap-10 lg:gap-20">
           <div className="col-span-1 md:col-span-7 lg:col-span-6 w-full">
-            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 mb-6 px-4 py-1.5 rounded-full font-bold text-[10px] lg:text-xs">{t('simpleSteps')}</Badge>
+            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 mb-6 px-4 py-1.5 rounded-full font-bold text-[10px] lg:text-xs">SIMPLE STEPS</Badge>
             <h2 className="text-3xl md:text-5xl lg:text-7xl font-extrabold leading-tight mb-8 lg:mb-12 text-slate-900 dark:text-white">
-              {t('userGuide')} <br />
-              <span className="text-amber-500">{t('userGuideHighlight')}</span>
+              User guide for <br />
+              <span className="text-amber-500">first timer</span>
             </h2>
             <div className="grid grid-cols-1 gap-4 lg:gap-8">
               {[
                 {
                   step: "01",
-                  title: t('step01'),
-                  desc: t('step01Desc'),
+                  title: "Pilih Kamar",
+                  desc: "Pilih tipe kamar sesuai kebutuhan.",
                   color: "bg-blue-500",
                 },
                 {
                   step: "02",
-                  title: t('step02'),
-                  desc: t('step02Desc'),
+                  title: "Survey Lokasi",
+                  desc: "Jadwalkan kunjungan fasilitas.",
                   color: "bg-purple-500",
                 },
                 {
                   step: "03",
-                  title: t('step03'),
-                  desc: t('step03Desc'),
+                  title: "Lakukan Bayar",
+                  desc: "Proses pembayaran aman.",
                   color: "bg-amber-500",
                 },
                 {
                   step: "04",
-                  title: t('step04'),
-                  desc: t('step04Desc'),
+                  title: "Check-in",
+                  desc: "Nikmati hunian baru Anda.",
                   color: "bg-emerald-500",
                 },
               ].map((item, idx) => (
@@ -598,7 +625,7 @@ export function Homepage({
           </div>
           <div className="col-span-1 md:col-span-5 lg:col-span-6 relative flex items-center justify-center">
             <div className="relative z-10 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] lg:rounded-[5rem] p-3 lg:p-12 aspect-square w-full max-w-lg">
-              <ImageWithFallback src="/koskosan/fasilitaskos/fasilitaslemaridanmejabelajarkos.jpg" alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
+              <ImageWithFallback src={IMAGES.GUIDE_IMG} alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
             </div>
             {/* Decorative blob */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-amber-500/5 rounded-full blur-[60px] lg:blur-[120px] -z-10" />
@@ -611,10 +638,10 @@ export function Homepage({
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10 lg:mb-16">
             <Badge className="bg-slate-900 text-white mb-2 lg:mb-4 px-4 lg:px-6 py-1 lg:py-2 rounded-full text-[10px]">
-              {t('ourLegacy')}
+              OUR LEGACY
             </Badge>
             <h2 className="text-2xl lg:text-5xl font-bold mb-2 lg:mb-4 text-slate-900 dark:text-white">
-              {t('historyTitle')}
+              Sejarah Rahmat ZAW
             </h2>
             <div className="w-16 lg:w-24 h-1 lg:h-1.5 bg-amber-500 mx-auto rounded-full" />
           </div>
@@ -623,14 +650,14 @@ export function Homepage({
             <motion.div className="col-span-12 lg:col-span-6 relative order-2 lg:order-1">
               <div className="aspect-square bg-white dark:bg-slate-900 rounded-[2rem] lg:rounded-[3rem] p-4 lg:p-8 shadow-2xl relative z-10">
                 <ImageWithFallback
-                  src="/koskosan/tampilandalam/tampilandalamkoslantaikedua2.jpeg"
+                  src={IMAGES.HISTORY_IMG}
                   className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[2rem]"
                   alt="History Image"
                 />
               </div>
               <div className="absolute -bottom-4 -right-4 lg:-bottom-6 lg:-right-6 bg-amber-500 text-white p-4 lg:p-8 rounded-[1.5rem] lg:rounded-[2rem] shadow-xl z-20">
                 <p className="text-xl lg:text-5xl font-black italic leading-none">
-                  EST. 2024
+                  EST. 2018
                 </p>
                 <p className="uppercase tracking-widest font-bold text-[8px] lg:text-sm text-white/80">
                   Malang
@@ -641,10 +668,12 @@ export function Homepage({
             <div className="col-span-12 lg:col-span-6 space-y-4 lg:space-y-8 order-1 lg:order-2">
               <div className="space-y-3 lg:space-y-6 text-sm lg:text-xl text-slate-600 dark:text-slate-400 leading-relaxed italic border-l-4 border-amber-500 pl-4 lg:pl-8">
                 <p>
-                  {t('historyText1')}
+                  Didirikan pada tahun 2018, Kos Putra Rahmat ZAW menyediakan
+                  ekosistem pendukung prestasi mahasiswa.
                 </p>
                 <p className="hidden md:block">
-                  {t('historyText2')}
+                  Kini bertransformasi memberikan standar hunian modern dengan
+                  menggabungkan kenyamanan hotel dan kehangatan rumah.
                 </p>
               </div>
               <div className="flex gap-3 lg:gap-4">
@@ -653,7 +682,7 @@ export function Homepage({
                     6++
                   </p>
                   <p className="text-[8px] lg:text-sm text-slate-500 font-bold uppercase tracking-wider">
-                    {t('yearsExcellence')}
+                    Tahun Excellence
                   </p>
                 </div>
                 <div className="p-4 lg:p-6 bg-white dark:bg-slate-900 rounded-[1.2rem] lg:rounded-[2rem] shadow-sm border border-slate-100 flex-1">
@@ -661,7 +690,7 @@ export function Homepage({
                     200++
                   </p>
                   <p className="text-[8px] lg:text-sm text-slate-500 font-bold uppercase tracking-wider">
-                    {t('alumni')}
+                    Alumni
                   </p>
                 </div>
               </div>
@@ -679,7 +708,7 @@ export function Homepage({
                 <Counter value={4.9} decimals={1} />
               </h2>
               <p className="text-slate-400 font-bold tracking-widest uppercase text-[8px] lg:text-sm">
-                {t('rating')}
+                Rating
               </p>
               <div className="flex gap-0.5 mt-2 justify-center text-amber-500">
                 {[...Array(5)].map((_, i) => (
@@ -695,7 +724,7 @@ export function Homepage({
                 <Counter value={98} suffix="%" />
               </h2>
               <p className="text-slate-400 font-bold tracking-widest uppercase text-[8px] lg:text-sm">
-                {t('satisfaction')}
+                Satisfaction
               </p>
             </div>
             <div className="px-2 border-l border-slate-100 dark:border-slate-800 lg:border-l-0">
@@ -703,7 +732,7 @@ export function Homepage({
                 <Counter value={2500} suffix="+" />
               </h2>
               <p className="text-slate-400 font-bold tracking-widest uppercase text-[8px] lg:text-sm">
-                {t('residents')}
+                Residents
               </p>
             </div>
             <div className="px-2 border-l border-slate-100 dark:border-slate-800">
@@ -711,24 +740,24 @@ export function Homepage({
                 24/7
               </h2>
               <p className="text-slate-400 font-bold tracking-widest uppercase text-[8px] lg:text-sm">
-                {t('support')}
+                Support
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 8. Ulasan Section (Infinite Auto-Scroller - Smaller Cards on Mobile) */}
+      {/* 7. Ulasan Section (Infinite Auto-Scroller - Smaller Cards on Mobile) */}
       <section className="py-16 lg:py-24 bg-slate-50 dark:bg-slate-950 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 mb-10 lg:mb-16 text-center">
           <Badge className="bg-amber-500 text-white mb-2 lg:mb-4 px-4 py-1 rounded-full text-[10px]">
-            {t('community')}
+            COMMUNITY
           </Badge>
           <h2 className="text-2xl lg:text-5xl font-bold mb-2 lg:mb-4 text-slate-900 dark:text-white">
-            {t('residentReviews')}
+            Ulasan Penghuni
           </h2>
           <p className="text-slate-500 text-xs lg:text-lg">
-            {t('reviewsSubtitle')}
+            Suara jujur dari keluarga Rahmat ZAW.
           </p>
         </div>
 
@@ -756,14 +785,18 @@ export function Homepage({
                     <div className="mt-auto flex items-center gap-3 lg:gap-5 border-t dark:border-slate-800 pt-4 lg:pt-8">
                       <div className="w-10 h-10 lg:w-14 lg:h-14 rounded-full overflow-hidden border border-slate-100">
                         <ImageWithFallback
-                          src={getImageUrl(r.image)}
+                          src={r.image}
                           alt={r.name}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <div>
-                        <p className="text-sm lg:text-lg font-bold text-slate-900 dark:text-white">{r.name}</p>
-                        <p className="text-[10px] lg:text-sm text-slate-500">{r.role} • {r.stayDuration}</p>
+                        <p className="font-bold text-slate-900 dark:text-white text-xs lg:text-lg">
+                          {r.name}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-medium uppercase">
+                          {r.role}
+                        </p>
                       </div>
                     </div>
                   </Card>
@@ -774,70 +807,92 @@ export function Homepage({
         </div>
       </section>
 
-      {/* 8. Services / Why Choose Us Section */}
-      <section className="px-4 py-20 lg:py-32 bg-white dark:bg-slate-900">
+      {/* 8. Services Section (2 Columns on Mobile) */}
+      <section className="px-4 py-16 lg:py-24 bg-white dark:bg-slate-900">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <Badge className="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 mb-4 px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-widest border-0">
-              {t('services')}
-            </Badge>
-            <h2 className="text-3xl lg:text-5xl font-extrabold text-slate-900 dark:text-white">
-              {t('whyChooseUsTitle')}
+          <div className="text-center mb-12 lg:mb-20">
+            <p className="text-amber-500 font-bold mb-1 lg:mb-2 uppercase tracking-widest text-[10px] lg:text-sm">
+              Services
+            </p>
+            <h2 className="text-2xl lg:text-5xl font-bold text-slate-900 dark:text-white">
+              Kenapa Memilih Kami?
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-8">
             {[
               {
-                number: "01",
-                icon: <Wifi className="w-6 h-6 text-amber-600" />,
-                title: t('facilitiesTitle'),
-                desc: t('facilitiesDesc'),
+                id: "01",
+                title: "Facilities",
+                desc: "WiFi, AC, Smart TV premium.",
+                icon: <Wifi className="w-6 h-6 lg:w-10 lg:h-10" />,
               },
               {
-                number: "02",
-                icon: <MapPin className="w-6 h-6 text-amber-600" />,
-                title: t('locationTitle'),
-                desc: t('locationDesc'),
+                id: "02",
+                title: "Location",
+                desc: "Pusat Sigura-gura, Malang.",
+                icon: <MapPin className="w-6 h-6 lg:w-10 lg:h-10" />,
               },
               {
-                number: "03",
-                icon: <Shield className="w-6 h-6 text-amber-600" />,
-                title: t('securityTitle'),
-                desc: t('securityDesc'),
+                id: "03",
+                title: "Security",
+                desc: "CCTV 24 jam terkontrol.",
+                icon: <MessageCircle className="w-6 h-6 lg:w-10 lg:h-10" />,
               },
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.2 }}
-                className="relative p-8 lg:p-12 rounded-[2.5rem] bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-800 group hover:bg-white dark:hover:bg-slate-800 transition-all duration-300 hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-none"
+            ].map((service) => (
+              <Card
+                key={service.id}
+                className="relative p-6 lg:p-12 bg-slate-50 dark:bg-slate-800 border-0 rounded-[1.5rem] lg:rounded-[3rem] overflow-hidden group hover:bg-slate-900 transition-colors duration-500"
               >
-                {/* Background Number */}
-                <div className="absolute top-8 right-8 text-7xl lg:text-9xl font-black text-slate-200/40 dark:text-slate-700/20 pointer-events-none group-hover:text-amber-500/10 transition-colors">
-                  {item.number}
-                </div>
-
-                {/* Icon */}
-                <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
-                  {item.icon}
-                </div>
-
-                <div className="relative z-10">
-                  <h3 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white mb-4">
-                    {item.title}
+                <span className="absolute top-4 right-6 lg:top-10 lg:right-14 text-3xl lg:text-8xl font-black text-slate-200 dark:text-slate-700 group-hover:text-white/10 transition-colors">
+                  {service.id}
+                </span>
+                <div className="relative z-10 text-left">
+                  <div className="w-10 h-10 lg:w-16 h-16 bg-white dark:bg-slate-900 rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 lg:mb-8 shadow-sm group-hover:bg-white transition-colors">
+                    <span className="text-amber-500">{service.icon}</span>
+                  </div>
+                  <h3 className="text-sm lg:text-3xl font-bold mb-2 group-hover:text-white transition-colors">
+                    {service.title}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 leading-relaxed lg:text-lg">
-                    {item.desc}
+                  <p className="text-[10px] lg:text-base text-slate-500 leading-relaxed group-hover:text-white/70 transition-colors hidden lg:block">
+                    {service.desc}
                   </p>
                 </div>
-              </motion.div>
+              </Card>
             ))}
           </div>
         </div>
       </section>
+
+      {/* CTA Section */}
+      {!isLoggedIn && (
+        <section className="px-6 pb-24">
+          <div className="max-w-7xl mx-auto bg-slate-900 dark:bg-amber-500 rounded-[3.5rem] p-12 lg:p-24 text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl" />
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <h2 className="text-4xl lg:text-6xl font-bold text-white mb-8">
+                Siap Bergabung dengan{" "}
+                <span className="text-amber-400 dark:text-slate-900">
+                  Keluarga Besar
+                </span>{" "}
+                Rahmat ZAW?
+              </h2>
+              <p className="text-white/70 text-lg mb-12">
+                Dapatkan akses eksklusif ke berbagai fasilitas premium dan promo
+                menarik khusus member baru hari ini.
+              </p>
+              <Button
+                onClick={onLoginPrompt}
+                size="lg"
+                className="bg-white hover:bg-slate-100 text-slate-900 px-12 py-8 rounded-2xl text-xl font-black shadow-2xl"
+              >
+                Daftar Sekarang
+              </Button>
+            </div>
+            <Sparkles className="absolute bottom-10 left-10 text-white/10 w-32 h-32" />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

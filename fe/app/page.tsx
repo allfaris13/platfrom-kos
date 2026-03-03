@@ -57,7 +57,7 @@ export default function App() {
 
   useLayoutEffect(() => {
     setIsClient(true);
-    
+
     const initializeAuth = async () => {
       // Check if there might be a token (session or persistent)
       const likelyAuthenticated = !!localStorage.getItem('token') || !!sessionStorage.getItem('token') || document.cookie.includes('access_token') || !!localStorage.getItem('user');
@@ -69,7 +69,7 @@ export default function App() {
         try {
           // DATABASE AS SINGLE SOURCE OF TRUTH
           const { user } = await import('@/app/services/api').then(mod => mod.api.getProfile());
-          
+
           if (user.role === 'admin') {
             setUserRole('admin');
             // Fix: NEVER auto-remember "tenant" view for admins on hard-reload.
@@ -78,9 +78,9 @@ export default function App() {
           } else {
             setUserRole('tenant');
             if (storedViewMode === 'login' || storedViewMode === 'register' || storedViewMode === 'forgot-password' || !storedViewMode || storedViewMode === 'admin') {
-               setViewMode('home');
+              setViewMode('home');
             } else {
-               setViewMode(storedViewMode);
+              setViewMode(storedViewMode);
             }
           }
         } catch {
@@ -95,9 +95,9 @@ export default function App() {
       } else {
         // No token, respect stored view (if it's not a private view) or default to home
         if (storedViewMode === 'admin' || storedViewMode === 'tenant') {
-            setViewMode('home');
+          setViewMode('home');
         } else {
-            setViewMode(storedViewMode || "home");
+          setViewMode(storedViewMode || "home");
         }
       }
     };
@@ -143,8 +143,8 @@ export default function App() {
         {/* Abstract Background Orbs */}
         <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-amber-600/20 rounded-full blur-[120px] animate-pulse delay-700" />
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -155,15 +155,15 @@ export default function App() {
             <span className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-slate-900 to-slate-700 dark:from-white dark:to-slate-400">R</span>
           </div>
         </motion.div>
-        
+
         <div className="flex flex-col items-center gap-4 z-10">
           <div className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10">
             <Loader2 className="size-4 text-amber-500 animate-spin" />
             <p className="text-slate-300 text-[10px] font-medium tracking-[0.3em] uppercase">
-                {t('initializingPlatform')}
+              {t('initializingPlatform')}
             </p>
           </div>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
@@ -191,11 +191,11 @@ export default function App() {
           <UserLogin
             onLoginSuccess={(user) => {
               if (user?.user?.role === 'admin') {
-                  setUserRole("admin");
-                  setViewMode("admin");
+                setUserRole("admin");
+                setViewMode("admin");
               } else {
-                  setUserRole("tenant");
-                  setViewMode("tenant");
+                setUserRole("tenant");
+                setViewMode("tenant");
               }
             }}
             onBack={() => setViewMode("home")}
@@ -226,21 +226,21 @@ export default function App() {
               currentPage={adminPage}
               onNavigate={(page) => setAdminPage(page as AdminPage)}
             />
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto admin-content-area scroll-smooth">
               <div className="sticky top-0 z-10 p-4 bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => setViewMode("home")} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                        {t('backToHome')}
-                    </Button>
-                    <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
-                    <Button
+                  <Button variant="ghost" size="sm" onClick={() => setViewMode("home")} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    {t('backToHome')}
+                  </Button>
+                  <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setViewMode("tenant")}
                     className="text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-500"
-                    >
+                  >
                     {t('switchToTenantView')}
-                    </Button>
+                  </Button>
                 </div>
                 <Button
                   variant="ghost"
@@ -258,7 +258,7 @@ export default function App() {
                   {t('signOut')}
                 </Button>
               </div>
-              <div className="p-6">
+              <div className="p-6 pb-32 lg:pb-8">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={adminPage}
@@ -282,17 +282,17 @@ export default function App() {
 
         {/* Tenant/Default Portal */}
         {(viewMode === "tenant" || viewMode === "home" || (!viewMode && isClient)) && (
-            <UserPlatform 
-                isLoggedIn={!!userRole}
-                isAdmin={userRole === 'admin'}
-                onLogout={async () => {
-                    clearStoredState();
-                    setUserRole(null);
-                    await import('@/app/services/api').then(mod => mod.api.logout());
-                    window.location.href = '/login'; // Hard flush memory
-                }}
-                onBackToAdmin={() => setViewMode("admin")}
-            />
+          <UserPlatform
+            isLoggedIn={!!userRole}
+            isAdmin={userRole === 'admin'}
+            onLogout={async () => {
+              clearStoredState();
+              setUserRole(null);
+              await import('@/app/services/api').then(mod => mod.api.logout());
+              window.location.href = '/login'; // Hard flush memory
+            }}
+            onBackToAdmin={() => setViewMode("admin")}
+          />
         )}
       </motion.div>
     </AnimatePresence>

@@ -26,7 +26,6 @@
     "switchToTenantView": "Switch to Tenant View",
     "allRightsReserved": "All rights reserved."
   },
-
   "auth": {
     "welcomeBack": "Welcome",
     "welcomeBackHighlight": "Back",
@@ -45,7 +44,6 @@
     "loginFailed": "Login failed",
     "noAccount": "Don't have an account?",
     "registerHere": "Register here",
-
     "startJourney": "Start Your",
     "startJourneyHighlight": "Journey",
     "registerSubtitle": "Join our premium community today. Find the perfect balance of comfort, style, and modern convenience.",
@@ -69,7 +67,6 @@
     "accountCreatedToast": "Account created successfully!",
     "accountCreatedToastDesc": "Please login with your new account to continue.",
     "redirectingToLogin": "Registration successful. You will be redirected to the login page...",
-
     "forgotPasswordTitle": "Forgot Password?",
     "forgotPasswordSubtitle": "Enter your email address to reset your password.",
     "emailLabel": "Email Address",
@@ -80,7 +77,6 @@
     "checkEmail": "Check your email",
     "resetLinkSent": "We have sent a password reset link to"
   },
-
   "home": {
     "welcomeBadge": "👋 Welcome Back",
     "hiUser": "Hi, <nameWrapper>{name}</nameWrapper>!",
@@ -88,25 +84,21 @@
     "loggedInSubtitle": "Manage your stay, check bills, or find a new room right from here. Enjoy the ease of living at Rahmat ZAW.",
     "checkBills": "Check Bills & Orders",
     "viewRooms": "View Rooms",
-
     "guestBadge": "🏠 Best Boarding House in Malang",
     "findDreamHome": "Find Your Dream",
     "findDreamHomeHighlight": "Home With Ease.",
     "guestSubtitle": "Discover exclusive comfort and premium facilities at Kos Putra Rahmat ZAW.",
-
     "searchPlaceholder": "Search rooms...",
     "priceLabel": "Price",
     "allPrices": "All Prices",
     "priceWithBathroom": "Rp 1,000,000 (Private Bathroom)",
     "priceWithoutBathroom": "Rp 800,000 (Shared Bathroom)",
-
     "roomSelection": "Room Selection",
     "completeFacilities": "The most complete facilities.",
     "all": "All",
     "selectRoom": "Select Room",
     "noRoomsFound": "No rooms found",
     "tryOtherCriteria": "Try searching with different criteria or go back to the \"All\" category.",
-
     "simpleSteps": "SIMPLE STEPS",
     "userGuide": "User guide for",
     "userGuideHighlight": "first timer",
@@ -118,26 +110,29 @@
     "step03Desc": "Secure payment process.",
     "step04": "Check-in",
     "step04Desc": "Enjoy your new home.",
-
     "ourLegacy": "OUR LEGACY",
     "historyTitle": "History of Rahmat ZAW",
     "historyText1": "Founded in 2024, Kos Putra Rahmat ZAW provides a supportive ecosystem for student achievement.",
     "historyText2": "Now transforming to provide modern housing standards combining hotel comfort and home warmth.",
     "yearsExcellence": "Years of Excellence",
     "alumni": "Alumni",
-
     "rating": "Rating",
     "satisfaction": "Satisfaction",
     "residents": "Residents",
     "support": "Support",
-
+    "services": "SERVICES",
+    "whyChooseUsTitle": "Why Choose Us?",
+    "facilitiesTitle": "Facilities",
+    "facilitiesDesc": "Premium WiFi, AC, Smart TV, and comfortable shared living room.",
+    "locationTitle": "Location",
+    "locationDesc": "Sigura-gura Center, Malang. Near campuses and culinary centers.",
+    "securityTitle": "Security",
+    "securityDesc": "24-hour controlled CCTV and environmental security guard.",
     "community": "COMMUNITY",
     "residentReviews": "Resident Reviews",
     "reviewsSubtitle": "Honest voices from the Rahmat ZAW family.",
-
     "footerCopyright": "© 2026 Rahmat ZAW Residence"
   },
-
   "nav": {
     "home": "Home",
     "gallery": "Gallery",
@@ -148,7 +143,6 @@
     "login": "Login",
     "malangPrimeStay": "Malang Prime Stay"
   },
-
   "admin": {
     "dashboard": "Dashboard",
     "rooms": "Room Data",
@@ -161,7 +155,6 @@
     "online": "Online",
     "controlPanel": "Control Panel",
     "backToSite": "Back to Site",
-
     "dashboardTitle": "Overview",
     "dashboardSubtitle": "Welcome back, here's what's happening today.",
     "lastUpdated": "Last Updated",
@@ -181,7 +174,6 @@
     "quickActions": "Quick Actions",
     "addRoom": "Add Room",
     "addTenant": "Add Tenant",
-
     "monthlyRevenueTrend": "Monthly Revenue Trend",
     "last6MonthsPerformance": "Last 6 months performance",
     "revenue": "Revenue",
@@ -198,7 +190,6 @@
     "tenantSatisfaction": "Tenant Satisfaction",
     "monthlyTarget": "Monthly Target",
     "newUser": "New User",
-
     "roomsTitle": "Room Data",
     "roomsSubtitle": "Manage all rooms and their details.",
     "addNewRoom": "Add New Room",
@@ -256,7 +247,6 @@
     "statMaintenance": "Maintenance",
     "statRoomTypes": "Room Types",
     "statTotalPaid": "Total Paid",
-
     "tenantsTitle": "Tenant Data",
     "tenantsSubtitle": "Manage all registered users and tenants.",
     "searchTenants": "Search users...",
@@ -269,7 +259,6 @@
     "deleteUserConfirm": "Are you sure you want to delete this user? This action cannot be undone.",
     "noTenantsFound": "No users found matching your criteria.",
     "id": "ID",
-
     "paymentsTitle": "Payment Confirmation",
     "paymentsSubtitle": "Review and approve incoming payments.",
     "pending": "Pending",
@@ -340,10 +329,8 @@
     "transactionCount": "transactions",
     "totalPotential": "Total Potential",
     "ifFullyOccupied": "If fully occupied",
-
     "reportsTitle": "Financial Reports",
     "reportsSubtitle": "Comprehensive financial analytics and reports.",
-    
     "galleryTitle": "Gallery Management",
     "gallerySubtitle": "Manage property images and media assets.",
     "addNewImage": "Add New Image",
@@ -356,7 +343,6 @@
     "searchGallery": "Search in gallery...",
     "noImagesFound": "No images found in gallery"
   },
-
   "footer": {
     "description": "Premium male boarding house in the Sigura-gura area, Malang. Comfortable, safe, and strategic.",
     "quickLinks": "Quick Links",
@@ -369,7 +355,6 @@
     "contactTitle": "Contact",
     "copyright": "© 2026 Kost Putra Rahmat ZAW. All rights reserved."
   },
-
   "tenant": {
     "dashboard": "Tenant Dashboard",
     "home": "Home",
@@ -377,7 +362,6 @@
     "history": "History",
     "profile": "Profile"
   },
-
   "history": {
     "title": "Booking History",
     "subtitle": "Monitor your transaction status and room rental history by logging in to your personal account.",
@@ -502,7 +486,6 @@
     "noDueBillsDesc": "Great! You have no pending bills at the moment.",
     "backToMyBookings": "Back to My Bookings"
   },
-
   "contact": {
     "getInTouch": "Get In Touch",
     "contactTeam": "Contact the Team",
@@ -530,7 +513,6 @@
     "messageSentDesc": "Thank you for contacting us. Our team will respond to your message shortly.",
     "messageSentError": "Failed to send message. Please try again."
   },
-
   "gallery": {
     "titlePart1": "Elite",
     "titlePart2": "Residences",
@@ -540,7 +522,6 @@
     "availableFrom": "Available from",
     "findOtherUnits": "Find Other Units"
   },
-
   "profile": {
     "loadingProfile": "Loading profile data...",
     "editProfile": "Edit Profile",
@@ -579,7 +560,6 @@
     "roomNumber": "Room Number",
     "totalSpent": "Total Spent"
   },
-
   "language": {
     "switchTo": "Bahasa Indonesia",
     "current": "English"
