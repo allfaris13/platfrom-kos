@@ -56,7 +56,7 @@ export function AdminDashboard() {
     },
     {
       title: 'Penyewa Aktif',
-      value: activeTenants,
+      value: tenants.filter(t => t.role === 'tenant').length,
       subtitle: `${tenants.length} Terdaftar`,
       icon: Users,
       color: 'green'

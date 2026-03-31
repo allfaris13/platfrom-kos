@@ -263,7 +263,7 @@ export function Homepage({
               </div>
               <div className="w-full md:col-span-1">
                 <Select value={selectedPrice} onValueChange={setSelectedPrice}>
-                  <SelectTrigger className="h-12 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base focus:ring-amber-500">
+                  <SelectTrigger className="h-auto min-h-12 lg:min-h-14 py-2 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base focus:ring-amber-500 whitespace-normal text-left">
                     <SelectValue placeholder={t('priceLabel')} />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100 shadow-xl">
@@ -368,7 +368,7 @@ export function Homepage({
                         />
                         {/* Type Badge */}
                         <div className="absolute top-2 left-2 lg:top-4 lg:left-4">
-                          <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-0 px-2 lg:px-4 py-0.5 lg:py-1.5 rounded-full font-bold shadow-sm text-[8px] lg:text-xs">
+                          <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-0 px-2 lg:px-4 py-0.5 lg:py-1.5 rounded-full font-bold shadow-sm text-[8px] lg:text-xs max-w-[100px] lg:max-w-none truncate lg:whitespace-normal">
                             {room.type}
                           </Badge>
                         </div>
@@ -717,7 +717,7 @@ export function Homepage({
           </div>
         </div>
       </section>
-
+      
       {/* 7. Ulasan Section (Infinite Auto-Scroller - Smaller Cards on Mobile) */}
       <section className="py-16 lg:py-24 bg-slate-50 dark:bg-slate-950 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 mb-10 lg:mb-16 text-center">

@@ -44,7 +44,8 @@ export const getImageUrl = (imageUrl: string | null | undefined, preset?: ImageP
 
   // Local relative URL → prepend API base URL
   const apiUrl = getApiUrl().replace(/\/api$/, '');
-  return `${apiUrl}${imageUrl}`;
+  const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+  return `${apiUrl}${path}`;
 };
 
 // Get default placeholder image

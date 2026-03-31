@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 
 export function LuxuryReports() {
   const t = useTranslations('admin');
+  const [dateFilter, setDateFilter] = useState<'all' | '30days' | '6months' | 'year'>('all');
   const [payments, setPayments] = useState<ApiPayment[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]); // Add tenants state
@@ -51,8 +52,47 @@ export function LuxuryReports() {
   const pendingRevenue = stats?.pending_revenue || 0;
 
 
-  // Revenue by Room Type Data
-  const revenueByType = stats?.type_breakdown || [];
+  const filteredPayments = payments.filter(p => {
+    if (dateFilter === 'all') return true;
+    const date = new Date(p.tanggal_bayar);
+    const now = new Date();
+    if (dateFilter === '30days') return now.getTime() - date.getTime() < 30 * 24 * 60 * 60 * 1000;
+    if (dateFilter === '6months') return now.getTime() - date.getTime() < 6 * 30 * 24 * 60 * 60 * 1000;
+    if (dateFilter === 'year') return now.getTime() - date.getTime() < 365 * 24 * 60 * 60 * 1000;
+    return true;
+  });
+
+  // Calculate derived stats from filtered payments
+  const derivedRevenueByType = rooms.map(room => {
+    const revenue = filteredPayments
+      .filter(p => p.pemesanan?.kamar_id === room.id && p.status_pembayaran === 'Confirmed')
+      .reduce((sum, p) => sum + p.jumlah_bayar, 0);
+    return {
+      type: room.tipe_kamar,
+      revenue,
+      count: 1,
+      occupied: room.status === 'Terisi' ? 1 : 0
+    };
+  }).reduce((acc, current) => {
+    const existing = acc.find(a => a.type === current.type);
+    if (existing) {
+      existing.revenue += current.revenue;
+      existing.count += 1;
+      existing.occupied += current.occupied;
+    } else {
+      acc.push({ ...current });
+    }
+    return acc;
+  }, [] as { type: string; revenue: number; count: number; occupied: number }[]);
+
+  const revenueByType = derivedRevenueByType;
+  const totalRevenueFiltered = filteredPayments
+    .filter(p => p.status_pembayaran === 'Confirmed')
+    .reduce((sum, p) => sum + p.jumlah_bayar, 0);
+  
+  const pendingRevenueFiltered = filteredPayments
+    .filter(p => p.status_pembayaran === 'Pending')
+    .reduce((sum, p) => sum + p.jumlah_bayar, 0);
 
   const tenantDemographics = stats?.demographics || [
     { name: '18-25', value: 33, color: '#f59e0b' },
@@ -61,7 +101,7 @@ export function LuxuryReports() {
     { name: '45+', value: 7, color: '#8b5cf6' }
   ];
 
-  // Monthly Data from Backend
+  // Monthly Data from Backend (static for now as it's harder to re-calculate per month locally without more data)
   const monthlyData = stats?.monthly_trend || [];
 
   const handleExport = async () => {
@@ -404,10 +444,15 @@ export function LuxuryReports() {
         <div className="flex items-center gap-2 md:gap-3">
           <Button
             variant="outline"
+            onClick={() => {
+              const filters: ('all' | '30days' | '6months' | 'year')[] = ['all', '30days', '6months', 'year'];
+              const nextIndex = (filters.indexOf(dateFilter) + 1) % filters.length;
+              setDateFilter(filters[nextIndex]);
+            }}
             className="flex-1 sm:flex-none bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-xs md:text-sm"
           >
             <Calendar className="size-4 mr-2" />
-            {t('last6Months')}
+            {dateFilter === 'all' ? t('allTime') : dateFilter === '30days' ? t('last30Days') : dateFilter === '6months' ? t('last6Months') : t('lastYear')}
           </Button>
           <Button
             onClick={handleExport}
@@ -594,9 +639,8 @@ export function LuxuryReports() {
         className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8"
       >
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">{t('revenueBreakdown')}</h3>
           <div className="space-y-4">
-            {revenueByType.map((item) => (
+            {revenueByType.filter(item => item.type !== 'Single Room').map((item) => (
               <div key={item.type} className="p-5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:border-amber-500/30 transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <div>

@@ -261,11 +261,11 @@ export function ExtendBooking({ isOpen, onClose, bookingData, onSuccess }: Exten
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Biaya Per Bulan</span>
-                  <span className="font-medium text-slate-900">${bookingData.pricePerMonth}</span>
+                  <span className="font-medium text-slate-900">Rp {bookingData.pricePerMonth.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="pt-3 border-t border-dashed border-slate-200 flex justify-between items-center">
                   <span className="font-bold text-slate-900">Total Pembayaran</span>
-                  <span className="text-2xl font-black text-stone-900">${totalCost}</span>
+                  <span className="text-2xl font-black text-stone-900">Rp {totalCost.toLocaleString('id-ID')}</span>
                 </div>
               </div>
 

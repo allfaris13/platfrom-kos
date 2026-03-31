@@ -436,9 +436,9 @@ export function LuxuryPaymentConfirmation() {
               </div>
 
               {viewingPayment.status === 'Pending' && (
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <div className="flex flex-col sm:flex-row-reverse gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                   <Button
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 text-white"
+                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-white font-bold h-11"
                     disabled={processingId === viewingPayment.id}
                     onClick={async () => { 
                       await handleConfirm(viewingPayment.id); 
@@ -450,7 +450,7 @@ export function LuxuryPaymentConfirmation() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/20"
+                    className="w-full bg-white dark:bg-transparent border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-bold h-11"
                     disabled={processingId === viewingPayment.id}
                     onClick={() => { handleReject(viewingPayment.id); setViewingPayment(null); }}
                   >

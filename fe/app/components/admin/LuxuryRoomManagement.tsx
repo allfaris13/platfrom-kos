@@ -228,6 +228,50 @@ export function LuxuryRoomManagement() {
     }
   };
 
+  const handleExportRooms = async () => {
+    try {
+      const jsPDF = (await import('jspdf')).default;
+      const autoTable = (await import('jspdf-autotable')).default;
+      const doc = new jsPDF();
+      
+      const tableColumn = [t('id'), t('roomName'), t('type'), t('price'), t('floor'), t('status')];
+      const tableRows: (string | number)[][] = [];
+
+      filteredRooms.forEach(room => {
+        const rowData = [
+          `R${String(room.id).padStart(3, '0')}`,
+          room.name,
+          room.type,
+          formatPrice(room.price),
+          room.floor,
+          t(('status_' + room.status.toLowerCase()) as "status_tersedia")
+        ];
+        tableRows.push(rowData);
+      });
+
+      doc.setFontSize(18);
+      doc.text("Laporan Data Kamar", 14, 15);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 30,
+        theme: 'grid',
+        headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255] },
+        styles: { fontSize: 9 },
+      });
+
+      doc.save(`Data_Kamar_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('Laporan berhasil diunduh');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal mengunduh laporan');
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm(t('deleteRoomConfirmation'))) {
       setDeletingId(id);
@@ -309,7 +353,11 @@ export function LuxuryRoomManagement() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="hidden sm:flex bg-white dark:bg-transparent border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 px-6">
+          <Button 
+            variant="outline" 
+            onClick={handleExportRooms}
+            className="hidden sm:flex bg-white dark:bg-transparent border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 px-6"
+          >
             <Download className="size-4 mr-2" />
             {t('export')}
           </Button>

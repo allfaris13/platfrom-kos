@@ -237,7 +237,13 @@ export function TenantData() {
               <p className="text-slate-500 dark:text-slate-400 font-medium">{t('noTenantsFound')}</p>
             </div>
           ) : (
-            users.map((user) => (
+            users.filter(user => 
+              !searchQuery || 
+              user.nama_lengkap?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              user.user?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              user.nik?.includes(searchQuery) ||
+              user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+            ).map((user) => (
               <div key={user.id}>
                 {/* Desktop Row */}
                 <div className="hidden md:grid grid-cols-[60px_1.5fr_1fr_1.5fr_100px_80px] gap-4 px-6 py-4 items-center bg-slate-50 dark:bg-slate-800/20 hover:bg-slate-100 dark:hover:bg-slate-800/40 rounded-2xl transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-800 group">
