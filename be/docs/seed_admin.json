@@ -1,0 +1,304 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "Admin@123",
+      "role": "admin",
+      "created_at": "2025-01-01T08:00:00Z",
+      "updated_at": "2025-01-01T08:00:00Z"
+    }
+  ],
+  "kamars": [
+    {
+      "id": 1,
+      "nomor_kamar": "A-101",
+      "tipe_kamar": "Standard",
+      "fasilitas": "AC, WiFi, Lemari, Meja Belajar, Kasur Single",
+      "harga_per_bulan": 800000,
+      "status": "available",
+      "capacity": 1,
+      "floor": 1,
+      "size": "3x4m",
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "description": "Kamar standard nyaman dengan fasilitas lengkap di lantai 1, cocok untuk mahasiswa atau pekerja single.",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-01T08:00:00Z",
+      "updated_at": "2025-01-01T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "nomor_kamar": "A-102",
+      "tipe_kamar": "Standard",
+      "fasilitas": "AC, WiFi, Lemari, Meja Belajar, Kasur Single",
+      "harga_per_bulan": 800000,
+      "status": "occupied",
+      "capacity": 1,
+      "floor": 1,
+      "size": "3x4m",
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "description": "Kamar standard nyaman dengan fasilitas lengkap di lantai 1.",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-01T08:00:00Z",
+      "updated_at": "2025-01-01T08:00:00Z"
+    },
+    {
+      "id": 3,
+      "nomor_kamar": "B-201",
+      "tipe_kamar": "Deluxe",
+      "fasilitas": "AC, WiFi, Lemari 2 pintu, Meja Belajar, Kasur Double, Kamar Mandi Dalam, Water Heater",
+      "harga_per_bulan": 1200000,
+      "status": "available",
+      "capacity": 2,
+      "floor": 2,
+      "size": "4x5m",
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "description": "Kamar deluxe luas dengan kamar mandi dalam dan water heater, sangat nyaman untuk pasangan.",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-02T08:00:00Z",
+      "updated_at": "2025-01-02T08:00:00Z"
+    },
+    {
+      "id": 4,
+      "nomor_kamar": "B-202",
+      "tipe_kamar": "Deluxe",
+      "fasilitas": "AC, WiFi, Lemari 2 pintu, Meja Belajar, Kasur Double, Kamar Mandi Dalam, Water Heater",
+      "harga_per_bulan": 1200000,
+      "status": "occupied",
+      "capacity": 2,
+      "floor": 2,
+      "size": "4x5m",
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "description": "Kamar deluxe luas dengan kamar mandi dalam dan water heater.",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-02T08:00:00Z",
+      "updated_at": "2025-01-02T08:00:00Z"
+    },
+    {
+      "id": 5,
+      "nomor_kamar": "C-301",
+      "tipe_kamar": "VIP",
+      "fasilitas": "AC, WiFi Premium, Lemari 3 pintu, Meja Kerja, Kasur Queen, Kamar Mandi Dalam, Water Heater, TV, Kulkas Mini, Sofa",
+      "harga_per_bulan": 2000000,
+      "status": "available",
+      "capacity": 2,
+      "floor": 3,
+      "size": "5x6m",
+      "bedrooms": 1,
+      "bathrooms": 1,
+      "description": "Kamar VIP premium dengan semua fasilitas lengkap, termasuk TV, kulkas mini, dan sofa. Nuansa mewah untuk kenyamanan maksimal.",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-03T08:00:00Z",
+      "updated_at": "2025-01-03T08:00:00Z"
+    }
+  ],
+  "kamar_images": [
+    { "id": 1, "kamar_id": 1, "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg", "created_at": "2025-01-01T08:00:00Z" },
+    { "id": 2, "kamar_id": 1, "image_url": "https://res.cloudinary.com/demo/image/upload/sample2.jpg", "created_at": "2025-01-01T08:00:00Z" },
+    { "id": 3, "kamar_id": 1, "image_url": "https://res.cloudinary.com/demo/image/upload/sample3.jpg", "created_at": "2025-01-01T08:00:00Z" },
+    { "id": 4, "kamar_id": 2, "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg", "created_at": "2025-01-01T08:00:00Z" },
+    { "id": 5, "kamar_id": 2, "image_url": "https://res.cloudinary.com/demo/image/upload/sample2.jpg", "created_at": "2025-01-01T08:00:00Z" },
+    { "id": 6, "kamar_id": 2, "image_url": "https://res.cloudinary.com/demo/image/upload/sample3.jpg", "created_at": "2025-01-01T08:00:00Z" },
+    { "id": 7, "kamar_id": 3, "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg", "created_at": "2025-01-02T08:00:00Z" },
+    { "id": 8, "kamar_id": 3, "image_url": "https://res.cloudinary.com/demo/image/upload/sample2.jpg", "created_at": "2025-01-02T08:00:00Z" },
+    { "id": 9, "kamar_id": 3, "image_url": "https://res.cloudinary.com/demo/image/upload/sample3.jpg", "created_at": "2025-01-02T08:00:00Z" },
+    { "id": 10, "kamar_id": 4, "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg", "created_at": "2025-01-02T08:00:00Z" },
+    { "id": 11, "kamar_id": 4, "image_url": "https://res.cloudinary.com/demo/image/upload/sample2.jpg", "created_at": "2025-01-02T08:00:00Z" },
+    { "id": 12, "kamar_id": 4, "image_url": "https://res.cloudinary.com/demo/image/upload/sample3.jpg", "created_at": "2025-01-02T08:00:00Z" },
+    { "id": 13, "kamar_id": 5, "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg", "created_at": "2025-01-03T08:00:00Z" },
+    { "id": 14, "kamar_id": 5, "image_url": "https://res.cloudinary.com/demo/image/upload/sample2.jpg", "created_at": "2025-01-03T08:00:00Z" },
+    { "id": 15, "kamar_id": 5, "image_url": "https://res.cloudinary.com/demo/image/upload/sample3.jpg", "created_at": "2025-01-03T08:00:00Z" }
+  ],
+  "galleries": [
+    {
+      "id": 1,
+      "title": "Lobby Utama",
+      "category": "Fasilitas Umum",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-01T08:00:00Z",
+      "updated_at": "2025-01-01T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "title": "Area Parkir",
+      "category": "Fasilitas Umum",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-01T08:00:00Z",
+      "updated_at": "2025-01-01T08:00:00Z"
+    },
+    {
+      "id": 3,
+      "title": "Dapur Bersama",
+      "category": "Fasilitas Umum",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-01T08:00:00Z",
+      "updated_at": "2025-01-01T08:00:00Z"
+    },
+    {
+      "id": 4,
+      "title": "Kamar Standard",
+      "category": "Kamar",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-02T08:00:00Z",
+      "updated_at": "2025-01-02T08:00:00Z"
+    },
+    {
+      "id": 5,
+      "title": "Kamar Deluxe",
+      "category": "Kamar",
+      "image_url": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2025-01-02T08:00:00Z",
+      "updated_at": "2025-01-02T08:00:00Z"
+    }
+  ],
+  "penyewas": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "nama_lengkap": "Budi Santoso",
+      "email": "budi.santoso@email.com",
+      "nik": "3201010101900001",
+      "nomor_hp": "081234567890",
+      "tanggal_lahir": "1990-01-01T00:00:00Z",
+      "alamat_asal": "Jl. Merdeka No. 10, Jakarta Pusat",
+      "jenis_kelamin": "Laki-laki",
+      "foto_profil": "",
+      "role": "tenant",
+      "created_at": "2025-02-01T08:00:00Z",
+      "updated_at": "2025-02-01T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "user_id": 3,
+      "nama_lengkap": "Siti Rahayu",
+      "email": "siti.rahayu@email.com",
+      "nik": "3201010202910002",
+      "nomor_hp": "082345678901",
+      "tanggal_lahir": "1991-02-02T00:00:00Z",
+      "alamat_asal": "Jl. Sudirman No. 5, Bandung",
+      "jenis_kelamin": "Perempuan",
+      "foto_profil": "",
+      "role": "tenant",
+      "created_at": "2025-02-05T08:00:00Z",
+      "updated_at": "2025-02-05T08:00:00Z"
+    },
+    {
+      "id": 3,
+      "user_id": 4,
+      "nama_lengkap": "Andi Wijaya",
+      "email": "andi.wijaya@email.com",
+      "nik": "3201010303920003",
+      "nomor_hp": "083456789012",
+      "tanggal_lahir": "1992-03-03T00:00:00Z",
+      "alamat_asal": "Jl. Ahmad Yani No. 20, Surabaya",
+      "jenis_kelamin": "Laki-laki",
+      "foto_profil": "",
+      "role": "guest",
+      "created_at": "2025-03-01T08:00:00Z",
+      "updated_at": "2025-03-01T08:00:00Z"
+    }
+  ],
+  "pemesanans": [
+    {
+      "id": 1,
+      "penyewa_id": 1,
+      "kamar_id": 2,
+      "tanggal_mulai": "2025-02-01T00:00:00Z",
+      "durasi_sewa": 6,
+      "status_pemesanan": "active",
+      "created_at": "2025-01-28T08:00:00Z",
+      "updated_at": "2025-02-01T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "penyewa_id": 2,
+      "kamar_id": 4,
+      "tanggal_mulai": "2025-02-06T00:00:00Z",
+      "durasi_sewa": 3,
+      "status_pemesanan": "active",
+      "created_at": "2025-02-04T08:00:00Z",
+      "updated_at": "2025-02-06T08:00:00Z"
+    },
+    {
+      "id": 3,
+      "penyewa_id": 3,
+      "kamar_id": 1,
+      "tanggal_mulai": "2025-03-01T00:00:00Z",
+      "durasi_sewa": 1,
+      "status_pemesanan": "pending",
+      "created_at": "2025-02-28T08:00:00Z",
+      "updated_at": "2025-02-28T08:00:00Z"
+    }
+  ],
+  "pembayarans": [
+    {
+      "id": 1,
+      "pemesanan_id": 1,
+      "jumlah_bayar": 4800000,
+      "tanggal_bayar": "2025-01-30T10:00:00Z",
+      "bukti_transfer": "https://res.cloudinary.com/demo/image/upload/proof.jpg",
+      "status_pembayaran": "Confirmed",
+      "order_id": "ORD-2025-001",
+      "metode_pembayaran": "transfer",
+      "tipe_pembayaran": "full",
+      "jumlah_dp": 0,
+      "tanggal_jatuh_tempo": "2025-08-01T00:00:00Z",
+      "created_at": "2025-01-30T10:00:00Z",
+      "updated_at": "2025-02-01T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "pemesanan_id": 2,
+      "jumlah_bayar": 1200000,
+      "tanggal_bayar": "2025-02-05T14:00:00Z",
+      "bukti_transfer": "",
+      "status_pembayaran": "Confirmed",
+      "order_id": "ORD-2025-002",
+      "metode_pembayaran": "cash",
+      "tipe_pembayaran": "dp",
+      "jumlah_dp": 1200000,
+      "tanggal_jatuh_tempo": "2025-03-05T00:00:00Z",
+      "created_at": "2025-02-05T14:00:00Z",
+      "updated_at": "2025-02-06T08:00:00Z"
+    },
+    {
+      "id": 3,
+      "pemesanan_id": 3,
+      "jumlah_bayar": 800000,
+      "tanggal_bayar": "2025-02-28T09:00:00Z",
+      "bukti_transfer": "https://res.cloudinary.com/demo/image/upload/proof2.jpg",
+      "status_pembayaran": "Pending",
+      "order_id": "ORD-2025-003",
+      "metode_pembayaran": "transfer",
+      "tipe_pembayaran": "full",
+      "jumlah_dp": 0,
+      "tanggal_jatuh_tempo": "2025-04-01T00:00:00Z",
+      "created_at": "2025-02-28T09:00:00Z",
+      "updated_at": "2025-02-28T09:00:00Z"
+    }
+  ],
+  "reviews": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "kamar_id": 2,
+      "rating": 4.5,
+      "comment": "Kamar bersih dan nyaman, pelayanan admin sangat ramah. WiFi stabil. Sangat rekomendasikan!",
+      "created_at": "2025-03-01T10:00:00Z",
+      "updated_at": "2025-03-01T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "user_id": 3,
+      "kamar_id": 4,
+      "rating": 5.0,
+      "comment": "Kamar deluxe sangat worth it! Fasilitas lengkap, air panas tersedia 24 jam. Pasti akan kembali lagi.",
+      "created_at": "2025-03-10T14:00:00Z",
+      "updated_at": "2025-03-10T14:00:00Z"
+    }
+  ]
+}

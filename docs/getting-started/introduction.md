@@ -12,8 +12,9 @@
 | 📅 **Booking System** | Reservasi kamar dengan atomic transaction |
 | 💳 **Payment** | Transfer bank + Cash, upload bukti bayar, konfirmasi admin |
 | 🔐 **Authentication** | Login/Register, Google OAuth, HttpOnly cookie JWT |
-| 📊 **Admin Dashboard** | Kelola kamar, penyewa, pembayaran, laporan keuangan |
-| 🖼️ **Gallery** | Galeri foto properti dengan Cloudinary CDN |
+| 📊 **Admin Dashboard** | Kelola kamar, penyewa, pembayaran, & analytics real-time |
+| 🛡️ **Advanced Reports** | Fitur export laporan PDF untuk keuangan & okupansi |
+| 🖼️ **Gallery** | Galeri multi-foto per kamar & properti via Cloudinary |
 | ⭐ **Reviews** | Sistem ulasan dari penyewa yang terverifikasi |
 | 🔔 **Reminders** | Pengingat otomatis pembayaran bulanan via email |
 

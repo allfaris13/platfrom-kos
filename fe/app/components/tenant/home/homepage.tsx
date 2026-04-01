@@ -650,7 +650,7 @@ export function Homepage({
               <div className="flex gap-3 lg:gap-4">
                 <div className="p-4 lg:p-6 bg-white dark:bg-slate-900 rounded-[1.2rem] lg:rounded-[2rem] shadow-sm border border-slate-100 flex-1">
                   <p className="text-xl lg:text-4xl font-extrabold text-slate-900 dark:text-white">
-                    6++
+                    2++
                   </p>
                   <p className="text-[8px] lg:text-sm text-slate-500 font-bold uppercase tracking-wider">
                     {t('yearsExcellence')}
@@ -658,7 +658,7 @@ export function Homepage({
                 </div>
                 <div className="p-4 lg:p-6 bg-white dark:bg-slate-900 rounded-[1.2rem] lg:rounded-[2rem] shadow-sm border border-slate-100 flex-1">
                   <p className="text-xl lg:text-4xl font-extrabold text-slate-900 dark:text-white">
-                    200++
+                    100++
                   </p>
                   <p className="text-[8px] lg:text-sm text-slate-500 font-bold uppercase tracking-wider">
                     {t('alumni')}

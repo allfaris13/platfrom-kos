@@ -16,14 +16,14 @@ Pemilihan teknologi didasarkan pada **performa**, **type safety**, dan **produkt
 | [Cron](https://github.com/robfig/cron) | v3.0.1 | Scheduler (reminder) |
 | [Gomail](https://github.com/go-gomail/gomail) | v2 | SMTP email sender |
 
-Sumber: [`be/go.mod`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/go.mod)
+Sumber: [`be/go.mod`](file:///home/arkan/coding/UPK_semester_2/be/go.mod)
 
 ## Frontend
 
 | Teknologi | Versi | Fungsi |
 |-----------|-------|--------|
-| [Next.js](https://nextjs.org/) | 16.x (App Router) | React framework |
-| [React](https://react.dev/) | 18.x | UI library |
+| [Next.js](https://nextjs.org/) | 16.1.6 (App Router) | React framework |
+| [React](https://react.dev/) | 19.2.4 | UI library |
 | [TypeScript](https://www.typescriptlang.org/) | 5.x | Type safety |
 | [SWR](https://swr.vercel.app/) | 2.4.0 | Stale-while-revalidate data fetching |
 | [Tailwind CSS](https://tailwindcss.com/) | 3.4.x | Utility-first CSS |
@@ -33,7 +33,7 @@ Sumber: [`be/go.mod`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/go
 | [Zod](https://zod.dev/) | 3.22.x | Schema validation |
 | [React Hook Form](https://react-hook-form.com/) | 7.51.x | Form management |
 
-Sumber: [`fe/package.json`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/fe/package.json)
+Sumber: [`fe/package.json`](file:///home/arkan/coding/UPK_semester_2/fe/package.json)
 
 ## Infrastructure
 

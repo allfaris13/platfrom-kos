@@ -1,0 +1,222 @@
+{
+  "users": [
+    {
+      "id": 2,
+      "username": "budi_santoso",
+      "password": "Budi@12345",
+      "role": "penyewa",
+      "created_at": "2025-02-01T08:00:00Z",
+      "updated_at": "2025-02-01T08:00:00Z"
+    },
+    {
+      "id": 3,
+      "username": "siti_rahayu",
+      "password": "Siti@12345",
+      "role": "penyewa",
+      "created_at": "2025-02-05T08:00:00Z",
+      "updated_at": "2025-02-05T08:00:00Z"
+    },
+    {
+      "id": 4,
+      "username": "andi_wijaya",
+      "password": "Andi@12345",
+      "role": "penyewa",
+      "created_at": "2025-03-01T08:00:00Z",
+      "updated_at": "2025-03-01T08:00:00Z"
+    }
+  ],
+  "penyewas": [
+    {
+      "_comment": "=== TENANT (penyewa aktif) ===",
+      "id": 1,
+      "user_id": 2,
+      "user": {
+        "id": 2,
+        "username": "budi_santoso",
+        "role": "penyewa",
+        "created_at": "2025-02-01T08:00:00Z",
+        "updated_at": "2025-02-01T08:00:00Z"
+      },
+      "nama_lengkap": "Budi Santoso",
+      "email": "budi.santoso@email.com",
+      "nik": "3201010101900001",
+      "nomor_hp": "081234567890",
+      "tanggal_lahir": "1990-01-01T00:00:00Z",
+      "alamat_asal": "Jl. Merdeka No. 10, Jakarta Pusat",
+      "jenis_kelamin": "Laki-laki",
+      "foto_profil": "",
+      "role": "tenant",
+      "created_at": "2025-02-01T08:00:00Z",
+      "updated_at": "2025-02-01T08:00:00Z",
+      "_pemesanan_aktif": {
+        "id": 1,
+        "penyewa_id": 1,
+        "kamar_id": 2,
+        "kamar": {
+          "nomor_kamar": "A-102",
+          "tipe_kamar": "Standard",
+          "harga_per_bulan": 800000,
+          "status": "occupied"
+        },
+        "tanggal_mulai": "2025-02-01T00:00:00Z",
+        "durasi_sewa": 6,
+        "status_pemesanan": "active",
+        "created_at": "2025-01-28T08:00:00Z",
+        "updated_at": "2025-02-01T08:00:00Z",
+        "_pembayaran": {
+          "id": 1,
+          "pemesanan_id": 1,
+          "jumlah_bayar": 4800000,
+          "tanggal_bayar": "2025-01-30T10:00:00Z",
+          "bukti_transfer": "https://res.cloudinary.com/demo/image/upload/proof.jpg",
+          "status_pembayaran": "Confirmed",
+          "order_id": "ORD-2025-001",
+          "metode_pembayaran": "transfer",
+          "tipe_pembayaran": "full",
+          "jumlah_dp": 0,
+          "tanggal_jatuh_tempo": "2025-08-01T00:00:00Z",
+          "created_at": "2025-01-30T10:00:00Z",
+          "updated_at": "2025-02-01T08:00:00Z"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "user_id": 3,
+      "user": {
+        "id": 3,
+        "username": "siti_rahayu",
+        "role": "penyewa",
+        "created_at": "2025-02-05T08:00:00Z",
+        "updated_at": "2025-02-05T08:00:00Z"
+      },
+      "nama_lengkap": "Siti Rahayu",
+      "email": "siti.rahayu@email.com",
+      "nik": "3201010202910002",
+      "nomor_hp": "082345678901",
+      "tanggal_lahir": "1991-02-02T00:00:00Z",
+      "alamat_asal": "Jl. Sudirman No. 5, Bandung",
+      "jenis_kelamin": "Perempuan",
+      "foto_profil": "",
+      "role": "tenant",
+      "created_at": "2025-02-05T08:00:00Z",
+      "updated_at": "2025-02-05T08:00:00Z",
+      "_pemesanan_aktif": {
+        "id": 2,
+        "penyewa_id": 2,
+        "kamar_id": 4,
+        "kamar": {
+          "nomor_kamar": "B-202",
+          "tipe_kamar": "Deluxe",
+          "harga_per_bulan": 1200000,
+          "status": "occupied"
+        },
+        "tanggal_mulai": "2025-02-06T00:00:00Z",
+        "durasi_sewa": 3,
+        "status_pemesanan": "active",
+        "created_at": "2025-02-04T08:00:00Z",
+        "updated_at": "2025-02-06T08:00:00Z",
+        "_pembayaran": {
+          "id": 2,
+          "pemesanan_id": 2,
+          "jumlah_bayar": 1200000,
+          "tanggal_bayar": "2025-02-05T14:00:00Z",
+          "bukti_transfer": "",
+          "status_pembayaran": "Confirmed",
+          "order_id": "ORD-2025-002",
+          "metode_pembayaran": "cash",
+          "tipe_pembayaran": "dp",
+          "jumlah_dp": 1200000,
+          "tanggal_jatuh_tempo": "2025-03-05T00:00:00Z",
+          "created_at": "2025-02-05T14:00:00Z",
+          "updated_at": "2025-02-06T08:00:00Z"
+        }
+      }
+    },
+    {
+      "_comment": "=== GUEST (terdaftar, belum menjadi tenant aktif) ===",
+      "id": 3,
+      "user_id": 4,
+      "user": {
+        "id": 4,
+        "username": "andi_wijaya",
+        "role": "penyewa",
+        "created_at": "2025-03-01T08:00:00Z",
+        "updated_at": "2025-03-01T08:00:00Z"
+      },
+      "nama_lengkap": "Andi Wijaya",
+      "email": "andi.wijaya@email.com",
+      "nik": "3201010303920003",
+      "nomor_hp": "083456789012",
+      "tanggal_lahir": "1992-03-03T00:00:00Z",
+      "alamat_asal": "Jl. Ahmad Yani No. 20, Surabaya",
+      "jenis_kelamin": "Laki-laki",
+      "foto_profil": "",
+      "role": "guest",
+      "created_at": "2025-03-01T08:00:00Z",
+      "updated_at": "2025-03-01T08:00:00Z",
+      "_pemesanan_pending": {
+        "id": 3,
+        "penyewa_id": 3,
+        "kamar_id": 1,
+        "kamar": {
+          "nomor_kamar": "A-101",
+          "tipe_kamar": "Standard",
+          "harga_per_bulan": 800000,
+          "status": "available"
+        },
+        "tanggal_mulai": "2025-03-01T00:00:00Z",
+        "durasi_sewa": 1,
+        "status_pemesanan": "pending",
+        "created_at": "2025-02-28T08:00:00Z",
+        "updated_at": "2025-02-28T08:00:00Z",
+        "_pembayaran": {
+          "id": 3,
+          "pemesanan_id": 3,
+          "jumlah_bayar": 800000,
+          "tanggal_bayar": "2025-02-28T09:00:00Z",
+          "bukti_transfer": "https://res.cloudinary.com/demo/image/upload/proof2.jpg",
+          "status_pembayaran": "Pending",
+          "order_id": "ORD-2025-003",
+          "metode_pembayaran": "transfer",
+          "tipe_pembayaran": "full",
+          "jumlah_dp": 0,
+          "tanggal_jatuh_tempo": "2025-04-01T00:00:00Z",
+          "created_at": "2025-02-28T09:00:00Z",
+          "updated_at": "2025-02-28T09:00:00Z"
+        }
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "kamar_id": 2,
+      "rating": 4.5,
+      "comment": "Kamar bersih dan nyaman, pelayanan admin sangat ramah. WiFi stabil. Sangat rekomendasikan!",
+      "created_at": "2025-03-01T10:00:00Z",
+      "updated_at": "2025-03-01T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "user_id": 3,
+      "kamar_id": 4,
+      "rating": 5.0,
+      "comment": "Kamar deluxe sangat worth it! Fasilitas lengkap, air panas tersedia 24 jam. Pasti akan kembali lagi.",
+      "created_at": "2025-03-10T14:00:00Z",
+      "updated_at": "2025-03-10T14:00:00Z"
+    }
+  ],
+  "_legend": {
+    "roles_penyewa": {
+      "guest": "User sudah register dan punya profil, tapi belum punya pemesanan aktif / pemesanan masih Pending",
+      "tenant": "User sudah punya pemesanan aktif (status_pemesanan: active) dan pembayaran sudah Confirmed",
+      "former_tenant": "User yang pernah tinggal tapi masa sewa sudah habis"
+    },
+    "status_pemesanan": ["pending", "active", "completed", "cancelled"],
+    "status_pembayaran": ["Pending", "Confirmed", "Failed", "Settled"],
+    "metode_pembayaran": ["transfer", "cash"],
+    "tipe_pembayaran": ["full", "dp"]
+  }
+}
