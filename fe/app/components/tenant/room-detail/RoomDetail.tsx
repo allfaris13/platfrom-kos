@@ -140,13 +140,15 @@ export function RoomDetail({
               icon: facilityIcons[f] || Check
             })),
             features: fasilitasArray,
-            images: [
-              roomData.image_url ? getImageUrl(roomData.image_url) : 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080',
-              // Gallery
-              ...(roomData.Gallery?.map(g => getImageUrl(g.image_url)) || 
-                 ['https://images.unsplash.com/photo-1662454419736-de132ff75638?q=80&w=1080',
-                  'https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1080'])
-            ]
+            images: (() => {
+              // Use uploaded kamar images if available
+              if (roomData.Images && roomData.Images.length > 0) {
+                return roomData.Images.map(img => getImageUrl(img.image_url));
+              }
+              // Fallback: use main image_url
+              const mainImg = roomData.image_url ? getImageUrl(roomData.image_url) : null;
+              return mainImg ? [mainImg] : ['https://via.placeholder.com/800x500?text=No+Image'];
+            })(),
           };
           setRoom(mapped);
         } else {
@@ -169,8 +171,7 @@ export function RoomDetail({
   }
 
   const handleSubmitReview = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!isLoggedIn) {
       toast.error("Please login as a tenant to write a review.");
       return;
     }

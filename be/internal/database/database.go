@@ -51,6 +51,7 @@ func InitDB(cfg *config.Config) {
 		&models.Pembayaran{},
 
 		&models.Gallery{},
+		&models.KamarImage{},
 		&models.Review{},
 		&models.PaymentReminder{},
 	)
@@ -58,8 +59,6 @@ func InitDB(cfg *config.Config) {
 		log.Fatal("Failed to migrate database:", err)
 	}
 
-	// Seed Data
-	SeedData()
 
 	log.Println("Database initialized and migrated successfully on PostgreSQL")
 }

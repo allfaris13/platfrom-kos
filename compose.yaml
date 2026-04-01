@@ -14,10 +14,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your_secret_here}
       PORT: 8080
       GIN_MODE: release
-      ALLOWED_ORIGINS: https://rahmadzaw.busines.biz.id
+      ALLOWED_ORIGINS: https://rahmatzaw.elarisnoir.my.id
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     ports:
-      - "8087:8080" # Diarahkan dari Apache (Ganti dari 8085 karena bentrok)
+      - "8087:8080"
     networks:
       - app-network
     deploy:
@@ -31,10 +31,11 @@ services:
       context: ./fe
       dockerfile: Dockerfile.prod
       args:
-        NEXT_PUBLIC_API_URL: https://rahmadzaw.busines.biz.id/api
+        NEXT_PUBLIC_API_URL: https://rahmatzaw.elarisnoir.my.id/api
         NEXT_PUBLIC_APP_NAME: "Rahmat ZAW Prime Stay"
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         NEXT_PUBLIC_GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL}
         NEXT_PUBLIC_MIDTRANS_CLIENT_KEY: ${NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
     container_name: senvanda-app-rahmatzaw-frontend
     restart: unless-stopped

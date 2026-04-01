@@ -13,6 +13,7 @@ type TenantService interface {
 	GetTenantsByRole(role string) ([]models.Penyewa, error)
 	GetTenantsPaginated(pagination *utils.Pagination, search, role string) ([]models.Penyewa, int64, error)
 	ValidateTenant(penyewa *models.Penyewa) error
+	DeactivateTenant(id uint) error
 }
 
 type tenantService struct {
@@ -43,4 +44,19 @@ func (s *tenantService) ValidateTenant(penyewa *models.Penyewa) error {
 		return errors.New("phone number must start with 08 or 62")
 	}
 	return nil
+}
+
+func (s *tenantService) DeactivateTenant(id uint) error {
+	// Fetch penyewa first to check role
+	penyewa, err := s.repo.FindByID(id)
+	if err != nil {
+		return errors.New("user tidak ditemukan")
+	}
+
+	// Lindungi akun admin dari di-nonaktifkan
+	if penyewa.Role == "admin" {
+		return errors.New("akun admin tidak dapat dinonaktifkan")
+	}
+
+	return s.repo.UpdateRole(id, "non_active")
 }

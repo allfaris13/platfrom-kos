@@ -78,7 +78,7 @@ SMTP_EMAIL=
 SMTP_PASSWORD=
 ```
 
-Sumber: [`be/.env.example`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/.env.example)
+Sumber: [`be/.env.example`](file:///home/arkan/coding/UPK_semester_2/be/.env.example)
 
 > [!WARNING]
 > `JWT_SECRET` **wajib** minimal 32 karakter. Tanpa ini, server tidak akan bisa start.
@@ -126,6 +126,12 @@ Server running on http://localhost:8081
 > [!NOTE]
 > GORM akan **auto-migrate** semua tabel saat pertama kali server dijalankan. Tidak perlu menjalankan SQL migration secara manual.
 
+<<<<<<< HEAD
+=======
+> [!CAUTION]
+> Di lingkungan **Production**, backend menggunakan port **8087** dan frontend port **3007** (sesuai konfigurasi `Caddyfile`). Pastikan port ini tidak tertukar dengan default development (8081/3000).
+
+>>>>>>> 839f4a26608ad70f87046b52e7de6c16df6d886e
 ### 2.4 Mengisi Data Awal (Seeding)
 
 Project ini menyertakan file **Seed Data** untuk memudahkan testing dengan akun admin dan data penyewa dummy.
@@ -168,7 +174,7 @@ NEXT_PUBLIC_APP_NAME=Kos-Kosan Alam Sigura Gura
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Sumber: [`fe/.env.example`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/fe/.env.example)
+Sumber: [`fe/.env.example`](file:///home/arkan/coding/UPK_semester_2/fe/.env.example)
 
 > [!IMPORTANT]
 > `NEXT_PUBLIC_API_URL` harus mengarah ke backend yang sudah berjalan. Port default backend adalah `8081`.
@@ -225,7 +231,7 @@ services:
     image: nginx:alpine
 ```
 
-Sumber: [`docker-compose.yml`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/docker-compose.yml)
+Sumber: [`docker-compose.yml`](file:///home/arkan/coding/UPK_semester_2/docker-compose.yml)
 
 ### 4.3 Verifikasi
 

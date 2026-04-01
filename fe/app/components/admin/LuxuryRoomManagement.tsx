@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getImageUrl } from '@/app/utils/api-url';
-import { Search, Plus, Edit, Trash2, Eye, Download, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, Download, ChevronUp, ChevronDown, Loader2, DoorOpen, DoorClosed, Wrench, Building2, Layers, BadgeDollarSign, CalendarDays } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
@@ -27,6 +27,7 @@ interface Room {
   bathrooms: number;
   description: string;
   image: string;
+  additionalImages: string[];
   facilities: string[];
 }
 
@@ -43,6 +44,7 @@ interface BackendRoom {
   bathrooms: number;
   description: string;
   image_url: string;
+  Images: { image_url: string }[];
   fasilitas: string;
 }
 
@@ -57,8 +59,14 @@ export function LuxuryRoomManagement() {
   const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
   const [sortField, setSortField] = useState<'name' | 'price' | 'floor'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [occupancyMap, setOccupancyMap] = useState<Record<string, { tenant_name: string; payment_status: string; last_pay_amount: number; payment_month: string }>>({});
+  const [roomPaymentDetail, setRoomPaymentDetail] = useState<{ tenant_name: string; penyewa_id: number; email: string; nomor_hp: string; check_in: string; check_out: string; durasi_sewa: number; payments: { id: number; jumlah_bayar: number; status_pembayaran: string; metode_pembayaran: string; tanggal_bayar: string; payment_month: string }[] } | null>(null);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Room>>({
     name: '',
@@ -91,6 +99,7 @@ export function LuxuryRoomManagement() {
         bathrooms: r.bathrooms || 1,
         description: r.description || '',
         image: getImageUrl(r.image_url) || 'https://via.placeholder.com/300',
+        additionalImages: r.Images ? r.Images.map(img => getImageUrl(img.image_url)) : [],
         facilities: r.fasilitas ? r.fasilitas.split(',').map(f => f.trim()) : []
       }));
       setRooms(mapped);
@@ -103,7 +112,36 @@ export function LuxuryRoomManagement() {
 
   useEffect(() => {
     fetchRooms();
+    // Fetch total revenue from dashboard stats
+    api.getDashboardStats().then(stats => {
+      setTotalRevenue(stats.total_revenue || 0);
+    }).catch(() => {});
+    // Fetch room occupancy data
+    api.getRoomOccupancy().then(data => {
+      const map: Record<string, { tenant_name: string; payment_status: string; last_pay_amount: number; payment_month: string }> = {};
+      for (const item of data) {
+        map[String(item.room_id)] = { tenant_name: item.tenant_name, payment_status: item.payment_status, last_pay_amount: item.last_pay_amount, payment_month: item.payment_month };
+      }
+      setOccupancyMap(map);
+    }).catch(() => {});
   }, []);
+
+  // Fetch payment detail when room detail modal opens
+  useEffect(() => {
+    if (viewingRoom && occupancyMap[viewingRoom.id]) {
+      setLoadingPayments(true);
+      // Extract numeric room ID from the room.id string (e.g., "R001" -> need actual DB id)
+      // The occupancyMap keys are the room.id strings mapped from the API's room_id
+      const numericId = Object.entries(occupancyMap).find(([key]) => key === viewingRoom.id);
+      if (numericId) {
+        api.getPaymentsByRoom(Number(numericId[0])).then(data => {
+          setRoomPaymentDetail(data);
+        }).catch(() => {}).finally(() => setLoadingPayments(false));
+      } else {
+        setLoadingPayments(false);
+      }
+    }
+  }, [viewingRoom, occupancyMap]);
 
   const filteredRooms = rooms
     .filter(room => {
@@ -125,24 +163,57 @@ export function LuxuryRoomManagement() {
     });
 
   const handleSubmit = async () => {
+    // Validation
+    if (!formData.name?.trim()) {
+      toast.error('Nama atau nomor kamar wajib diisi');
+      return;
+    }
+    if (!formData.price || formData.price <= 0) {
+      toast.error('Harga per bulan wajib diisi dengan format yang benar');
+      return;
+    }
+    if (!formData.size?.trim()) {
+      toast.error('Ukuran kamar wajib diisi (contoh: 3x4m)');
+      return;
+    }
+    if (!formData.facilities || formData.facilities.length === 0) {
+      toast.error('Fasilitas wajib diisi minimal satu');
+      return;
+    }
+    if (!formData.description?.trim()) {
+      toast.error('Deskripsi kamar wajib diisi');
+      return;
+    }
+
     const data = new FormData();
-    data.append('nomor_kamar', formData.name || '');
+    data.append('nomor_kamar', formData.name.trim());
     data.append('tipe_kamar', formData.type || 'Standard');
     data.append('harga_per_bulan', String(formData.price));
     data.append('status', formData.status || 'Tersedia');
     data.append('capacity', String(formData.capacity));
     data.append('floor', String(formData.floor));
-    data.append('size', formData.size || '');
+    data.append('size', formData.size.trim());
     data.append('bedrooms', String(formData.bedrooms));
     data.append('bathrooms', String(formData.bathrooms));
-    data.append('description', formData.description || '');
+    data.append('description', formData.description.trim());
     // Handle facilities array to string
     data.append('fasilitas', Array.isArray(formData.facilities) ? formData.facilities.join(', ') : formData.facilities || '');
 
-    if (imageFile) {
-      data.append('image', imageFile);
+    const newImages = imageFiles.filter(f => f !== null);
+    if (newImages.length > 0 && newImages.length < 3) {
+      toast.error('Jika ingin mengubah foto, minimal upload 3 foto baru');
+      return;
+    }
+    if (!editingRoom && newImages.length < 3) {
+      toast.error('Minimal 3 foto kamar diperlukan untuk kamar baru');
+      return;
     }
 
+    newImages.forEach(file => {
+      data.append('images', file as File);
+    });
+
+    setIsSubmitting(true);
     try {
       if (editingRoom) {
         await api.updateRoom(editingRoom.id, data);
@@ -155,17 +226,67 @@ export function LuxuryRoomManagement() {
     } catch (e) {
       console.error(e);
       toast.error(editingRoom ? t('failedToUpdate') : t('failedToCreate'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleExportRooms = async () => {
+    try {
+      const jsPDF = (await import('jspdf')).default;
+      const autoTable = (await import('jspdf-autotable')).default;
+      const doc = new jsPDF();
+      
+      const tableColumn = [t('id'), t('roomName'), t('type'), t('price'), t('floor'), t('status')];
+      const tableRows: (string | number)[][] = [];
+
+      filteredRooms.forEach(room => {
+        const rowData = [
+          `R${String(room.id).padStart(3, '0')}`,
+          room.name,
+          room.type,
+          formatPrice(room.price),
+          room.floor,
+          t(('status_' + room.status.toLowerCase()) as "status_tersedia")
+        ];
+        tableRows.push(rowData);
+      });
+
+      doc.setFontSize(18);
+      doc.text("Laporan Data Kamar", 14, 15);
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 30,
+        theme: 'grid',
+        headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255] },
+        styles: { fontSize: 9 },
+      });
+
+      doc.save(`Data_Kamar_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('Laporan berhasil diunduh');
+    } catch (e) {
+      console.error(e);
+      toast.error('Gagal mengunduh laporan');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm(t('deleteRoomConfirmation'))) {
+      setDeletingId(id);
       try {
         await api.deleteRoom(id);
         await fetchRooms();
+        toast.success(t('roomDeletedSuccess') || 'Kamar berhasil dihapus');
       } catch (e) {
         console.error(e);
         toast.error(t('failedToDelete'));
+      } finally {
+        setDeletingId(null);
       }
     }
   };
@@ -192,7 +313,7 @@ export function LuxuryRoomManagement() {
     });
     setEditingRoom(null);
     setIsDialogOpen(false);
-    setImageFile(null);
+    setImageFiles([null, null, null]);
   };
 
   const formatPrice = (price: number) => {
@@ -235,7 +356,11 @@ export function LuxuryRoomManagement() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="hidden sm:flex bg-white dark:bg-transparent border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 px-6">
+          <Button 
+            variant="outline" 
+            onClick={handleExportRooms}
+            className="hidden sm:flex bg-white dark:bg-transparent border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 px-6"
+          >
             <Download className="size-4 mr-2" />
             {t('export')}
           </Button>
@@ -391,78 +516,156 @@ export function LuxuryRoomManagement() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-slate-600 dark:text-slate-300">{t('roomImage')}</Label>
-                  <div className="flex flex-col gap-4">
-                    {/* Image Preview Area */}
-                    {(imageFile || formData.image) && (
-                      <div className="relative w-full h-48 md:h-56 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
-                        <ImageWithFallback
-                          src={imageFile ? URL.createObjectURL(imageFile) : formData.image}
-                          alt="Room Preview"
-                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <p className="text-white font-medium text-sm">{t('currentPreview')}</p>
-                        </div>
-                        {imageFile && (
-                          <button
-                            onClick={() => setImageFile(null)}
-                            className="absolute top-2 right-2 p-1.5 bg-red-500/80 text-white rounded-full hover:bg-red-600 transition-colors"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        )}
-                      </div>
-                    )}
+                  <Label className="text-slate-600 dark:text-slate-300">{t('roomImage')} (Wajib 3 Gambar)</Label>
+                  
+                  {/* Image Previews */}
+                  {(imageFiles.some(f => f !== null) || (editingRoom && formData.image)) && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      {imageFiles.some(f => f !== null) ? (
+                        imageFiles.map((file, idx) => {
+                          if (!file) return null;
+                          return (
+                            <div key={idx} className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
+                              <ImageWithFallback
+                                src={URL.createObjectURL(file)}
+                                alt={`New Room Preview ${idx + 1}`}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <p className="text-white font-medium text-xs">Gambar Baru</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const newFiles = [...imageFiles];
+                                  newFiles[idx] = null;
+                                  setImageFiles(newFiles);
+                                }}
+                                className="absolute top-2 right-2 p-1.5 bg-red-500/80 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <>
+                          {formData.additionalImages && formData.additionalImages.length > 0 ? (
+                            formData.additionalImages.map((src, idx) => (
+                              <div key={idx} className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
+                                <ImageWithFallback
+                                  src={src}
+                                  alt={`Current Room Preview ${idx + 1}`}
+                                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <p className="text-white font-medium text-xs text-center px-1">Gambar {idx + 1}</p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
+                              <ImageWithFallback
+                                src={formData.image!}
+                                alt={`Current Room Preview`}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
 
-                    {/* Styled Upload Button */}
+                  {/* Single Upload Area */}
+                  {imageFiles.filter(f => f !== null).length < 3 && (
                     <div className="relative">
                       <input
+
                         type="file"
-                        id="image-upload"
+                        id="image-upload-multiple"
                         className="hidden"
                         accept="image/*"
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setImageFile(e.target.files?.[0] || null)}
+                        multiple
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          if (e.target.files) {
+                            const files = Array.from(e.target.files);
+                            const currentFiles = [...imageFiles];
+                            let added = 0;
+                            
+                            for (const file of files) {
+                              const emptyIndex = currentFiles.findIndex(f => f === null);
+                              if (emptyIndex !== -1) {
+                                currentFiles[emptyIndex] = file;
+                                added++;
+                              }
+                            }
+                            
+                            if (added < files.length) {
+                              toast.warning(`Hanya dapat mengunggah maksimal 3 gambar. Gambar selebihnya diabaikan.`);
+                            }
+                            
+                            setImageFiles(currentFiles);
+                            e.target.value = '';
+                          }
+                        }}
                       />
                       <label
-                        htmlFor="image-upload"
+                        htmlFor="image-upload-multiple"
                         className={`
-                          flex flex-col items-center justify-center w-full p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all
-                          ${imageFile 
-                            ? 'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10' 
-                            : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-amber-500/50'
-                          }
+                          flex flex-col items-center justify-center w-full p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-amber-500/50
                         `}
                       >
-                        <div className={`
-                          p-4 rounded-full mb-3 transition-colors
-                          ${imageFile ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-200 dark:bg-slate-800 text-amber-500 group-hover:scale-110'}
-                        `}>
-                          {imageFile ? <Eye className="size-6" /> : <Download className="size-6 rotate-180" />} 
+                        <div className="p-4 rounded-full mb-3 transition-colors bg-slate-200 dark:bg-slate-800 text-amber-500 group-hover:scale-110">
+                          <Download className="size-6 rotate-180" />
                         </div>
                         <p className="text-sm font-bold text-slate-600 dark:text-slate-300 mb-1">
-                          {imageFile ? t('changeImage') : t('clickToUpload')}
+                          {imageFiles.some(f => f !== null) ? 'Tambah Gambar' : 'Pilih Gambar'}
                         </p>
                         <p className="text-xs text-slate-400 dark:text-slate-500 text-center max-w-xs">
-                          {imageFile 
-                            ? t('selectedFile', { filename: imageFile.name })
-                            : t('imageFormatHelp')
+                          {imageFiles.some(f => f !== null)
+                            ? `Telah memilih ${imageFiles.filter(f => f !== null).length} dari 3 gambar`
+                            : 'Klik untuk memilih gambar atau drag & drop'
                           }
                         </p>
                       </label>
                     </div>
-                  </div>
+                  )}
+
+                  {editingRoom && <p className="text-xs text-amber-600 italic mt-1">* Jika ingin mengubah gambar, Anda harus mengunggah 3 gambar baru sekaligus untuk menggantikan gambar sebelumnya.</p>}
+                  {imageFiles.some(f => f !== null) && (
+                    <div className="flex justify-start mt-2">
+                       <Button 
+                         type="button"
+                         variant="destructive" 
+                         size="sm" 
+                         onClick={(e) => {
+                           e.preventDefault();
+                           setImageFiles([null, null, null]);
+                         }}
+                         className="text-xs"
+                       >
+                         <Trash2 className="size-3 mr-1" /> Hapus Semua
+                       </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="outline" onClick={resetForm} className="bg-transparent border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <Button variant="outline" onClick={resetForm} disabled={isSubmitting} className="bg-transparent border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
                     {t('cancel')}
                   </Button>
                   <Button
                     onClick={handleSubmit}
+                    disabled={isSubmitting}
                     className="bg-amber-500 hover:bg-amber-600 text-white"
                   >
-                    {editingRoom ? t('update') : t('create')}
+                    {isSubmitting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...</>
+                    ) : (
+                      editingRoom ? t('update') : t('create')
+                    )}
                   </Button>
                 </div>
               </div>
@@ -470,6 +673,53 @@ export function LuxuryRoomManagement() {
           </Dialog>
         </div>
       </motion.div>
+
+      {/* Room Stats Report Cards */}
+      {!isLoading && rooms.length > 0 && (() => {
+        const totalRooms = rooms.length;
+        const tersedia = rooms.filter(r => r.status === 'Tersedia').length;
+        const terisi = rooms.filter(r => r.status === 'Penuh').length;
+        const maintenance = rooms.filter(r => r.status === 'Maintenance').length;
+        const uniqueTypes = [...new Set(rooms.map(r => r.type))].length;
+
+        const cards = [
+          { label: t('statTotalRooms'), value: totalRooms, icon: Building2, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
+          { label: t('statAvailable'), value: tersedia, icon: DoorOpen, color: 'from-green-500 to-emerald-600', bg: 'bg-green-500/10', text: 'text-green-600 dark:text-green-400', border: 'border-green-500/20' },
+          { label: t('statOccupied'), value: terisi, icon: DoorClosed, color: 'from-red-500 to-rose-600', bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/20' },
+          { label: t('statMaintenance'), value: maintenance, icon: Wrench, color: 'from-orange-500 to-orange-600', bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500/20' },
+          { label: t('statRoomTypes'), value: uniqueTypes, icon: Layers, color: 'from-blue-500 to-indigo-600', bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/20' },
+          { label: t('statTotalPaid'), value: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(totalRevenue), icon: BadgeDollarSign, color: 'from-purple-500 to-violet-600', bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/20' },
+        ];
+
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, duration: 0.4 }}
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4"
+          >
+            {cards.map((card, idx) => (
+              <motion.div
+                key={card.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 + idx * 0.05, duration: 0.4 }}
+                className={`relative overflow-hidden p-4 md:p-5 rounded-2xl border ${card.border} ${card.bg} backdrop-blur-sm`}
+              >
+                <div className={`inline-flex items-center justify-center size-9 md:size-10 rounded-xl bg-gradient-to-br ${card.color} mb-3 shadow-lg`}>
+                  <card.icon className="size-4 md:size-5 text-white" />
+                </div>
+                <p className={`text-xl md:text-2xl font-black ${card.text}`}>
+                  {card.value}
+                </p>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mt-1">
+                  {card.label}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+        );
+      })()}
 
       {/* Filter Bar */}
       <motion.div 
@@ -505,10 +755,8 @@ export function LuxuryRoomManagement() {
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
               <SelectItem value="All">{t('allTypes')}</SelectItem>
-              <SelectItem value="Single">Single</SelectItem>
-              <SelectItem value="Double">Double</SelectItem>
-              <SelectItem value="Suite">Suite</SelectItem>
-              <SelectItem value="Deluxe">Deluxe</SelectItem>
+              <SelectItem value="Standard">Standard</SelectItem>
+              <SelectItem value="Premium">Premium</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -613,6 +861,7 @@ export function LuxuryRoomManagement() {
                       </div>
                     </div>
                   </div>
+                  
                   <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                     <Button variant="ghost" className="flex-1 text-slate-500 dark:text-slate-400 h-9" onClick={() => setViewingRoom(room)}>
                       <Eye className="size-4 mr-2" /> {t('detail')}
@@ -620,8 +869,8 @@ export function LuxuryRoomManagement() {
                     <Button variant="ghost" className="flex-1 text-slate-500 dark:text-slate-400 h-9" onClick={() => handleEdit(room)}>
                       <Edit className="size-4 mr-2" /> {t('edit')}
                     </Button>
-                    <Button variant="ghost" className="size-9 p-0 text-slate-500 hover:text-red-500" onClick={() => handleDelete(room.id)}>
-                      <Trash2 className="size-4" />
+                    <Button variant="ghost" className="size-9 p-0 text-slate-500 hover:text-red-500" disabled={deletingId === room.id} onClick={() => handleDelete(room.id)}>
+                      {deletingId === room.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
                     </Button>
                   </div>
                 </div>
@@ -632,8 +881,9 @@ export function LuxuryRoomManagement() {
       </motion.div>
 
       {/* View Dialog - Responsive */}
-      <Dialog open={!!viewingRoom} onOpenChange={() => setViewingRoom(null)}>
-        <DialogContent className="w-[95vw] max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white p-0 overflow-hidden rounded-2xl md:rounded-[2rem]">
+      <Dialog open={!!viewingRoom} onOpenChange={() => { setViewingRoom(null); setRoomPaymentDetail(null); }}>
+        <DialogContent className="w-[95vw] max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white p-0 overflow-hidden rounded-2xl md:rounded-[2rem] max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="sr-only">Detail Kamar {viewingRoom?.name}</DialogTitle>
           {viewingRoom && (
             <div className="space-y-0">
               <div className="aspect-video relative">
@@ -649,25 +899,43 @@ export function LuxuryRoomManagement() {
                 </div>
               </div>
 
+              {/* Additional Images Gallery */}
+              {viewingRoom.additionalImages && viewingRoom.additionalImages.length > 0 && (
+                <div className="p-4 md:px-8 md:pt-4 md:pb-0 grid grid-cols-3 gap-2 md:gap-4">
+                  {viewingRoom.additionalImages.map((src, idx) => (
+                    <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 group cursor-pointer">
+                      <ImageWithFallback
+                        src={src}
+                        alt={`${viewingRoom.name} gallery ${idx + 1}`}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                         <span className="text-white text-[10px] font-bold">Image {idx + 1}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="p-4 md:p-8 space-y-6 md:space-y-8">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                  <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">{t('status')}</p>
-                    <p className={`font-black text-xs md:text-sm uppercase ${viewingRoom.status === 'Tersedia' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                  <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 min-w-0">
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">{t('status')}</p>
+                    <p className={`font-black text-xs md:text-sm uppercase truncate ${viewingRoom.status === 'Tersedia' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
                       {t(('status_' + viewingRoom.status.toLowerCase()) as "status_tersedia")}
                     </p>
                   </div>
-                  <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">{t('price')}</p>
-                    <p className="font-black text-xs md:text-sm text-amber-600 dark:text-amber-500">{formatPrice(viewingRoom.price)}</p>
+                  <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 min-w-0">
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">{t('price')}</p>
+                    <p className="font-black text-xs md:text-sm text-amber-600 dark:text-amber-500 truncate" title={formatPrice(viewingRoom.price)}>{formatPrice(viewingRoom.price)}</p>
                   </div>
-                  <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">{t('floor')}</p>
-                    <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white">{viewingRoom.floor}</p>
+                  <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 min-w-0">
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">{t('floor')}</p>
+                    <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white truncate">{viewingRoom.floor}</p>
                   </div>
-                  <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">{t('capacity')}</p>
-                    <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white">{viewingRoom.capacity}</p>
+                  <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 min-w-0">
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">{t('capacity')}</p>
+                    <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white truncate">{viewingRoom.capacity}</p>
                   </div>
                 </div>
 
@@ -686,6 +954,81 @@ export function LuxuryRoomManagement() {
                     &quot;{viewingRoom.description || t('noDescription')}&quot;
                   </p>
                 </div>
+
+                {/* Tenant & Payment History */}
+                {occupancyMap[viewingRoom.id] ? (
+                  <div className="space-y-4">
+                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">Penghuni & Riwayat Pembayaran</p>
+                    <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-500/5 rounded-xl border border-amber-200 dark:border-amber-500/20">
+                      <div className="size-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center font-bold text-white uppercase flex-shrink-0">
+                        {occupancyMap[viewingRoom.id].tenant_name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm text-slate-900 dark:text-white">{occupancyMap[viewingRoom.id].tenant_name}</p>
+                        {roomPaymentDetail && (
+                          <p className="text-[10px] text-slate-500">{roomPaymentDetail.email} &bull; {roomPaymentDetail.nomor_hp}</p>
+                        )}
+                      </div>
+                      <span className={`ml-auto flex-shrink-0 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                        occupancyMap[viewingRoom.id].payment_status === 'Lunas' ? 'bg-green-500/10 text-green-600 border border-green-500/20' :
+                        occupancyMap[viewingRoom.id].payment_status === 'Pending' ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/20' :
+                        'bg-red-500/10 text-red-600 border border-red-500/20'
+                      }`}>
+                        {occupancyMap[viewingRoom.id].payment_status}
+                      </span>
+                    </div>
+                    {roomPaymentDetail && roomPaymentDetail.check_in && (
+                      <div className="grid grid-cols-3 gap-2 mt-3">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Check In</p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{roomPaymentDetail.check_in}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Check Out</p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{roomPaymentDetail.check_out}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Durasi</p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{roomPaymentDetail.durasi_sewa} Bulan</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {loadingPayments ? (
+                      <div className="flex justify-center py-4"><Loader2 className="size-5 animate-spin text-amber-500" /></div>
+                    ) : roomPaymentDetail && roomPaymentDetail.payments.length > 0 ? (
+                      <div className="space-y-2">
+                        {roomPaymentDetail.payments.map((pay) => (
+                          <div key={pay.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                            <div className="flex items-center gap-3">
+                              <CalendarDays className="size-4 text-slate-400" />
+                              <div>
+                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{pay.payment_month || pay.tanggal_bayar}</p>
+                                <p className="text-[10px] text-slate-400">{pay.metode_pembayaran}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(pay.jumlah_bayar)}</p>
+                              <span className={`text-[9px] font-bold uppercase ${
+                                pay.status_pembayaran === 'Confirmed' ? 'text-green-600' :
+                                pay.status_pembayaran === 'Pending' ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>
+                                {pay.status_pembayaran === 'Confirmed' ? 'Lunas' : pay.status_pembayaran}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 text-xs italic text-center py-3">Belum ada riwayat pembayaran</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-xs italic">Kamar belum ditempati</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

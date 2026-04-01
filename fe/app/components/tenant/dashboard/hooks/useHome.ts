@@ -60,9 +60,25 @@ export interface UIRoom {
 }
 
 export function useHome() {
-  const [searchLocation, setSearchLocation] = useState("");
-  const [selectedPrice, setSelectedPrice] = useState("all");
-  const [selectedType, setSelectedType] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchLocation, setSearchLocationInner] = useState("");
+  const [selectedPrice, setSelectedPriceInner] = useState("all");
+  const [selectedType, setSelectedTypeInner] = useState("all");
+
+  const setSearchLocation = (val: string) => {
+    setSearchLocationInner(val);
+    setCurrentPage(1);
+  };
+
+  const setSelectedPrice = (val: string) => {
+    setSelectedPriceInner(val);
+    setCurrentPage(1);
+  };
+
+  const setSelectedType = (val: string) => {
+    setSelectedTypeInner(val);
+    setCurrentPage(1);
+  };
 
   const { data: roomsData, isLoading: isLoadingRooms } = useSWR(
     "api/rooms",
@@ -104,7 +120,7 @@ export function useHome() {
   const displayRooms = useMemo(() => {
     return realRooms.filter((room: UIRoom) => {
       // 1. Search Filter
-      const searchLower = (searchLocation || '').trim().toLowerCase();
+      const searchLower = (searchLocation.trim()).toLowerCase();
       if (searchLower && !room.name.toLowerCase().includes(searchLower)) return false;
 
       // 2. Type Filter
@@ -119,9 +135,9 @@ export function useHome() {
       if (selectedPrice === '1jt' && p !== 1000000) return false;
       if (selectedPrice === '800rb' && p !== 800000) return false;
 
-      // 4. Status Filter
+      // Status 'tidak tersedia' still hidden, but 'penuh' rooms are now shown with a badge
       const status = (room.status || '').toLowerCase();
-      if (status === 'tidak tersedia' || status === 'penuh') return false;
+      if (status === 'tidak tersedia') return false;
 
       return true;
     });
@@ -146,9 +162,10 @@ export function useHome() {
   }, [reviewsDataApi]);
 
   const resetFilters = () => {
-    setSearchLocation("");
-    setSelectedPrice("all");
-    setSelectedType("all");
+    setSearchLocationInner("");
+    setSelectedPriceInner("all");
+    setSelectedTypeInner("all");
+    setCurrentPage(1);
   };
 
   return {
@@ -161,6 +178,8 @@ export function useHome() {
     isLoadingRooms,
     displayRooms,
     resetFilters,
-    reviews
+    reviews,
+    currentPage,
+    setCurrentPage
   };
 }

@@ -62,6 +62,16 @@ func (m *MockKamarRepository) WithTx(tx *gorm.DB) repository.KamarRepository {
 	return args.Get(0).(repository.KamarRepository)
 }
 
+func (m *MockKamarRepository) AddImage(image *models.KamarImage) error {
+	args := m.Called(image)
+	return args.Error(0)
+}
+
+func (m *MockKamarRepository) DeleteImagesByKamarID(kamarID uint) error {
+	args := m.Called(kamarID)
+	return args.Error(0)
+}
+
 func (m *MockBookingRepository) FindByPenyewaID(penyewaID uint) ([]models.Pemesanan, error) {
 	args := m.Called(penyewaID)
 	if args.Get(0) == nil {

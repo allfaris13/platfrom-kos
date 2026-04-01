@@ -42,7 +42,6 @@ export function AdminDashboard() {
 
   const availableRooms = statsData.available_rooms;
   const occupiedRooms = statsData.occupied_rooms;
-  const activeTenants = statsData.active_tenants;
   const pendingPayments = statsData.pending_payments;
   const totalRevenue = statsData.total_revenue;
 
@@ -56,7 +55,7 @@ export function AdminDashboard() {
     },
     {
       title: 'Penyewa Aktif',
-      value: activeTenants,
+      value: tenants.filter(t => t.role === 'tenant').length,
       subtitle: `${tenants.length} Terdaftar`,
       icon: Users,
       color: 'green'

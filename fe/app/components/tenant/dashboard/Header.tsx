@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Home, LogIn, LogOut, MessageCircle, Menu, LucideIcon } from 'lucide-react';
+import { LogIn, LogOut, MessageCircle, Menu, LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import NextImage from 'next/image';
 import { Button } from '@/app/components/ui/button';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 import { LanguageSwitcher } from '@/app/components/shared/LanguageSwitcher';
@@ -43,7 +44,7 @@ export function Header({
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setActiveView('home')}>
             <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden border border-slate-200">
-              <img src="/logo.svg" alt="Rahmat ZAW Logo" className="w-full h-full object-cover" />
+              <NextImage src="/logo.svg" alt="Rahmat ZAW Logo" width={44} height={44} className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white uppercase tracking-tighter">Rahmat ZAW</h1>

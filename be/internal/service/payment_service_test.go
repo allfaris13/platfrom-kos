@@ -310,6 +310,11 @@ func (m *MockPaymentRepository) DeleteByBookingID(bookingID uint) error {
 	return args.Error(0)
 }
 
+func (m *MockPaymentRepository) DeleteRemindersByBookingID(bookingID uint) error {
+	args := m.Called(bookingID)
+	return args.Error(0)
+}
+
 func (m *MockPaymentRepository) FindByOrderID(orderID string) (*models.Pembayaran, error) {
 	args := m.Called(orderID)
 	if args.Get(0) == nil {

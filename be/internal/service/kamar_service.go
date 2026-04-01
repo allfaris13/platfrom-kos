@@ -11,6 +11,8 @@ type KamarService interface {
 	Create(kamar *models.Kamar) error
 	Update(kamar *models.Kamar) error
 	Delete(id uint) error
+	AddImage(image *models.KamarImage) error
+	DeleteImagesByKamarID(kamarID uint) error
 }
 
 type kamarService struct {
@@ -39,4 +41,12 @@ func (s *kamarService) Update(kamar *models.Kamar) error {
 
 func (s *kamarService) Delete(id uint) error {
 	return s.repo.Delete(id)
+}
+
+func (s *kamarService) AddImage(image *models.KamarImage) error {
+	return s.repo.AddImage(image)
+}
+
+func (s *kamarService) DeleteImagesByKamarID(kamarID uint) error {
+	return s.repo.DeleteImagesByKamarID(kamarID)
 }

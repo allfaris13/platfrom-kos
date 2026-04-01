@@ -60,16 +60,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 func (h *AuthHandler) Register(c *gin.Context) {
 	var input struct {
-		Username string `json:"username" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Email    string `json:"email"`
-		Phone    string `json:"phone"`
-		Address  string `json:"address"`
+		Username  string `json:"username" binding:"required"`
+		Password  string `json:"password" binding:"required"`
+		Email     string `json:"email"`
+		Phone     string `json:"phone"`
+		Address   string `json:"address"`
 		Birthdate string `json:"birthdate"` // "YYYY-MM-DD"
 		NIK       string `json:"nik"`
 	}
 
-	if err := c.ShouldBindJSON(&input); err  != nil {
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
@@ -96,7 +96,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	// Parse birthdate
-	
+
 	user, err := h.service.Register(input.Username, input.Password, "guest", input.Email, input.Phone, input.Address, input.Birthdate, input.NIK)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -112,8 +112,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	var input struct {
 		IDToken  string `json:"id_token" binding:"required"` // Google ID token to verify
-		Username string `json:"username"`                     // Display name (optional, for new users)
-		Picture  string `json:"picture"`                      // Profile picture (optional)
+		Username string `json:"username"`                    // Display name (optional, for new users)
+		Picture  string `json:"picture"`                     // Profile picture (optional)
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -129,7 +129,7 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	// Pass ID token to service for verification
 	_, user, err := h.service.GoogleLogin(input.IDToken, input.Username, input.Picture)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Google authentication failed. Invalid token."})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 

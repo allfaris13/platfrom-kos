@@ -21,7 +21,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8081";
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8081";
     const newSocket = io(socketUrl, {
       withCredentials: true,
       transports: ["websocket"],

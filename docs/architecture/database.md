@@ -53,6 +53,7 @@ erDiagram
     Penyewa ||--o{ Pemesanan : "books"
     Kamar ||--o{ Pemesanan : "is booked"
     Kamar ||--o{ Review : "has reviews"
+    Kamar ||--o{ KamarImage : "has many"
     Pemesanan ||--o{ Pembayaran : "has payments"
     Pembayaran ||--o{ PaymentReminder : "has reminders"
 
@@ -95,6 +96,12 @@ erDiagram
         string ImageURL
     }
 
+    KamarImage {
+        uint ID PK
+        uint KamarID FK
+        string ImageURL
+    }
+
     Pemesanan {
         uint ID PK
         uint PenyewaID FK
@@ -112,7 +119,6 @@ erDiagram
         string BuktiTransfer
         string StatusPembayaran
         string OrderID
-        string SnapToken
         string MetodePembayaran
         string TipePembayaran
         float64 JumlahDP
@@ -238,14 +244,12 @@ type Pembayaran struct {
     JumlahBayar      float64        `json:"jumlah_bayar"`
     TanggalBayar     time.Time      `json:"tanggal_bayar"`
     BuktiTransfer    string         `json:"bukti_transfer"`
-    StatusPembayaran string         `json:"status_pembayaran"` // Pending, Confirmed, Failed, Settled
+    StatusPembayaran string         `json:"status_pembayaran"`
     OrderID          string         `json:"order_id"`
-    SnapToken        string         `json:"snap_token"`
-    MetodePembayaran string         `json:"metode_pembayaran"` // midtrans, cash
-    TipePembayaran   string         `json:"tipe_pembayaran"`   // full, dp
+    MetodePembayaran string         `json:"metode_pembayaran"`
+    TipePembayaran   string         `json:"tipe_pembayaran"`
     JumlahDP         float64        `json:"jumlah_dp"`
     TanggalJatuhTempo time.Time     `json:"tanggal_jatuh_tempo"`
-    // ... timestamps & soft delete
 }
 ```
 

@@ -25,9 +25,11 @@ import { Button } from "@/app/components/ui/button";
 interface UserPlatformProps {
   onLogout?: () => void;
   onBackToAdmin?: () => void;
+  isLoggedIn?: boolean;
+  isAdmin?: boolean;
 }
 
-export function UserPlatform({ onLogout, onBackToAdmin }: UserPlatformProps) {
+export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLoggedIn = false, isAdmin: initialIsAdmin = false }: UserPlatformProps) {
   // -- Basic Dashboard State --
   const [activeView, setActiveView] = useState('home');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -35,11 +37,24 @@ export function UserPlatform({ onLogout, onBackToAdmin }: UserPlatformProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
+  const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
+
+  let effectiveIsLoggedIn = isLoggedIn;
+  let effectiveIsAdmin = isAdmin;
+
+  // Sync props to state if they change externally (e.g. from page.tsx passing down new values)
+  if (initialIsLoggedIn !== isLoggedIn) {
+    setIsLoggedIn(initialIsLoggedIn);
+    effectiveIsLoggedIn = initialIsLoggedIn;
+  }
+  if (initialIsAdmin !== isAdmin) {
+    setIsAdmin(initialIsAdmin);
+    effectiveIsAdmin = initialIsAdmin;
+  }
 
   // -- Profile System Hook --
-  const profileSystem = useProfile(isClient, isLoggedIn, activeView);
+  const profileSystem = useProfile(isClient, effectiveIsLoggedIn, activeView);
   const { userName } = profileSystem;
 
   // -- Lifecycle --
@@ -48,19 +63,8 @@ export function UserPlatform({ onLogout, onBackToAdmin }: UserPlatformProps) {
     setIsMounted(true);
     setIsClient(true);
     
-    // Check auth immediately
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
-    setIsLoggedIn(!!token || !!userStr);
-
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        if (user.role === 'admin') setIsAdmin(true);
-      } catch {
-        // ignore
-      }
-    }
+    // We strictly trust the props passed down from page.tsx for auth.
+    // We only use localStorage as a fallback string for the username display before profile loads.
 
     // Restore view state if available
     const storedActiveView = localStorage.getItem('user_platform_active_view');
@@ -137,7 +141,7 @@ export function UserPlatform({ onLogout, onBackToAdmin }: UserPlatformProps) {
       />
 
       {/* Admin Floating Button */}
-      {isAdmin && onBackToAdmin && (
+      {effectiveIsAdmin && onBackToAdmin && (
         <motion.div
            initial={{ opacity: 0, scale: 0.8 }}
            animate={{ opacity: 1, scale: 1 }}

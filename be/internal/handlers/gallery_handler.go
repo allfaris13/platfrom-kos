@@ -12,12 +12,11 @@ import (
 )
 
 type GalleryHandler struct {
-	service    service.GalleryService
-	cloudinary *utils.CloudinaryService
+	service service.GalleryService
 }
 
-func NewGalleryHandler(s service.GalleryService, cld *utils.CloudinaryService) *GalleryHandler {
-	return &GalleryHandler{s, cld}
+func NewGalleryHandler(s service.GalleryService) *GalleryHandler {
+	return &GalleryHandler{service: s}
 }
 
 func (h *GalleryHandler) GetGalleries(c *gin.Context) {
@@ -50,24 +49,12 @@ func (h *GalleryHandler) CreateGallery(c *gin.Context) {
 	}
 
 	var imageURL string
-	if h.cloudinary != nil {
-		src, err := file.Open()
-		if err == nil {
-			defer src.Close()
-			url, err := h.cloudinary.UploadImage(src, "koskosan/gallery")
-			if err == nil {
-				imageURL = url
-			} else {
-				utils.GlobalLogger.Error("Cloudinary upload failed: %v", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image to cloud: %v", err)})
-				return
-			}
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image file"})
-			return
-		}
+	url, err := utils.UploadToCloudinary(file, "gallery")
+	if err == nil {
+		imageURL = url
 	} else {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
+		utils.GlobalLogger.Error("Upload failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image: %v", err)})
 		return
 	}
 

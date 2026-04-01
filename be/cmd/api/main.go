@@ -19,6 +19,15 @@ import (
 )
 
 func main() {
+	// 0. Set Timezone to Asia/Jakarta (WIB)
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		log.Println("Warning: Could not load Asia/Jakarta timezone, using local system time")
+	} else {
+		time.Local = loc
+		log.Printf("Timezone successfully set to %s\n", loc.String())
+	}
+
 	// 1. Load Configuration
 	cfg := config.LoadConfig()
 
@@ -39,20 +48,7 @@ func main() {
 	emailSender := utils.NewEmailSender(cfg)
 	waSender := utils.NewWhatsAppSender(cfg)
 
-	// Cloudinary Service
-	var cloudinaryService *utils.CloudinaryService
-	if cfg.CloudinaryURL != "" {
-		var err error
-		cloudinaryService, err = utils.NewCloudinaryService(cfg.CloudinaryURL)
-		if err != nil {
-			utils.GlobalLogger.Error("Failed to initialize Cloudinary: %v", err)
-			log.Println("Warning: Cloudinary initialization failed, falling back to local storage")
-		} else {
-			utils.GlobalLogger.Info("Cloudinary service initialized successfully")
-		}
-	} else {
-		utils.GlobalLogger.Info("Cloudinary URL not set, using local storage")
-	}
+	// Removed Cloudinary Initialization
 
 	authService := service.NewAuthService(userRepo, penyewaRepo, cfg, emailSender, &utils.RealIDTokenVerifier{})
 	kamarService := service.NewKamarService(kamarRepo)
@@ -73,13 +69,13 @@ func main() {
 
 	// 5. Initialize Handlers
 	authHandler := handlers.NewAuthHandler(authService, cfg)
-	kamarHandler := handlers.NewKamarHandler(kamarService, cloudinaryService)
-	galleryHandler := handlers.NewGalleryHandler(galleryService, cloudinaryService)
+	kamarHandler := handlers.NewKamarHandler(kamarService)
+	galleryHandler := handlers.NewGalleryHandler(galleryService)
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService)
 	reviewHandler := handlers.NewReviewHandler(reviewService)
-	profileHandler := handlers.NewProfileHandler(profileService, cloudinaryService)
-	bookingHandler := handlers.NewBookingHandler(bookingService, cloudinaryService)
-	paymentHandler := handlers.NewPaymentHandler(paymentService, cloudinaryService)
+	profileHandler := handlers.NewProfileHandler(profileService)
+	bookingHandler := handlers.NewBookingHandler(bookingService)
+	paymentHandler := handlers.NewPaymentHandler(paymentService)
 	tenantHandler := handlers.NewTenantHandler(tenantService)
 	contactHandler := handlers.NewContactHandler(contactService)
 
@@ -127,6 +123,13 @@ func main() {
 	r.GET("/socket.io/*any", gin.WrapH(socketServer.Server))
 	r.POST("/socket.io/*any", gin.WrapH(socketServer.Server))
 	r.Handle("ANY", "/socket.io/*any", gin.WrapH(socketServer.Server))
+
+	// Serve Static Files for local uploads
+	r.Static("/uploads", "./public/uploads")
+	r.Static("/rooms", "./public/rooms")
+	r.Static("/gallery", "./public/gallery")
+	r.Static("/profiles", "./public/profiles")
+	r.Static("/proofs", "./public/proofs")
 
 	// API Routes
 	appRoutes.Register(r, cfg)

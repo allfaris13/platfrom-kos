@@ -40,3 +40,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.claude
+.claude/*   
+.claude/settings
+.claude/settings/*
+.claude/agents
+.claude/agents/*
+.claude/system-prompts
+.claude/system-prompts/*
+.claude/tasks
+.claude/tasks/*
+.claude/tools
+.claude/tools/*

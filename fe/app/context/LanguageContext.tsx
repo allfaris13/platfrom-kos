@@ -57,7 +57,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   // Prevent hydration mismatch by rendering with default locale until client hydrates
   if (!isHydrated) {
     return (
-      <NextIntlClientProvider locale="id" messages={messagesMap['id']}>
+      <NextIntlClientProvider locale="id" messages={messagesMap['id']} timeZone="Asia/Jakarta">
         <LanguageContext.Provider value={{ locale: 'id', setLocale }}>
           {children}
         </LanguageContext.Provider>
@@ -66,7 +66,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   }
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Jakarta">
       <LanguageContext.Provider value={{ locale, setLocale }}>
         {children}
       </LanguageContext.Provider>

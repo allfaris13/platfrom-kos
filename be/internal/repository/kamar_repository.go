@@ -14,6 +14,8 @@ type KamarRepository interface {
 	UpdateStatus(id uint, status string) error
 	Delete(id uint) error
 	WithTx(tx *gorm.DB) KamarRepository
+	AddImage(image *models.KamarImage) error
+	DeleteImagesByKamarID(kamarID uint) error
 }
 
 type kamarRepository struct {
@@ -26,13 +28,13 @@ func NewKamarRepository(db *gorm.DB) KamarRepository {
 
 func (r *kamarRepository) FindAll() ([]models.Kamar, error) {
 	var kamars []models.Kamar
-	err := r.db.Find(&kamars).Error
+	err := r.db.Preload("Images").Find(&kamars).Error
 	return kamars, err
 }
 
 func (r *kamarRepository) FindByID(id uint) (*models.Kamar, error) {
 	var kamar models.Kamar
-	err := r.db.First(&kamar, id).Error
+	err := r.db.Preload("Images").First(&kamar, id).Error
 	return &kamar, err
 }
 
@@ -54,4 +56,12 @@ func (r *kamarRepository) Delete(id uint) error {
 
 func (r *kamarRepository) WithTx(tx *gorm.DB) KamarRepository {
 	return &kamarRepository{db: tx}
+}
+
+func (r *kamarRepository) AddImage(image *models.KamarImage) error {
+	return r.db.Create(image).Error
+}
+
+func (r *kamarRepository) DeleteImagesByKamarID(kamarID uint) error {
+	return r.db.Where("kamar_id = ?", kamarID).Delete(&models.KamarImage{}).Error
 }

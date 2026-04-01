@@ -40,7 +40,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       const storedTheme = localStorage.getItem(STORAGE_THEME_KEY) as Theme | null;
       if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
       
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return 'light'; // Default to light theme directly as requested
     } catch {
       return 'light';
     }

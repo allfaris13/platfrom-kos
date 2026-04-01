@@ -12,12 +12,11 @@ import (
 )
 
 type KamarHandler struct {
-	service    service.KamarService
-	cloudinary *utils.CloudinaryService
+	service service.KamarService
 }
 
-func NewKamarHandler(s service.KamarService, cld *utils.CloudinaryService) *KamarHandler {
-	return &KamarHandler{s, cld}
+func NewKamarHandler(s service.KamarService) *KamarHandler {
+	return &KamarHandler{service: s}
 }
 
 func (h *KamarHandler) GetKamars(c *gin.Context) {
@@ -50,7 +49,6 @@ func (h *KamarHandler) GetKamarByID(c *gin.Context) {
 
 func (h *KamarHandler) CreateKamar(c *gin.Context) {
 	// Parse multipart form
-	// We need to manually parse fields since it's multipart
 	nomorKamar := c.PostForm("nomor_kamar")
 	tipeKamar := c.PostForm("tipe_kamar")
 	fasilitas := c.PostForm("fasilitas")
@@ -60,42 +58,44 @@ func (h *KamarHandler) CreateKamar(c *gin.Context) {
 	harga, _ := strconv.ParseFloat(c.PostForm("harga_per_bulan"), 64)
 	capacity, _ := strconv.Atoi(c.PostForm("capacity"))
 	floor, _ := strconv.Atoi(c.PostForm("floor"))
-
 	size := c.PostForm("size")
 	bedrooms, _ := strconv.Atoi(c.PostForm("bedrooms"))
 	bathrooms, _ := strconv.Atoi(c.PostForm("bathrooms"))
 
-	// File upload
-	var imageURL string
-	file, err := c.FormFile("image")
-	if err == nil {
-		// If file is provided, validate and save
-		if utils.IsImageFile(file) {
-			if h.cloudinary != nil {
-				src, err := file.Open()
-				if err == nil {
-					defer src.Close()
-					url, err := h.cloudinary.UploadImage(src, "koskosan/rooms")
-					if err == nil {
-						imageURL = url
-					} else {
-						utils.GlobalLogger.Error("Failed to upload to Cloudinary: %v", err)
-						c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image to cloud: %v", err)})
-						return
-					}
-				} else {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image file"})
-					return
-				}
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
-				return
-			}
-		}
-	} else {
-		// Optional default image if none provided
-		imageURL = "https://via.placeholder.com/400"
+	// Cloudinary check removed
+
+	// Parse multipart form to get multiple files
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal memproses form data: " + err.Error()})
+		return
 	}
+
+	imageFiles := form.File["images"]
+	if len(imageFiles) < 3 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Minimal 3 foto kamar diperlukan untuk kamar baru"})
+		return
+	}
+
+	// Upload all images locally
+	var uploadedURLs []string
+	for _, fileHeader := range imageFiles {
+		if !utils.IsImageFile(fileHeader) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Semua file harus berupa gambar"})
+			return
+		}
+
+		url, err := utils.UploadToCloudinary(fileHeader, "rooms")
+		if err != nil {
+			utils.GlobalLogger.Error("Failed to upload image: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image: %v", err)})
+			return
+		}
+		uploadedURLs = append(uploadedURLs, url)
+	}
+
+	// First image is the main image_url
+	mainImageURL := uploadedURLs[0]
 
 	kamar := models.Kamar{
 		NomorKamar:    nomorKamar,
@@ -109,14 +109,32 @@ func (h *KamarHandler) CreateKamar(c *gin.Context) {
 		Bedrooms:      bedrooms,
 		Bathrooms:     bathrooms,
 		Description:   description,
-		ImageURL:      imageURL,
+		ImageURL:      mainImageURL,
 	}
 
 	if err := h.service.Create(&kamar); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusCreated, kamar)
+
+	// Save all images to kamar_images table
+	for _, url := range uploadedURLs {
+		img := models.KamarImage{
+			KamarID:  kamar.ID,
+			ImageURL: url,
+		}
+		if err := h.service.AddImage(&img); err != nil {
+			utils.GlobalLogger.Error("Failed to save kamar image: %v", err)
+		}
+	}
+
+	// Reload with images
+	kamarWithImages, _ := h.service.GetByID(kamar.ID)
+	if kamarWithImages != nil {
+		c.JSON(http.StatusCreated, kamarWithImages)
+	} else {
+		c.JSON(http.StatusCreated, kamar)
+	}
 }
 
 func (h *KamarHandler) UpdateKamar(c *gin.Context) {
@@ -164,29 +182,44 @@ func (h *KamarHandler) UpdateKamar(c *gin.Context) {
 		kamar.Bathrooms, _ = strconv.Atoi(v)
 	}
 
-	// File upload
-	file, err := c.FormFile("image")
-	if err == nil {
-		if utils.IsImageFile(file) {
-			if h.cloudinary != nil {
-				src, err := file.Open()
-				if err == nil {
-					defer src.Close()
-					url, err := h.cloudinary.UploadImage(src, "koskosan/rooms")
-					if err == nil {
-						kamar.ImageURL = url
-					} else {
-						utils.GlobalLogger.Error("Failed to upload to Cloudinary: %v", err)
-						c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image to cloud: %v", err)})
-						return
-					}
-				} else {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image file"})
+	// Check for new multi-image upload
+	form, err := c.MultipartForm()
+	if err == nil && form != nil {
+		imageFiles := form.File["images"]
+		if len(imageFiles) > 0 {
+			if len(imageFiles) < 3 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Jika mengunggah foto baru, minimal harus ada 3 foto kamar"})
+				return
+			}
+
+			var uploadedURLs []string
+			for _, fileHeader := range imageFiles {
+				if !utils.IsImageFile(fileHeader) {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Semua file harus berupa gambar"})
 					return
 				}
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
-				return
+				url, err := utils.UploadToCloudinary(fileHeader, "rooms")
+				if err != nil {
+					utils.GlobalLogger.Error("Failed to upload image: %v", err)
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image: %v", err)})
+					return
+				}
+				uploadedURLs = append(uploadedURLs, url)
+			}
+
+			// Delete old images
+			_ = h.service.DeleteImagesByKamarID(uint(id))
+
+			// Update main image
+			kamar.ImageURL = uploadedURLs[0]
+
+			// Save new images
+			for _, url := range uploadedURLs {
+				img := models.KamarImage{
+					KamarID:  uint(id),
+					ImageURL: url,
+				}
+				_ = h.service.AddImage(&img)
 			}
 		}
 	}
@@ -195,12 +228,22 @@ func (h *KamarHandler) UpdateKamar(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, kamar)
+
+	// Reload with images
+	kamarWithImages, _ := h.service.GetByID(uint(id))
+	if kamarWithImages != nil {
+		c.JSON(http.StatusOK, kamarWithImages)
+	} else {
+		c.JSON(http.StatusOK, kamar)
+	}
 }
 
 func (h *KamarHandler) DeleteKamar(c *gin.Context) {
 	idStr := c.Param("id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	// Delete associated images first
+	_ = h.service.DeleteImagesByKamarID(uint(id))
 
 	if err := h.service.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

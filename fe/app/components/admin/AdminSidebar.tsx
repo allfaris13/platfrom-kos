@@ -1,7 +1,8 @@
 'use client';
 
-import { LayoutDashboard, Image as ImageIcon, Home, Users, CreditCard, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Image as LucideImageIcon, Home, Users, CreditCard, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import NextImage from 'next/image';
 import { ThemeToggleButton } from '@/app/components/ui/ThemeToggleButton';
 import { LanguageSwitcher } from '@/app/components/shared/LanguageSwitcher';
 import { useTranslations } from 'next-intl';
@@ -26,7 +27,7 @@ export function AdminSidebar({ currentPage, onNavigate }: AdminSidebarProps) {
     { id: 'tenants', label: t('tenants'), icon: Users },
     { id: 'payments', label: t('payments'), icon: CreditCard },
     { id: 'reports', label: t('reports'), icon: TrendingUp },
-    { id: 'gallery', label: t('gallery'), icon: ImageIcon }
+    { id: 'gallery', label: t('gallery'), icon: LucideImageIcon }
   ];
 
 
@@ -67,7 +68,7 @@ export function AdminSidebar({ currentPage, onNavigate }: AdminSidebarProps) {
         <div className="p-8 border-b border-slate-200 dark:border-slate-800/50">
           <div className="flex items-center gap-3 mb-2 cursor-pointer" onClick={() => onNavigate('dashboard')}>
             <div className="size-12 bg-white rounded-xl flex items-center justify-center shadow-lg border border-slate-200 overflow-hidden">
-              <img src="/logo.svg" alt="Rahmat ZAW Logo" className="w-full h-full object-cover" />
+              <NextImage src="/logo.svg" alt="Rahmat ZAW Logo" width={48} height={48} className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-400 dark:to-amber-600 bg-clip-text text-transparent">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Search, Trash2, Plus, Download, Eye } from 'lucide-react';
+import { Search, Trash2, Plus, Download, Eye, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
@@ -32,6 +32,8 @@ export function GalleryData() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchGalleries = async () => {
     try {
@@ -57,6 +59,7 @@ export function GalleryData() {
     formData.append('category', category);
     formData.append('image', imageFile);
 
+    setIsSubmitting(true);
     try {
       await api.createGallery(formData);
       void fetchGalleries();
@@ -67,16 +70,21 @@ export function GalleryData() {
       setImageFile(null);
     } catch (error) {
       console.error("Failed to create gallery:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm(t('deleteImageConfirm'))) return;
+    setDeletingId(id);
     try {
       await api.deleteGallery(id.toString());
       void fetchGalleries();
     } catch (error) {
       console.error("Failed to delete gallery:", error);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -175,7 +183,13 @@ export function GalleryData() {
                   </div>
                 </div>
               </div>
-              <Button onClick={handleCreate} className="w-full bg-amber-500 hover:bg-amber-600 text-white py-6">{t('uploadAsset')}</Button>
+              <Button onClick={handleCreate} disabled={isSubmitting} className="w-full bg-amber-500 hover:bg-amber-600 text-white py-6">
+                {isSubmitting ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('processing') || 'Memproses...'}</>
+                ) : (
+                  t('uploadAsset')
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -224,9 +238,10 @@ export function GalleryData() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
               <button
                 onClick={() => handleDelete(image.id)}
+                disabled={deletingId === image.id}
                 className="absolute top-3 right-3 p-2.5 bg-red-500/90 text-white rounded-xl shadow-lg hover:bg-red-600 hover:scale-110 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-sm"
               >
-                <Trash2 className="size-4" />
+                {deletingId === image.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
               </button>
             </div>
             <div className="p-4">

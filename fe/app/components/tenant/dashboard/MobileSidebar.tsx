@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, LogIn, LogOut, MessageCircle, X, LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 interface MenuItem {
   id: string;
@@ -29,6 +30,7 @@ export function MobileSidebar({
   onLogout
 }: MobileSidebarProps) {
   const router = useRouter();
+  const t = useTranslations('nav');
 
   return (
     <AnimatePresence>
@@ -106,7 +108,7 @@ export function MobileSidebar({
                     }`}
                 >
                   <MessageCircle className="w-5 h-5" />
-                  <span className="text-sm">Hubungi Kami</span>
+                  <span className="text-sm">{t('contactUs')}</span>
                 </button>
 
                 {isLoggedIn ? (
@@ -118,7 +120,7 @@ export function MobileSidebar({
                     className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40 transition-all duration-200"
                   >
                     <LogOut className="w-5 h-5" />
-                    <span className="text-sm">Keluar</span>
+                    <span className="text-sm">{t('logout')}</span>
                   </button>
                 ) : (
                   <button
@@ -129,7 +131,7 @@ export function MobileSidebar({
                     className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium text-white bg-stone-900 hover:bg-stone-800 shadow-lg shadow-stone-900/20"
                   >
                     <LogIn className="w-5 h-5" />
-                    <span className="text-sm">Masuk</span>
+                    <span className="text-sm">{t('login')}</span>
                   </button>
                 )}
               </div>

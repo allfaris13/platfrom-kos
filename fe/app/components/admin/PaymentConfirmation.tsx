@@ -38,6 +38,7 @@ interface BackendPayment {
     penyewa?: { nama_lengkap: string };
     kamar?: { nomor_kamar: string };
   };
+  metode_pembayaran?: string;
 }
 
 export function PaymentConfirmation() {
@@ -55,7 +56,7 @@ export function PaymentConfirmation() {
         roomName: p.pemesanan?.kamar?.nomor_kamar || 'Kamar',
         amount: p.jumlah_bayar,
         date: new Date(p.tanggal_bayar).toLocaleDateString('id-ID'),
-        method: 'Transfer Bank',
+        method: (p.metode_pembayaran || '').toLowerCase() === 'cash' ? 'Tunai' : 'Transfer Bank',
         status: p.status_pembayaran as Payment['status'],
         receiptUrl: getImageUrl(p.bukti_transfer) || '',
       }));

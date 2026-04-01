@@ -1,0 +1,51 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Kos-Kosan API",
+    "description": "API for Kos-Kosan Perum Alam Sigura Gura",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://immortalisable-verena-electroluminescent.ngrok-free.dev/api",
+      "description": "Ngrok Server"
+    },
+    {
+      "url": "http://localhost:8081/api",
+      "description": "Local Server"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "User Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful login"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  }
+}

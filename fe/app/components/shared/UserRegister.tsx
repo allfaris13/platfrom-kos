@@ -97,7 +97,7 @@ export function UserRegister({
           className="absolute inset-0 z-0"
         >
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2000"
+            src="/koskosan/tampilandalam/tampilandalamkosbalkon2.jpeg"
             alt="Registration Background"
             className="w-full h-full object-cover opacity-50"
           />
@@ -183,35 +183,35 @@ export function UserRegister({
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
               <Label htmlFor="username">{t('chooseUsername')}</Label>
-              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ex: arkan_tenant" className="mt-1" required />
+              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ex: arkan_tenant" className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
             </div>
             <div>
               <Label htmlFor="email">{t('emailAddress')}</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" className="mt-1" required />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
             </div>
             <div>
               <Label htmlFor="nik">{t('nik')}</Label>
-              <Input id="nik" value={nik} onChange={(e) => setNik(e.target.value)} placeholder={t('nikPlaceholder')} className="mt-1" required />
+              <Input id="nik" value={nik} onChange={(e) => setNik(e.target.value)} placeholder={t('nikPlaceholder')} className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
             </div>
             <div>
               <Label htmlFor="phone">{t('phoneNumber')}</Label>
-              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08123456789" className="mt-1" required />
+              <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08123456789" className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
             </div>
             <div>
               <Label htmlFor="address">{t('homeAddress')}</Label>
-              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Jl. Example No. 123, City" className="mt-1" required />
+              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Jl. Example No. 123, City" className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
             </div>
             <div>
               <Label htmlFor="birthdate">{t('birthDate')}</Label>
-              <Input id="birthdate" type="date" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} className="mt-1" required />
+              <Input id="birthdate" type="date" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
             </div>
             <div>
               <Label htmlFor="password">{t('password')}</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" required />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
             </div>
             <div>
               <Label htmlFor="confirm-password">{t('confirmPassword')}</Label>
-              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className="mt-1" required />
+              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
             </div>
 
             <Button type="submit" disabled={isLoading} className="w-full bg-stone-900 hover:bg-stone-800 text-white h-11 font-semibold mt-6">

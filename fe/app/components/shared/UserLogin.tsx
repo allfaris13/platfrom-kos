@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
@@ -27,6 +27,13 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
   const [error, setError] = useState('');
   const t = useTranslations('auth');
   const tc = useTranslations('common');
+
+  // Public stats
+  const [stats, setStats] = useState<{ active_tenants: number; average_rating: number; total_reviews: number } | null>(null);
+
+  useEffect(() => {
+    api.getPublicStats().then(setStats).catch(() => {});
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,8 +65,8 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
           className="absolute inset-0 z-0"
         >
           <ImageWithFallback
-            src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2000"
-            alt="Premium Interior"
+            src="/koskosan/tampilandepankos/tampilandaridepankos2.jpeg"
+            alt="Tampilan Depan Kos"
             className="w-full h-full object-cover opacity-50"
             priority
           />
@@ -88,7 +95,7 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
 
             <div className="flex items-center justify-center gap-6 pt-6 border-t border-white/10">
               <div className="text-center">
-                <p className="text-xl md:text-2xl font-bold text-white">500+</p>
+                <p className="text-xl md:text-2xl font-bold text-white">{stats ? stats.active_tenants : '—'}</p>
                 <p className="text-stone-400 text-[10px] md:text-sm uppercase tracking-wider font-semibold">
                   {t('activeTenants')}
                 </p>
@@ -96,7 +103,7 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
               <div className="w-px h-8 md:h-10 bg-white/20" />
               <div className="text-center">
                 <p className="text-xl md:text-2xl font-bold text-white">
-                  4.9/5
+                  {stats ? `${stats.average_rating}/5` : '—'}
                 </p>
                 <p className="text-stone-400 text-[10px] md:text-sm uppercase tracking-wider font-semibold">
                   {t('userRating')}
@@ -154,7 +161,7 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder={t('usernamePlaceholder')}
-                className="mt-1"
+                className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]"
                 required
               />
             </div>
@@ -166,7 +173,7 @@ export function UserLogin({ onLoginSuccess, onBack, onRegisterClick, onForgotPas
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1"
+                className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]"
                 required
               />
             </div>

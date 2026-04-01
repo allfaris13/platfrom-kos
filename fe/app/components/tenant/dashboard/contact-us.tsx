@@ -7,9 +7,11 @@ import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { toast } from 'sonner';
 import { api } from '@/app/services/api';
+import { useTranslations } from 'next-intl';
 
 
 export function ContactUs() {
+  const t = useTranslations('contact');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -39,17 +41,17 @@ export function ContactUs() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error('Nama tidak boleh kosong');
+      toast.error(t('nameRequired'));
       return;
     }
 
     if (!validateEmail(formData.email)) {
-      setEmailError('Email tidak valid');
+      setEmailError(t('emailInvalid'));
       return;
     }
 
     if (!formData.message.trim()) {
-      toast.error('Pesan tidak boleh kosong');
+      toast.error(t('messageRequired'));
       return;
     }
 
@@ -58,14 +60,14 @@ export function ContactUs() {
       await api.sendContactForm(formData);
       setLoading(false);
       setFormData({ name: '', email: '', message: '' });
-      toast.success('Pesan berhasil terkirim!', {
-        description: 'Terima kasih telah menghubungi kami. Tim kami akan segera merespons pesan Anda.',
+      toast.success(t('messageSentSuccess'), {
+        description: t('messageSentDesc'),
         duration: 4000,
         icon: <CheckCircle2 className="w-5 h-5 text-green-500" />,
       });
     } catch (err: unknown) {
       setLoading(false);
-      let errorMessage = 'Gagal mengirim pesan. Silakan coba lagi.';
+      let errorMessage = t('messageSentError');
       if (err instanceof Error) {
         errorMessage = err.message;
       }
@@ -114,7 +116,7 @@ export function ContactUs() {
               whileInView={{ opacity: 1, y: 0 }}
               className="text-stone-500 dark:text-stone-400 font-bold tracking-widest uppercase text-sm mb-3"
             >
-              Get In Touch
+              {t('getInTouch')}
             </motion.h4>
             <motion.h2 
               initial={{ opacity: 0, y: 20 }}
@@ -122,10 +124,10 @@ export function ContactUs() {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white"
             >
-              Hubungi Tim <span className="text-stone-600 dark:text-stone-400">Rahmat ZAW</span>
+              {t('contactTeam')} <span className="text-stone-600 dark:text-stone-400">Rahmat ZAW</span>
             </motion.h2>
             <p className="mt-4 text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
-              Punya pertanyaan mengenai fasilitas atau ingin melakukan kunjungan langsung? Kami siap membantu kenyamanan hunian Anda.
+              {t('contactDescription')}
             </p>
           </div>
 
@@ -142,8 +144,8 @@ export function ContactUs() {
               
               <div className="relative z-10 h-full flex flex-col justify-between">
                 <div>
-                  <h3 className="text-2xl font-bold mb-6">Informasi Kontak</h3>
-                  <p className="text-stone-400 mb-10">Layanan pelanggan kami tersedia setiap hari untuk menjawab kebutuhan Anda.</p>
+                  <h3 className="text-2xl font-bold mb-6">{t('contactInfo')}</h3>
+                  <p className="text-stone-400 mb-10">{t('contactInfoDesc')}</p>
                   
                   <div className="space-y-8">
                     <div className="flex items-center gap-5 group">
@@ -151,7 +153,7 @@ export function ContactUs() {
                         <Phone className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-xs text-stone-400 uppercase font-bold">Telepon</p>
+                        <p className="text-xs text-stone-400 uppercase font-bold">{t('phone')}</p>
                         <p className="font-medium">+62 812-4911-926</p>
                       </div>
                     </div>
@@ -171,7 +173,7 @@ export function ContactUs() {
                         <MapPin className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-xs text-stone-400 uppercase font-bold">Lokasi</p>
+                        <p className="text-xs text-stone-400 uppercase font-bold">{t('location')}</p>
                         <p className="font-medium text-sm">Pondok Alam, Jl. Sigura - Gura No.21 Blok A2, Malang</p>
                       </div>
                     </div>
@@ -196,17 +198,17 @@ export function ContactUs() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nama Lengkap</label>
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('fullName')}</label>
                     <Input 
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      placeholder="Contoh: Budi Setiawan" 
+                      placeholder={t('namePlaceholder')} 
                       className="h-12 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-stone-500" 
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Alamat Email</label>
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('emailAddress')}</label>
                     <div>
                       <Input 
                         type="email" 
@@ -223,14 +225,14 @@ export function ContactUs() {
 
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Pesan Anda</label>
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('yourMessage')}</label>
                   <textarea 
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
                     rows={4} 
                     className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-stone-500 transition-all"
-                    placeholder="Tuliskan pesan atau pertanyaan Anda di sini..."
+                    placeholder={t('messagePlaceholder')}
                   ></textarea>
                 </div>
 
@@ -242,11 +244,11 @@ export function ContactUs() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Mengirim...
+                      {t('sending')}
                     </>
                   ) : (
                     <>
-                      Kirim Pesan
+                      {t('sendMessage')}
                       <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     </>
                   )}
@@ -264,11 +266,11 @@ export function ContactUs() {
           >
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
-              <span className="text-sm font-medium">Response time: &lt; 24 Hours</span>
+              <span className="text-sm font-medium">{t('responseTime')}</span>
             </div>
             <div className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
-              <span className="text-sm font-medium">24/7 Priority Support</span>
+              <span className="text-sm font-medium">{t('prioritySupport')}</span>
             </div>
           </motion.div>
 
@@ -290,7 +292,7 @@ export function ContactUs() {
                     <MapPin className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Lokasi Kost</h3>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('kostLocation')}</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Pondok Alam, Jl. Sigura - Gura No.21 Blok A2, Malang</p>
                   </div>
                 </div>
@@ -304,7 +306,7 @@ export function ContactUs() {
                     rel="noopener noreferrer"
                   >
                     <Navigation className="w-4 h-4" />
-                    Petunjuk Arah (Google Maps)
+                    {t('directions')}
                   </a>
                 </Button>
               </div>

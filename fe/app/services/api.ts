@@ -45,6 +45,7 @@ export interface Room {
     nama_kategori: string;
   };
   Gallery?: { image_url: string }[];
+  Images?: { id: number; kamar_id: number; image_url: string }[];
   // derived fields for UI
   rating?: number;
   reviews?: number;
@@ -87,7 +88,7 @@ export interface Tenant {
   alamat_asal: string;
   jenis_kelamin: string;
   foto_profil: string;
-  role?: 'guest' | 'tenant' | 'former_tenant';
+  role?: 'guest' | 'tenant' | 'former_tenant' | 'non_active';
   created_at?: string;
   status?: string; 
   kamar?: { nomor_kamar: string }; 
@@ -100,9 +101,8 @@ export interface Payment {
   jumlah_bayar: number;
   tanggal_bayar: string;
   bukti_transfer: string;
-  status_pembayaran: 'Pending' | 'Confirmed' | 'Failed' | 'Settled';
+  status_pembayaran: 'Pending' | 'Confirmed' | 'Failed' | 'Settled' | 'Rejected';
   order_id: string;
-  snap_token: string;
   metode_pembayaran: string;
   tipe_pembayaran: string;
   jumlah_dp: number;
@@ -116,7 +116,7 @@ export interface PaymentReminder {
   pembayaran?: Payment;
   jumlah_bayar: number;
   tanggal_reminder: string;
-  status_reminder: 'Pending' | 'Paid' | 'Expired';
+  status_reminder: 'Pending' | 'Paid' | 'Expired' | 'Rejected';
   is_sent: boolean;
   created_at?: string;
 }
@@ -192,7 +192,7 @@ class ApiErrorClass extends Error implements ApiError {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8087/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
 
 // 2. Helper Functions
 
@@ -252,9 +252,14 @@ const apiCall = async <T>(method: string, endpoint: string, body?: unknown): Pro
     }
   }
 
-  const res = await fetch(`${API_URL}${endpoint}`, config);
-  
-  // Handle token refresh on 401
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${endpoint}`, config);
+  } catch {
+    // Catch network errors
+    throw new ApiErrorClass('Koneksi ke server gagal. Harap periksa jaringan Anda atau hubungi admin.', 0);
+  }
+
   if (res.status === 401 && endpoint !== '/auth/refresh' && endpoint !== '/auth/login') {
     // Try to refresh token
     const refreshed = await refreshAccessToken();
@@ -384,8 +389,8 @@ export const api = {
     return apiCall<MessageResponse>('POST', `/bookings/${id}/cancel`);
   },
 
-  extendBooking: async (id: string, months: number) => {
-    return apiCall<Payment>('POST', `/bookings/${id}/extend`, { months });
+  extendBooking: async (id: string, months: number, paymentMethod: string) => {
+    return apiCall<Payment>('POST', `/bookings/${id}/extend`, { months, payment_method: paymentMethod });
   },
 
   // --- PAYMENTS (Manual Transfer) ---
@@ -439,8 +444,8 @@ export const api = {
     return apiCall<PaginatedResponse<Tenant[]>>('GET', `/tenants?${query.toString()}`);
   },
 
-  deleteTenant: async (id: string | number) => {
-    return apiCall<MessageResponse>('DELETE', `/tenants/${id}`);
+  deactivateTenant: async (id: string | number) => {
+    return apiCall<MessageResponse>('PUT', `/tenants/${id}/deactivate`);
   },
 
   getAllPayments: async () => {
@@ -450,6 +455,11 @@ export const api = {
   confirmPayment: async (paymentId: string) => {
     // Admin confirmation
     return apiCall<MessageResponse>('PUT', `/payments/${paymentId}/confirm`);
+  },
+
+  rejectPayment: async (paymentId: string) => {
+    // Admin rejection
+    return apiCall<MessageResponse>('PUT', `/payments/${paymentId}/reject`);
   },
   
 
@@ -470,6 +480,26 @@ export const api = {
 
   getDashboardStats: async () => {
     return apiCall<DashboardStats>('GET', '/dashboard');
+  },
+
+  getRoomOccupancy: async () => {
+    return apiCall<{ room_id: number; nomor_kamar: string; tenant_name: string; penyewa_id: number; payment_status: string; last_pay_amount: number; payment_month: string }[]>('GET', '/room-occupancy');
+  },
+
+  getTenantRooms: async () => {
+    return apiCall<{ penyewa_id: number; nama_lengkap: string; nomor_kamar: string; room_id: number; tipe_kamar: string; payment_status: string; last_pay_amount: number; due_date: string; payment_month: string }[]>('GET', '/tenant-rooms');
+  },
+
+  getPaymentsByRoom: async (roomId: number) => {
+    return apiCall<{ tenant_name: string; penyewa_id: number; email: string; nomor_hp: string; check_in: string; check_out: string; durasi_sewa: number; payments: { id: number; jumlah_bayar: number; status_pembayaran: string; metode_pembayaran: string; tanggal_bayar: string; payment_month: string; bukti_transfer: string }[] }>('GET', `/room-payments/${roomId}`);
+  },
+
+  getPaymentsByTenant: async (penyewaId: number) => {
+    return apiCall<{ nama_lengkap: string; email: string; nomor_hp: string; nik: string; alamat_asal: string; jenis_kelamin: string; tanggal_lahir: string; foto_profil: string; role: string; nomor_kamar: string; tipe_kamar: string; harga_per_bulan: number; check_in: string; check_out: string; durasi_sewa: number; payments: { id: number; jumlah_bayar: number; status_pembayaran: string; metode_pembayaran: string; tanggal_bayar: string; payment_month: string; bukti_transfer: string }[] }>('GET', `/tenant-payments/${penyewaId}`);
+  },
+
+  getPublicStats: async () => {
+    return apiCall<{ active_tenants: number; average_rating: number; total_reviews: number }>('GET', '/public-stats');
   },
 
   healthCheck: async () => {

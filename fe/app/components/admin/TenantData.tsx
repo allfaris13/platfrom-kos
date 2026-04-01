@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Loader2, Trash2, UserX, AlertTriangle } from 'lucide-react';
+import { Search, Loader2, Ban, UserX, AlertTriangle, Home, Eye, CalendarDays } from 'lucide-react';
 import { api, Tenant } from '@/app/services/api';
 import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { motion } from "framer-motion";
+import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import {  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -18,6 +19,7 @@ import {  AlertDialog,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/app/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/app/components/ui/dialog";
 
 export function TenantData() {
   const t = useTranslations('admin');
@@ -25,15 +27,18 @@ export function TenantData() {
   const [users, setUsers] = useState<Tenant[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'guest' | 'tenant'>('all'); // Filter user/tenant
+  const [activeTab, setActiveTab] = useState<'all' | 'guest' | 'tenant' | 'non_active'>('all');
   
   // Pagination State
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
-  // States for delete action
-  const [isDeleting, setIsDeleting] = useState(false);
+  // States for deactivate action
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
+  const [tenantPaymentDetail, setTenantPaymentDetail] = useState<{ nama_lengkap: string; email: string; nomor_hp: string; nik: string; alamat_asal: string; jenis_kelamin: string; foto_profil: string; role: string; nomor_kamar: string; tipe_kamar: string; harga_per_bulan: number; check_in: string; check_out: string; durasi_sewa: number; payments: { id: number; jumlah_bayar: number; status_pembayaran: string; metode_pembayaran: string; tanggal_bayar: string; payment_month: string }[] } | null>(null);
+  const [loadingTenantDetail, setLoadingTenantDetail] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -72,17 +77,27 @@ export function TenantData() {
     return () => clearTimeout(timer);
   }, [fetchUsers]);
 
-  const handleDelete = async (id: number) => {
-    setIsDeleting(true);
+  // Fetch tenant detail when modal opens
+  useEffect(() => {
+    if (viewingTenant) {
+      setLoadingTenantDetail(true);
+      api.getPaymentsByTenant(viewingTenant.id).then(data => {
+        setTenantPaymentDetail(data);
+      }).catch(() => {}).finally(() => setLoadingTenantDetail(false));
+    }
+  }, [viewingTenant]);
+
+  const handleDeactivate = async (id: number) => {
+    setIsDeactivating(true);
     try {
-      await api.deleteTenant(id);
-      toast.success('Pengguna berhasil dihapus');
+      await api.deactivateTenant(id);
+      toast.success('Status pengguna berhasil diubah menjadi Non Active');
       void fetchUsers(); // Refresh data
     } catch (e) {
       console.error(e);
-      toast.error('Gagal menghapus pengguna');
+      toast.error('Gagal mengubah status pengguna');
     } finally {
-      setIsDeleting(false);
+      setIsDeactivating(false);
     }
   };
 
@@ -91,6 +106,13 @@ export function TenantData() {
       return (
         <span className="px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold rounded-lg border border-green-500/20 uppercase">
           Tenant
+        </span>
+      );
+    }
+    if (role === 'non_active') {
+      return (
+        <span className="px-3 py-1 bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-lg border border-red-500/20 uppercase">
+          Non Active
         </span>
       );
     }
@@ -173,6 +195,16 @@ export function TenantData() {
         >
           {t('activeTenantsTab')}
         </button>
+        <button
+          onClick={() => { setActiveTab('non_active'); setPage(1); }}
+          className={`px-6 py-3 font-bold text-sm transition-all whitespace-nowrap ${
+            activeTab === 'non_active'
+              ? 'text-red-600 dark:text-red-500 border-b-2 border-red-500'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+          }`}
+        >
+          Non Active
+        </button>
       </motion.div>
 
       {/* Content Container */}
@@ -205,7 +237,14 @@ export function TenantData() {
               <p className="text-slate-500 dark:text-slate-400 font-medium">{t('noTenantsFound')}</p>
             </div>
           ) : (
-            users.map((user) => (
+            users.filter(user => 
+              !searchQuery || 
+              user.nama_lengkap?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              user.user?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              user.nik?.includes(searchQuery) ||
+              user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              user.nomor_hp?.includes(searchQuery)
+            ).map((user) => (
               <div key={user.id}>
                 {/* Desktop Row */}
                 <div className="hidden md:grid grid-cols-[60px_1.5fr_1fr_1.5fr_100px_80px] gap-4 px-6 py-4 items-center bg-slate-50 dark:bg-slate-800/20 hover:bg-slate-100 dark:hover:bg-slate-800/40 rounded-2xl transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-800 group">
@@ -243,42 +282,51 @@ export function TenantData() {
                     {getRoleBadge(user.role)}
                   </div>
 
-                  <div className="flex justify-center">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                            <AlertTriangle className="size-5 text-red-500" />
-                            {tCommon('delete')}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
-                            {t('deleteUserConfirm')}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="bg-transparent border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
-                            {tCommon('cancel')}
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(user.id)}
-                            disabled={isDeleting}
-                            className="bg-red-500 hover:bg-red-600 text-white border-none"
+                  <div className="flex items-center justify-center gap-1 min-w-[72px]">
+                    <Button variant="ghost" size="icon" onClick={() => setViewingTenant(user)} className="size-8 text-slate-400 hover:text-slate-900 dark:hover:text-white" title="Detail">
+                      <Eye className="size-4" />
+                    </Button>
+                    {user.role !== 'non_active' ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors"
+                            title="Non-aktifkan"
                           >
-                            {isDeleting ? <Loader2 className="size-4 animate-spin" /> : tCommon('delete')}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            <Ban className="size-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                              <AlertTriangle className="size-5 text-amber-500" />
+                              Non-aktifkan Pengguna
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
+                              Apakah Anda yakin ingin mengubah status pengguna ini menjadi Non Active? Pengguna tidak akan dihapus dari sistem.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="bg-transparent border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
+                              {tCommon('cancel')}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeactivate(user.id)}
+                              disabled={isDeactivating}
+                              className="bg-amber-500 hover:bg-amber-600 text-white border-none"
+                            >
+                              {isDeactivating ? <Loader2 className="size-4 animate-spin" /> : 'Non-aktifkan'}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <div className="size-8 flex items-center justify-center text-slate-300 dark:text-slate-600 font-bold">—</div>
+                    )}
                   </div>
+
                 </div>
 
                 {/* Mobile Card */}
@@ -312,28 +360,32 @@ export function TenantData() {
                   </div>
 
                   <div className="flex justify-end pt-2">
-                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost" 
-                          size="sm"
-                          className="w-full text-red-500 hover:text-white hover:bg-red-500 border border-red-500/20"
-                        >
-                          <Trash2 className="size-4 mr-2" />
-                          {tCommon('delete')}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                        <AlertDialogHeader>
-                           <AlertDialogTitle className="text-slate-900 dark:text-white">{tCommon('confirm')}</AlertDialogTitle>
-                           <AlertDialogDescription className="text-slate-600 dark:text-slate-400">{t('deleteUserConfirm')}</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                           <AlertDialogCancel className="dark:text-white">{tCommon('cancel')}</AlertDialogCancel>
-                           <AlertDialogAction onClick={() => handleDelete(user.id)} className="bg-red-500 text-white">{tCommon('delete')}</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {user.role !== 'non_active' ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost" 
+                            size="sm"
+                            className="w-full text-amber-600 hover:text-white hover:bg-amber-500 border border-amber-500/20"
+                          >
+                            <Ban className="size-4 mr-2" />
+                            Non-aktifkan
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                          <AlertDialogHeader>
+                             <AlertDialogTitle className="text-slate-900 dark:text-white">Non-aktifkan Pengguna</AlertDialogTitle>
+                             <AlertDialogDescription className="text-slate-600 dark:text-slate-400">Apakah Anda yakin ingin mengubah status pengguna ini menjadi Non Active?</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                             <AlertDialogCancel className="dark:text-white">{tCommon('cancel')}</AlertDialogCancel>
+                             <AlertDialogAction onClick={() => handleDeactivate(user.id)} className="bg-amber-500 hover:bg-amber-600 text-white">Non-aktifkan</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-600 text-xs italic w-full text-center py-2">Sudah Non Active</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -362,6 +414,126 @@ export function TenantData() {
           </button>
         </div>
       </motion.div>
+
+      {/* Tenant Detail Modal */}
+      <Dialog open={!!viewingTenant} onOpenChange={() => { setViewingTenant(null); setTenantPaymentDetail(null); }}>
+        <DialogContent className="w-[95vw] max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white p-0 overflow-hidden rounded-2xl md:rounded-[2rem] max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="sr-only">Detail Penyewa {viewingTenant?.nama_lengkap}</DialogTitle>
+          {viewingTenant && (
+            <div className="space-y-0">
+              {/* Header with Avatar */}
+              <div className="relative bg-gradient-to-br from-amber-500 to-amber-600 p-6 md:p-8">
+                <div className="flex items-center gap-4">
+                  <div className="size-16 md:size-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-2xl md:text-3xl font-black text-white uppercase flex-shrink-0 overflow-hidden">
+                    {tenantPaymentDetail?.foto_profil ? (
+                      <ImageWithFallback src={tenantPaymentDetail.foto_profil} alt="Foto Profil" className="w-full h-full object-cover" />
+                    ) : (
+                      viewingTenant.nama_lengkap ? viewingTenant.nama_lengkap.charAt(0) : 'U'
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-black text-white">{viewingTenant.nama_lengkap || viewingTenant.user?.username || 'N/A'}</h2>
+                    <p className="text-amber-100 text-xs md:text-sm mt-1">@{viewingTenant.user?.username || '-'} • ID #{viewingTenant.id}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 md:p-8 space-y-6">
+                {/* Profile Info Grid */}
+                <div>
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-3">Data Pribadi</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">NIK</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.nik || viewingTenant.nik || '-'}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Email</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{tenantPaymentDetail?.email || viewingTenant.email || '-'}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Telepon</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.nomor_hp || viewingTenant.nomor_hp || '-'}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Jenis Kelamin</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.jenis_kelamin || viewingTenant.jenis_kelamin || '-'}</p>
+                    </div>
+                    <div className="col-span-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Alamat Asal</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.alamat_asal || viewingTenant.alamat_asal || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Room Info */}
+                {loadingTenantDetail ? (
+                  <div className="flex justify-center py-6"><Loader2 className="size-5 animate-spin text-amber-500" /></div>
+                ) : tenantPaymentDetail?.nomor_kamar ? (
+                  <div className="space-y-4">
+                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">Kamar & Riwayat Pembayaran</p>
+                    <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-500/5 rounded-xl border border-amber-200 dark:border-amber-500/20">
+                      <Home className="size-5 text-amber-500 flex-shrink-0" />
+                      <div>
+                        <p className="font-bold text-sm text-slate-900 dark:text-white">{tenantPaymentDetail.nomor_kamar}</p>
+                        <p className="text-[10px] text-slate-500">{tenantPaymentDetail.tipe_kamar} • {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(tenantPaymentDetail.harga_per_bulan)}/bulan</p>
+                      </div>
+                    </div>
+                    {tenantPaymentDetail.check_in && (
+                      <div className="grid grid-cols-3 gap-2 mt-3">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Check In</p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{tenantPaymentDetail.check_in}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Check Out</p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{tenantPaymentDetail.check_out}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Durasi</p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{tenantPaymentDetail.durasi_sewa} Bulan</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {tenantPaymentDetail.payments.length > 0 ? (
+                      <div className="space-y-2">
+                        {tenantPaymentDetail.payments.map((pay) => (
+                          <div key={pay.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                            <div className="flex items-center gap-3">
+                              <CalendarDays className="size-4 text-slate-400" />
+                              <div>
+                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{pay.payment_month || pay.tanggal_bayar}</p>
+                                <p className="text-[10px] text-slate-400">{pay.metode_pembayaran}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(pay.jumlah_bayar)}</p>
+                              <span className={`text-[9px] font-bold uppercase ${
+                                pay.status_pembayaran === 'Confirmed' ? 'text-green-600' :
+                                pay.status_pembayaran === 'Pending' ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>
+                                {pay.status_pembayaran === 'Confirmed' ? 'Lunas' : pay.status_pembayaran}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 text-xs italic text-center py-3">Belum ada riwayat pembayaran</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
+                    <p className="text-slate-400 text-xs italic">Belum ada pemesanan aktif</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

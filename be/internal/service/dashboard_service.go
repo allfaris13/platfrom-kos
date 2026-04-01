@@ -2,6 +2,7 @@ package service
 
 import (
 	"koskosan-be/internal/models"
+	"math"
 	"time"
 
 	"gorm.io/gorm"
@@ -26,14 +27,14 @@ type Demographic struct {
 }
 
 type DashboardStats struct {
-	TotalRevenue     float64       `json:"total_revenue"`
-	ActiveTenants    int64         `json:"active_tenants"`
-	AvailableRooms   int64         `json:"available_rooms"`
-	OccupiedRooms    int64         `json:"occupied_rooms"`
-	PendingPayments  int64         `json:"pending_payments"`
-	PendingRevenue   float64       `json:"pending_revenue"`
-	RejectedPayments int64         `json:"rejected_payments"`
-	PotentialRevenue float64       `json:"potential_revenue"`
+	TotalRevenue     float64          `json:"total_revenue"`
+	ActiveTenants    int64            `json:"active_tenants"`
+	AvailableRooms   int64            `json:"available_rooms"`
+	OccupiedRooms    int64            `json:"occupied_rooms"`
+	PendingPayments  int64            `json:"pending_payments"`
+	PendingRevenue   float64          `json:"pending_revenue"`
+	RejectedPayments int64            `json:"rejected_payments"`
+	PotentialRevenue float64          `json:"potential_revenue"`
 	MonthlyTrend     []MonthlyData    `json:"monthly_trend"`
 	TypeBreakdown    []TypeRevenue    `json:"type_breakdown"`
 	Demographics     []Demographic    `json:"demographics"`
@@ -49,6 +50,92 @@ type RecentCheckout struct {
 
 type DashboardService interface {
 	GetStats() (*DashboardStats, error)
+	GetPublicStats() (*PublicStats, error)
+	GetRoomOccupancy() ([]RoomOccupancyInfo, error)
+	GetTenantRooms() ([]TenantRoomInfo, error)
+	GetPaymentsByRoom(roomID uint) (*RoomPaymentDetail, error)
+	GetPaymentsByTenant(penyewaID uint) (*TenantPaymentDetail, error)
+}
+
+type PaymentRecord struct {
+	ID               uint    `json:"id"`
+	JumlahBayar      float64 `json:"jumlah_bayar"`
+	StatusPembayaran string  `json:"status_pembayaran"`
+	MetodePembayaran string  `json:"metode_pembayaran"`
+	TanggalBayar     string  `json:"tanggal_bayar"`
+	PaymentMonth     string  `json:"payment_month"`
+	BuktiTransfer    string  `json:"bukti_transfer"`
+}
+
+type RoomPaymentDetail struct {
+	TenantName string          `json:"tenant_name"`
+	PenyewaID  uint            `json:"penyewa_id"`
+	Email      string          `json:"email"`
+	NomorHP    string          `json:"nomor_hp"`
+	CheckIn    string          `json:"check_in"`
+	CheckOut   string          `json:"check_out"`
+	DurasiSewa int             `json:"durasi_sewa"`
+	Payments   []PaymentRecord `json:"payments"`
+}
+
+type TenantPaymentDetail struct {
+	NamaLengkap   string          `json:"nama_lengkap"`
+	Email         string          `json:"email"`
+	NomorHP       string          `json:"nomor_hp"`
+	NIK           string          `json:"nik"`
+	AlamatAsal    string          `json:"alamat_asal"`
+	JenisKelamin  string          `json:"jenis_kelamin"`
+	TanggalLahir  string          `json:"tanggal_lahir"`
+	FotoProfil    string          `json:"foto_profil"`
+	Role          string          `json:"role"`
+	NomorKamar    string          `json:"nomor_kamar"`
+	TipeKamar     string          `json:"tipe_kamar"`
+	HargaPerBulan float64         `json:"harga_per_bulan"`
+	CheckIn       string          `json:"check_in"`
+	CheckOut      string          `json:"check_out"`
+	DurasiSewa    int             `json:"durasi_sewa"`
+	Payments      []PaymentRecord `json:"payments"`
+}
+
+type PublicStats struct {
+	ActiveTenants int64   `json:"active_tenants"`
+	AverageRating float64 `json:"average_rating"`
+	TotalReviews  int64   `json:"total_reviews"`
+}
+
+type RoomOccupancyInfo struct {
+	RoomID        uint    `json:"room_id"`
+	NomorKamar    string  `json:"nomor_kamar"`
+	TenantName    string  `json:"tenant_name"`
+	PenyewaID     uint    `json:"penyewa_id"`
+	PaymentStatus string  `json:"payment_status"`
+	LastPayAmount float64 `json:"last_pay_amount"`
+	PaymentMonth  string  `json:"payment_month"`
+}
+
+type TenantRoomInfo struct {
+	PenyewaID     uint    `json:"penyewa_id"`
+	NamaLengkap   string  `json:"nama_lengkap"`
+	NomorKamar    string  `json:"nomor_kamar"`
+	RoomID        uint    `json:"room_id"`
+	TipeKamar     string  `json:"tipe_kamar"`
+	PaymentStatus string  `json:"payment_status"`
+	LastPayAmount float64 `json:"last_pay_amount"`
+	DueDate       string  `json:"due_date"`
+	PaymentMonth  string  `json:"payment_month"`
+}
+
+var indonesianMonths = []string{
+	"", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+}
+
+func formatIndonesianMonth(t time.Time) string {
+	month := int(t.Month())
+	if month >= 1 && month <= 12 {
+		return indonesianMonths[month] + " " + t.Format("2006")
+	}
+	return t.Format("January 2006")
 }
 
 type dashboardService struct {
@@ -57,6 +144,356 @@ type dashboardService struct {
 
 func NewDashboardService(db *gorm.DB) DashboardService {
 	return &dashboardService{db}
+}
+
+func (s *dashboardService) GetRoomOccupancy() ([]RoomOccupancyInfo, error) {
+	var results []RoomOccupancyInfo
+
+	// Find all active bookings (Confirmed) with their room and tenant info
+	type bookingRow struct {
+		KamarID     uint
+		NomorKamar  string
+		PenyewaID   uint
+		NamaLengkap string
+		PemesananID uint
+	}
+
+	var rows []bookingRow
+	s.db.Raw(`
+		SELECT pm.kamar_id, k.nomor_kamar, pm.penyewa_id, p.nama_lengkap, pm.id as pemesanan_id
+		FROM pemesanans pm
+		JOIN kamars k ON k.id = pm.kamar_id
+		JOIN penyewas p ON p.id = pm.penyewa_id
+		WHERE pm.status_pemesanan = 'Confirmed'
+		AND pm.deleted_at IS NULL AND k.deleted_at IS NULL AND p.deleted_at IS NULL
+	`).Scan(&rows)
+
+	for _, row := range rows {
+		var payment struct {
+			StatusPembayaran string
+			JumlahBayar      float64
+			TanggalBayar     time.Time
+		}
+		err := s.db.Raw(`
+			SELECT status_pembayaran, jumlah_bayar, tanggal_bayar
+			FROM pembayarans 
+			WHERE pemesanan_id = ? AND deleted_at IS NULL
+			ORDER BY created_at DESC LIMIT 1
+		`, row.PemesananID).Scan(&payment).Error
+
+		status := "Belum Bayar"
+		paymentMonth := ""
+		if err == nil && payment.StatusPembayaran != "" {
+			switch payment.StatusPembayaran {
+			case "Confirmed":
+				status = "Lunas"
+			case "Pending":
+				status = "Pending"
+			default:
+				status = "Belum Bayar"
+			}
+			if !payment.TanggalBayar.IsZero() {
+				paymentMonth = formatIndonesianMonth(payment.TanggalBayar)
+			}
+		}
+
+		results = append(results, RoomOccupancyInfo{
+			RoomID:        row.KamarID,
+			NomorKamar:    row.NomorKamar,
+			TenantName:    row.NamaLengkap,
+			PenyewaID:     row.PenyewaID,
+			PaymentStatus: status,
+			LastPayAmount: payment.JumlahBayar,
+			PaymentMonth:  paymentMonth,
+		})
+	}
+
+	return results, nil
+}
+
+func (s *dashboardService) GetTenantRooms() ([]TenantRoomInfo, error) {
+	var results []TenantRoomInfo
+
+	type bookingRow struct {
+		PenyewaID   uint
+		NamaLengkap string
+		KamarID     uint
+		NomorKamar  string
+		TipeKamar   string
+		PemesananID uint
+	}
+
+	var rows []bookingRow
+	s.db.Raw(`
+		SELECT pm.penyewa_id, p.nama_lengkap, pm.kamar_id, k.nomor_kamar, k.tipe_kamar, pm.id as pemesanan_id
+		FROM pemesanans pm
+		JOIN kamars k ON k.id = pm.kamar_id
+		JOIN penyewas p ON p.id = pm.penyewa_id
+		WHERE pm.status_pemesanan = 'Confirmed'
+		AND pm.deleted_at IS NULL AND k.deleted_at IS NULL AND p.deleted_at IS NULL
+	`).Scan(&rows)
+
+	for _, row := range rows {
+		var payment struct {
+			StatusPembayaran  string
+			JumlahBayar       float64
+			TanggalJatuhTempo time.Time
+			TanggalBayar      time.Time
+		}
+		err := s.db.Raw(`
+			SELECT status_pembayaran, jumlah_bayar, tanggal_jatuh_tempo, tanggal_bayar
+			FROM pembayarans 
+			WHERE pemesanan_id = ? AND deleted_at IS NULL
+			ORDER BY created_at DESC LIMIT 1
+		`, row.PemesananID).Scan(&payment).Error
+
+		status := "Belum Bayar"
+		dueDate := ""
+		paymentMonth := ""
+		if err == nil && payment.StatusPembayaran != "" {
+			switch payment.StatusPembayaran {
+			case "Confirmed":
+				status = "Lunas"
+			case "Pending":
+				status = "Pending"
+			default:
+				status = "Belum Bayar"
+			}
+			if !payment.TanggalJatuhTempo.IsZero() {
+				dueDate = payment.TanggalJatuhTempo.Format("2006-01-02")
+			}
+			if !payment.TanggalBayar.IsZero() {
+				paymentMonth = formatIndonesianMonth(payment.TanggalBayar)
+			}
+		}
+
+		results = append(results, TenantRoomInfo{
+			PenyewaID:     row.PenyewaID,
+			NamaLengkap:   row.NamaLengkap,
+			NomorKamar:    row.NomorKamar,
+			RoomID:        row.KamarID,
+			TipeKamar:     row.TipeKamar,
+			PaymentStatus: status,
+			LastPayAmount: payment.JumlahBayar,
+			DueDate:       dueDate,
+			PaymentMonth:  paymentMonth,
+		})
+	}
+
+	return results, nil
+}
+
+func (s *dashboardService) GetPaymentsByRoom(roomID uint) (*RoomPaymentDetail, error) {
+	// Find active booking for this room
+	type bookingInfo struct {
+		PemesananID   uint
+		NamaLengkap   string
+		PenyewaID     uint
+		Email         string
+		NomorHP       string
+		TanggalMulai  time.Time
+		DurasiSewa    int
+		HargaPerBulan float64
+	}
+	var info bookingInfo
+	err := s.db.Raw(`
+		SELECT pm.id as pemesanan_id, p.nama_lengkap, p.id as penyewa_id, p.email, p.nomor_hp, pm.tanggal_mulai, pm.durasi_sewa, k.harga_per_bulan
+		FROM pemesanans pm
+		JOIN penyewas p ON p.id = pm.penyewa_id
+		JOIN kamars k ON k.id = pm.kamar_id
+		WHERE pm.kamar_id = ? AND pm.status_pemesanan = 'Confirmed'
+		AND pm.deleted_at IS NULL AND p.deleted_at IS NULL AND k.deleted_at IS NULL
+		ORDER BY pm.created_at DESC LIMIT 1
+	`, roomID).Scan(&info).Error
+	if err != nil || info.PemesananID == 0 {
+		return &RoomPaymentDetail{Payments: []PaymentRecord{}}, nil
+	}
+
+	// Get all payments for this booking
+	payments := s.getPaymentsForBooking(info.PemesananID)
+
+	// Calculate total paid to dynamically determine actual duration
+	var totalPaid float64
+	for _, p := range payments {
+		if p.StatusPembayaran == "Confirmed" {
+			totalPaid += p.JumlahBayar
+		}
+	}
+
+	actualDurasi := info.DurasiSewa
+	if info.HargaPerBulan > 0 {
+		paidMonths := int(totalPaid / info.HargaPerBulan)
+		if paidMonths > actualDurasi {
+			actualDurasi = paidMonths
+		}
+	}
+
+	checkIn := ""
+	checkOut := ""
+	if !info.TanggalMulai.IsZero() {
+		checkIn = info.TanggalMulai.Format("2006-01-02")
+		checkOutDate := info.TanggalMulai.AddDate(0, actualDurasi, 0)
+		checkOut = checkOutDate.Format("2006-01-02")
+	}
+
+	return &RoomPaymentDetail{
+		TenantName: info.NamaLengkap,
+		PenyewaID:  info.PenyewaID,
+		Email:      info.Email,
+		NomorHP:    info.NomorHP,
+		CheckIn:    checkIn,
+		CheckOut:   checkOut,
+		DurasiSewa: actualDurasi,
+		Payments:   payments,
+	}, nil
+}
+
+func (s *dashboardService) GetPaymentsByTenant(penyewaID uint) (*TenantPaymentDetail, error) {
+	// Get tenant profile
+	type tenantProfile struct {
+		NamaLengkap  string
+		Email        string
+		NomorHP      string
+		NIK          string
+		AlamatAsal   string
+		JenisKelamin string
+		TanggalLahir time.Time
+		FotoProfil   string
+		Role         string
+	}
+	var profile tenantProfile
+	s.db.Raw(`SELECT nama_lengkap, email, nomor_hp, nik, alamat_asal, jenis_kelamin, tanggal_lahir, foto_profil, role FROM penyewas WHERE id = ? AND deleted_at IS NULL`, penyewaID).Scan(&profile)
+
+	// Find active booking
+	type bookingInfo struct {
+		PemesananID   uint
+		NomorKamar    string
+		TipeKamar     string
+		HargaPerBulan float64
+		TanggalMulai  time.Time
+		DurasiSewa    int
+	}
+	var booking bookingInfo
+	s.db.Raw(`
+		SELECT pm.id as pemesanan_id, k.nomor_kamar, k.tipe_kamar, k.harga_per_bulan, pm.tanggal_mulai, pm.durasi_sewa
+		FROM pemesanans pm
+		JOIN kamars k ON k.id = pm.kamar_id
+		WHERE pm.penyewa_id = ? AND pm.status_pemesanan = 'Confirmed'
+		AND pm.deleted_at IS NULL AND k.deleted_at IS NULL
+		ORDER BY pm.created_at DESC LIMIT 1
+	`, penyewaID).Scan(&booking)
+
+	var payments []PaymentRecord
+	if booking.PemesananID > 0 {
+		payments = s.getPaymentsForBooking(booking.PemesananID)
+	}
+	if payments == nil {
+		payments = []PaymentRecord{}
+	}
+
+	// Calculate total paid to dynamically determine actual duration
+	var totalPaid float64
+	for _, p := range payments {
+		if p.StatusPembayaran == "Confirmed" {
+			totalPaid += p.JumlahBayar
+		}
+	}
+
+	actualDurasi := booking.DurasiSewa
+	if booking.HargaPerBulan > 0 {
+		paidMonths := int(totalPaid / booking.HargaPerBulan)
+		if paidMonths > actualDurasi {
+			actualDurasi = paidMonths
+		}
+	}
+
+	tanggalLahir := ""
+	if !profile.TanggalLahir.IsZero() {
+		tanggalLahir = profile.TanggalLahir.Format("2006-01-02")
+	}
+
+	checkIn := ""
+	checkOut := ""
+	if !booking.TanggalMulai.IsZero() {
+		checkIn = booking.TanggalMulai.Format("2006-01-02")
+		checkOutDate := booking.TanggalMulai.AddDate(0, actualDurasi, 0)
+		checkOut = checkOutDate.Format("2006-01-02")
+	}
+
+	return &TenantPaymentDetail{
+		NamaLengkap:   profile.NamaLengkap,
+		Email:         profile.Email,
+		NomorHP:       profile.NomorHP,
+		NIK:           profile.NIK,
+		AlamatAsal:    profile.AlamatAsal,
+		JenisKelamin:  profile.JenisKelamin,
+		TanggalLahir:  tanggalLahir,
+		FotoProfil:    profile.FotoProfil,
+		Role:          profile.Role,
+		NomorKamar:    booking.NomorKamar,
+		TipeKamar:     booking.TipeKamar,
+		HargaPerBulan: booking.HargaPerBulan,
+		CheckIn:       checkIn,
+		CheckOut:      checkOut,
+		DurasiSewa:    actualDurasi,
+		Payments:      payments,
+	}, nil
+}
+
+func (s *dashboardService) getPaymentsForBooking(pemesananID uint) []PaymentRecord {
+	type payRow struct {
+		ID               uint
+		JumlahBayar      float64
+		StatusPembayaran string
+		MetodePembayaran string
+		TanggalBayar     time.Time
+		BuktiTransfer    string
+	}
+	var rows []payRow
+	s.db.Raw(`
+		SELECT id, jumlah_bayar, status_pembayaran, metode_pembayaran, tanggal_bayar, bukti_transfer
+		FROM pembayarans
+		WHERE pemesanan_id = ? AND deleted_at IS NULL
+		ORDER BY tanggal_bayar DESC
+	`, pemesananID).Scan(&rows)
+
+	var records []PaymentRecord
+	for _, r := range rows {
+		tanggalBayar := ""
+		paymentMonth := ""
+		if !r.TanggalBayar.IsZero() {
+			tanggalBayar = r.TanggalBayar.Format("2006-01-02")
+			paymentMonth = formatIndonesianMonth(r.TanggalBayar)
+		}
+		records = append(records, PaymentRecord{
+			ID:               r.ID,
+			JumlahBayar:      r.JumlahBayar,
+			StatusPembayaran: r.StatusPembayaran,
+			MetodePembayaran: r.MetodePembayaran,
+			TanggalBayar:     tanggalBayar,
+			PaymentMonth:     paymentMonth,
+			BuktiTransfer:    r.BuktiTransfer,
+		})
+	}
+	return records
+}
+
+func (s *dashboardService) GetPublicStats() (*PublicStats, error) {
+	stats := &PublicStats{}
+
+	// Count active tenants (role = 'tenant')
+	s.db.Model(&models.Penyewa{}).Where("role = ?", "tenant").Count(&stats.ActiveTenants)
+
+	// Average rating and total reviews
+	var result struct {
+		Avg   float64
+		Count int64
+	}
+	s.db.Model(&models.Review{}).Select("COALESCE(AVG(rating), 0) as avg, COUNT(*) as count").Scan(&result)
+	stats.AverageRating = math.Round(result.Avg*10) / 10 // round to 1 decimal
+	stats.TotalReviews = result.Count
+
+	return stats, nil
 }
 
 func (s *dashboardService) GetStats() (*DashboardStats, error) {
@@ -275,7 +712,7 @@ func (s *dashboardService) GetStats() (*DashboardStats, error) {
 	// Let's keep Demographics logic in Go for now as cross-db SQL for age is messy.
 	// (Re-inserting the existing demographics logic to match the removal range)
 	// Actually I will optimize it slightly by checking if birthDates is empty.
-	
+
 	var birthDates []time.Time
 	s.db.Model(&models.Penyewa{}).
 		Where("tanggal_lahir IS NOT NULL").

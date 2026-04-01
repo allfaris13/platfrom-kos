@@ -187,6 +187,10 @@ export const api = {
     // Admin only
     confirmPayment: async (paymentId: string) =>
         apiCall<MessageResponse>('PUT', `/payments/${paymentId}/confirm`),
+    rejectPayment: async (paymentId: string) =>
+        apiCall<MessageResponse>('PUT', `/payments/${paymentId}/reject`),
+    verifyPayment: async (orderId: string) =>
+        apiCall<MessageResponse>('POST', '/payments/verify', { order_id: orderId }),
 };
 ```
 
@@ -278,10 +282,11 @@ export interface DashboardStats {
 ```
 
 Dashboard menampilkan:
-- **Revenue** — Total pendapatan dan tren bulanan
-- **Occupancy** — Kamar tersedia vs terisi
-- **Payments** — Pembayaran pending yang perlu dikonfirmasi
-- **Demographics** — Statistik penyewa
+- **Revenue** — Total pendapatan (settled), pendapatan tertunda (pending), dan potensi pendapatan.
+- **Occupancy** — Kamar tersedia vs terisi, termasuk breakdown per tipe kamar.
+- **Payments** — Pembayaran pending yang perlu dikonfirmasi atau direject.
+- **Demographics** — Statistik penyewa berdasarkan kategori tertentu.
+- **Checkouts** — Log keluar penyewa terbaru.
 
 ### Admin Dashboard UX Enhancements
 

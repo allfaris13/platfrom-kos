@@ -23,13 +23,6 @@ import {
 import { api, Room } from "@/app/services/api";
 import { toast } from "sonner";
 
-declare global {
-  interface Window {
-    snap: {
-      pay: (token: string) => void;
-    };
-  }
-}
 
 interface BookingFlowProps {
   roomId: string;
@@ -246,7 +239,10 @@ export function BookingFlow({ roomId, onBack, initialData }: BookingFlowProps) {
             
             <div className="flex flex-col gap-3">
                 <Button
-                  onClick={() => window.location.href = "/tenant/bookings"}
+                  onClick={() => {
+                    localStorage.setItem('user_platform_active_view', 'history');
+                    window.location.href = "/";
+                  }}
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   Go to My Bookings

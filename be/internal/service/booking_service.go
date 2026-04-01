@@ -25,7 +25,7 @@ type BookingService interface {
 	CreateBooking(userID uint, kamarID uint, tanggalMulai string, durasiSewa int) (*models.Pemesanan, error)
 	CreateBookingWithProof(userID uint, kamarID uint, tanggalMulai string, durasiSewa int, proofURL string, paymentType string, paymentMethod string) (*models.Pemesanan, error)
 	CancelBooking(id uint, userID uint) error
-	ExtendBooking(bookingID uint, months int, userID uint) (*models.Pembayaran, error)
+	ExtendBooking(bookingID uint, months int, userID uint, paymentMethod string) (*models.Pembayaran, error)
 	AutoCancelExpiredBookings() error
 }
 
@@ -66,11 +66,19 @@ func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error)
 			lastStatus = p.StatusPembayaran
 		}
 
+		actualDurasi := b.DurasiSewa
+		if b.Kamar.HargaPerBulan > 0 {
+			paidMonths := int(totalPaid / b.Kamar.HargaPerBulan)
+			if paidMonths > actualDurasi {
+				actualDurasi = paidMonths
+			}
+		}
+
 		response = append(response, BookingResponse{
 			ID:              b.ID,
 			Kamar:           b.Kamar, // Already preloaded
 			TanggalMulai:    b.TanggalMulai.Format("2006-01-02"),
-			DurasiSewa:      b.DurasiSewa,
+			DurasiSewa:      actualDurasi,
 			StatusPemesanan: b.StatusPemesanan,
 			TotalBayar:      totalPaid,
 			StatusBayar:     lastStatus,
@@ -102,7 +110,7 @@ func (s *bookingService) CreateBooking(userID uint, kamarID uint, tanggalMulai s
 		if b.StatusPemesanan == "Confirmed" {
 			// Calculate lease end date: StartDate + Duration (months)
 			endDate := b.TanggalMulai.AddDate(0, b.DurasiSewa, 0)
-			
+
 			// If today is before end date, lease is still active
 			if time.Now().Before(endDate) {
 				return nil, fmt.Errorf("masa sewa anda masih aktif hingga %s. Tidak bisa memesan kamar lain", endDate.Format("02 January 2006"))
@@ -133,7 +141,7 @@ func (s *bookingService) CreateBooking(userID uint, kamarID uint, tanggalMulai s
 		if err := s.penyewaRepo.UpdateRole(penyewa.ID, "tenant"); err != nil {
 			fmt.Printf("Warning: Failed to update penyewa role for user %d: %v\n", userID, err)
 		}
-		
+
 		// 2. Update User record role
 		user, err := s.userRepo.FindByID(userID)
 		if err == nil {
@@ -233,18 +241,24 @@ func (s *bookingService) CreateBookingWithProof(userID uint, kamarID uint, tangg
 			return err
 		}
 
-		// Create reminder for DP if needed
+		// Create reminder for BOTH full and dp payments so it shows up in "My Bills"
+		var reminderAmount float64
 		if paymentType == "dp" {
-			reminder := models.PaymentReminder{
-				PembayaranID:    payment.ID,
-				JumlahBayar:     totalAmount - dpAmount,
-				TanggalReminder: time.Now().AddDate(0, 0, 30),
-				StatusReminder:  "Pending",
-				IsSent:          false,
-			}
-			if err := txPaymentRepo.CreateReminder(&reminder); err != nil {
-				fmt.Printf("Warning: Failed to create reminder for payment %d: %v\n", payment.ID, err)
-			}
+			reminderAmount = totalAmount - dpAmount // Sisa bayar setelah DP
+		} else {
+			reminderAmount = totalAmount // Full amount
+		}
+
+		reminderDate := time.Now().AddDate(0, 0, 3) // Due in 3 days
+		reminder := models.PaymentReminder{
+			PembayaranID:    payment.ID,
+			JumlahBayar:     reminderAmount,
+			TanggalReminder: reminderDate,
+			StatusReminder:  "Pending",
+			IsSent:          false,
+		}
+		if err := txPaymentRepo.CreateReminder(&reminder); err != nil {
+			fmt.Printf("Warning: Failed to create reminder for payment %d: %v\n", payment.ID, err)
 		}
 
 		// 3. Role Transition
@@ -306,7 +320,7 @@ func (s *bookingService) CancelBooking(id uint, userID uint) error {
 
 	// NEW: Delete associated pending payment so it disappears from Admin Dashboard
 	if err := s.paymentRepo.DeleteByBookingID(id); err != nil {
-		// Log error but generally don't fail the whole cancellation if this fails? 
+		// Log error but generally don't fail the whole cancellation if this fails?
 		// Or maybe we should? Let's treat it as important.
 		return fmt.Errorf("failed to remove pending payment: %v", err)
 	}
@@ -315,7 +329,7 @@ func (s *bookingService) CancelBooking(id uint, userID uint) error {
 }
 
 // ExtendBooking creates a new payment for extending the lease
-func (s *bookingService) ExtendBooking(bookingID uint, months int, userID uint) (*models.Pembayaran, error) {
+func (s *bookingService) ExtendBooking(bookingID uint, months int, userID uint, paymentMethod string) (*models.Pembayaran, error) {
 	booking, err := s.repo.FindByID(bookingID)
 	if err != nil {
 		return nil, err
@@ -344,15 +358,15 @@ func (s *bookingService) ExtendBooking(bookingID uint, months int, userID uint) 
 		JumlahBayar:      amount,
 		TanggalBayar:     time.Now(),
 		StatusPembayaran: "Pending",
-		MetodePembayaran: "manual",   // Default to manual
-		TipePembayaran:   "extend",   // New type for extension
+		MetodePembayaran: paymentMethod, // Selected method (bank_transfer or cash)
+		TipePembayaran:   "extend",      // New type for extension
 		JumlahDP:         0,
 	}
-	
+
 	if err := s.paymentRepo.Create(&payment); err != nil {
 		return nil, err
 	}
-	
+
 	// Create Payment Reminder so it shows up in "My Bills"
 	reminder := models.PaymentReminder{
 		PembayaranID:    payment.ID,
@@ -361,12 +375,12 @@ func (s *bookingService) ExtendBooking(bookingID uint, months int, userID uint) 
 		StatusReminder:  "Pending",
 		IsSent:          false,
 	}
-	
+
 	if err := s.paymentRepo.CreateReminder(&reminder); err != nil {
 		fmt.Printf("Failed to create reminder for payment %d: %v\n", payment.ID, err)
 		// Non-critical error, payment still created
 	}
-	
+
 	return &payment, nil
 }
 
@@ -385,13 +399,13 @@ func (s *bookingService) AutoCancelExpiredBookings() error {
 			fmt.Printf("Failed to auto-cancel booking %d: %v\n", b.ID, err)
 			continue
 		}
-		
+
 		// Update room to available
 		if err := s.kamarRepo.UpdateStatus(b.KamarID, "Tersedia"); err != nil {
-             fmt.Printf("Failed to update room status for auto-cancelled booking %d: %v\n", b.ID, err)
-        }
+			fmt.Printf("Failed to update room status for auto-cancelled booking %d: %v\n", b.ID, err)
+		}
 	}
-	
+
 	if len(expiredBookings) > 0 {
 		fmt.Printf("Auto-cancelled %d expired bookings\n", len(expiredBookings))
 	}

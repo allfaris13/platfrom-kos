@@ -5,6 +5,7 @@ import { ImageWithFallback } from "@/app/components/shared/ImageWithFallback";
 import { SkeletonGrid } from "@/app/components/ui/loading-screen";
 import { ArrowRight } from "lucide-react";
 import { useGallery } from "../dashboard/hooks/useGallery";
+import { useTranslations } from 'next-intl';
 
 interface GalleryItem {
   id: number | string;
@@ -22,6 +23,7 @@ export function Gallery() {
     handleLoadMore,
     isLoadedMore
   } = useGallery();
+  const t = useTranslations('gallery');
 
   // Map hook items to displayItems used in the visual snippet
   const displayItems = items.map(item => ({
@@ -43,51 +45,52 @@ export function Gallery() {
           >
             <div className="space-y-4">
               <h2 className="text-6xl md:text-7xl font-light tracking-tight leading-none text-slate-900 dark:text-white">
-                Elite <br /> <span className="italic font-serif">Residences</span>
+                {t('titlePart1')} <br /> <span className="italic font-serif">{t('titlePart2')}</span>
               </h2>
             </div>
             <p className="max-w-xs text-stone-500 dark:text-slate-400 font-sans text-sm leading-relaxed tracking-wide uppercase">
-              Koleksi pilihan hunian eksklusif dengan kenyamanan hotel berbintang untuk gaya hidup modern.
+              {t('description')}
             </p>
           </motion.div>
         </header>
 
         {/* --- KATEGORI KOS GRID --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-40">
-          {[
-            { title: "Standard Deluxe", features: ["Fast WiFi", "Private Bath", "AC Room"] },
-            { title: "Executive Studio", features: ["Smart TV", "Mini Kitchen", "Cleaning Service"] },
-            { title: "Premium Loft", features: ["City View", "Private Balcony", "Gym Access"] }
-          ].map((cat, i) => (
-            <motion.div
-              key={cat.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              viewport={{ once: true }}
-              className="group cursor-pointer"
-            >
-              <div className="flex justify-between items-center border-b border-stone-300 dark:border-slate-800 pb-4 mb-8">
-                <h3 className="text-2xl font-medium tracking-tight text-slate-900 dark:text-slate-100">{cat.title}</h3>
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-2 text-slate-400" />
-              </div>
-              <div className="space-y-4 font-sans text-sm text-stone-600 dark:text-slate-400">
-                {cat.features.map((feat) => (
-                  <p key={feat} className="hover:text-black dark:hover:text-white transition-colors flex items-center gap-2">
-                    <span className="text-[10px]">→</span> {feat}
-                  </p>
-                ))}
-              </div>
-            </motion.div>
-          ))}
+          {(["standard", "multipurpose", "premium"] as const).map((key, i) => {
+            const title = t(`categories.${key}.title`);
+            const features = t(`categories.${key}.features`).split(",").map(f => f.trim());
+            
+            return (
+              <motion.div
+                key={key}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className="group cursor-pointer"
+              >
+                <div className="flex justify-between items-center border-b border-stone-300 dark:border-slate-800 pb-4 mb-8">
+                  <h3 className="text-2xl font-medium tracking-tight text-slate-900 dark:text-slate-100">{title}</h3>
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-2 text-slate-400" />
+                </div>
+                <div className="space-y-4 font-sans text-sm text-stone-600 dark:text-slate-400">
+                  {features.map((feat) => (
+                    <p key={feat} className="hover:text-black dark:hover:text-white transition-colors flex items-center gap-2">
+                      <span className="text-[10px]">→</span> {feat}
+                    </p>
+                  ))}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* --- COLLECTION GRID (ASIMETRIS) --- */}
         <div className="border-t border-stone-200 dark:border-slate-900 pt-16">
           <div className="flex justify-between items-end mb-20">
-            <h2 className="text-5xl font-light italic font-serif tracking-tighter text-slate-900 dark:text-slate-100">Our Rooms</h2>
+            <h2 className="text-5xl font-light italic font-serif tracking-tighter text-slate-900 dark:text-slate-100">{t('ourRooms')}</h2>
             <button className="font-sans text-xs uppercase tracking-[0.2em] border-b border-black dark:border-white pb-1 hover:opacity-50 transition-opacity text-slate-900 dark:text-slate-100">
-              Lihat Semua Unit
+              {t('seeAllUnits')}
             </button>
           </div>
 
@@ -123,7 +126,7 @@ export function Gallery() {
                       </span>
                       <h4 className="text-xl font-medium font-serif leading-snug text-slate-900 dark:text-slate-200">{item.title}</h4>
                       <p className="font-sans text-xs italic text-stone-500 dark:text-slate-500">
-                        Available from {item.year}
+                        {t('availableFrom')} {item.year}
                       </p>
                     </div>
                   </motion.div>
@@ -141,7 +144,7 @@ export function Gallery() {
               onClick={handleLoadMore}
               className="bg-[#1a1a1a] dark:bg-white text-white dark:text-black px-14 py-5 rounded-full font-sans text-[11px] uppercase tracking-[0.4em] hover:bg-stone-800 dark:hover:bg-slate-200 transition-all active:scale-95 shadow-xl"
             >
-              Cari Unit Lainnya
+              {t('findOtherUnits')}
             </button>
           </div>
         )}

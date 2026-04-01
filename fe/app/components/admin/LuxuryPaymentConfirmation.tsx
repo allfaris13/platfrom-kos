@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getImageUrl } from '@/app/utils/api-url';
-import { Check, X, Eye, Clock, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Check, X, Eye, Clock, CheckCircle2, XCircle, AlertCircle, Loader2, RefreshCw, Home, CreditCard } from 'lucide-react';
 import { api, Payment as ApiPayment } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
@@ -20,6 +20,7 @@ interface Payment {
   method: string;
   status: 'Pending' | 'Confirmed' | 'Rejected';
   receiptUrl: string;
+  paymentType: string; // 'full' | 'dp' | 'extend'
 }
 
 export function LuxuryPaymentConfirmation() {
@@ -27,6 +28,8 @@ export function LuxuryPaymentConfirmation() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null);
+  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
 
   const fetchPayments = useCallback(async () => {
     setIsLoading(true);
@@ -37,13 +40,14 @@ export function LuxuryPaymentConfirmation() {
 
       const mapped = paymentData.map((p: ApiPayment) => ({
         id: p.id,
-        tenantName: p.pemesanan?.penyewa?.nama_lengkap || t('guest'),
+        tenantName: p.pemesanan?.penyewa?.nama_lengkap || p.pemesanan?.penyewa?.user?.username || t('guest'),
         roomName: p.pemesanan?.kamar?.nomor_kamar || t('room'),
         amount: p.jumlah_bayar,
         date: new Date(p.tanggal_bayar).toLocaleDateString('id-ID'),
-        method: t('transferBank'),
+        method: (p.metode_pembayaran || '').toLowerCase() === 'cash' ? t('cash') : t('transferBank'),
         status: p.status_pembayaran as Payment['status'],
         receiptUrl: getImageUrl(p.bukti_transfer) || '',
+        paymentType: p.tipe_pembayaran || 'full',
       }));
       
       setPayments(mapped);
@@ -59,6 +63,7 @@ export function LuxuryPaymentConfirmation() {
   }, [fetchPayments]);
 
   const handleConfirm = async (id: number) => {
+    setProcessingId(id);
     try {
       await api.confirmPayment(String(id));
       fetchPayments();
@@ -66,14 +71,23 @@ export function LuxuryPaymentConfirmation() {
     } catch (e) {
       console.error(e);
       toast.error(t('paymentConfirmedError'));
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  const handleReject = (id: number) => {
-    // Backend Reject not yet implemented, keeping local update for demo or skipping
-    setPayments(payments.map(p =>
-      p.id === id ? { ...p, status: 'Rejected' as const } : p
-    ));
+  const handleReject = async (id: number) => {
+    setProcessingId(id);
+    try {
+      await api.rejectPayment(String(id));
+      fetchPayments();
+      toast.success(t('paymentRejectedSuccess') || 'Payment rejected successfully');
+    } catch (e) {
+      console.error(e);
+      toast.error(t('paymentRejectedError') || 'Failed to reject payment');
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -100,6 +114,34 @@ export function LuxuryPaymentConfirmation() {
       case 'Rejected': return 'from-red-500/20 to-red-600/20 border-red-500/30 text-red-600 dark:text-red-400';
       default: return 'from-slate-500/20 to-slate-600/20 border-slate-500/30 text-slate-600 dark:text-slate-400';
     }
+  };
+
+  const getPaymentTypeBadge = (type: string) => {
+    if (type === 'extend') {
+      return (
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 border border-teal-300 dark:border-teal-700">
+          <RefreshCw className="size-2.5" /> Perpanjang Sewa
+        </span>
+      );
+    }
+    if (type === 'dp') {
+      return (
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
+          <CreditCard className="size-2.5" /> DP Cicilan
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+        <Home className="size-2.5" /> Booking Awal
+      </span>
+    );
+  };
+
+  const getCardAccent = (type: string) => {
+    if (type === 'extend') return 'border-l-4 border-l-teal-500';
+    if (type === 'dp') return 'border-l-4 border-l-purple-500';
+    return 'border-l-4 border-l-blue-500';
   };
 
   return (
@@ -161,26 +203,77 @@ export function LuxuryPaymentConfirmation() {
       >
         <h2 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white mb-6">{t('paymentTimeline')}</h2>
 
+        {/* Tab Selector */}
+        <div className="flex p-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl mb-6 w-full max-w-sm">
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${
+              activeTab === 'pending'
+                ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <Clock className="size-4" />
+            {t('tabNeedConfirmation')}
+            {payments.filter(p => p.status === 'Pending').length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-orange-500 text-white rounded-full">
+                {payments.filter(p => p.status === 'Pending').length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${
+              activeTab === 'history'
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <CheckCircle2 className="size-4" />
+            {t('tabHistory')}
+          </button>
+        </div>
+
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
             <p className="text-slate-400 font-medium italic">{t('loadingPayments')}</p>
           </div>
-        ) : payments.length === 0 ? (
-          <div className="text-center py-20 bg-slate-100 dark:bg-slate-800/10 rounded-xl border border-dashed border-slate-300 dark:border-slate-800">
-            <p className="text-slate-500">{t('noPaymentsRecord')}</p>
-          </div>
         ) : (
-          <div className="flex sm:flex-col overflow-x-auto sm:overflow-x-visible gap-4 pb-4 sm:pb-0 snap-x">
-            {payments.map((payment, index) => (
-              <div key={payment.id} className="group relative">
-                {/* Timeline Line (Desktop Only) */}
-                {index !== payments.length - 1 && (
-                  <div className="hidden sm:block absolute left-6 top-14 bottom-0 w-0.5 bg-gradient-to-b from-slate-200 dark:from-slate-700 to-transparent" />
-                )}
+          (() => {
+            const filteredPayments = payments
+              .filter(p => activeTab === 'pending' ? p.status === 'Pending' : p.status !== 'Pending')
+              .sort(() => 0);
+
+            if (filteredPayments.length === 0) {
+              return (
+                <div className="text-center py-20 bg-slate-50 dark:bg-slate-800/10 rounded-xl border border-dashed border-slate-300 dark:border-slate-800">
+                  <div className="size-16 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    {activeTab === 'pending' ? <CheckCircle2 className="size-8 text-slate-400" /> : <Clock className="size-8 text-slate-400" />}
+                  </div>
+                  <p className="text-slate-900 dark:text-white font-bold mb-1">
+                    {activeTab === 'pending' ? t('pendingEmptyTitle') : t('historyEmptyTitle')}
+                  </p>
+                  <p className="text-slate-500 text-sm">
+                    {activeTab === 'pending' 
+                      ? t('pendingEmptyDesc')
+                      : t('historyEmptyDesc')}
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="flex sm:flex-col overflow-x-auto sm:overflow-x-visible gap-4 pb-4 sm:pb-0 snap-x">
+                {filteredPayments.map((payment, index) => (
+                  <div key={payment.id} className="group relative">
+                    {/* Timeline Line (Desktop Only) */}
+                    {index !== filteredPayments.length - 1 && (
+                      <div className="hidden sm:block absolute left-6 top-14 bottom-0 w-0.5 bg-gradient-to-b from-slate-200 dark:from-slate-700 to-transparent" />
+                    )}
 
                 {/* Payment Card */}
-                <div className="relative flex flex-col sm:flex-row gap-4 p-4 md:p-5 bg-white dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300 min-w-[280px] sm:min-w-0 snap-start shadow-sm dark:shadow-none">
+                <div className={`relative flex flex-col sm:flex-row gap-4 p-4 md:p-5 bg-white dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300 min-w-[280px] sm:min-w-0 snap-start shadow-sm dark:shadow-none ${getCardAccent(payment.paymentType)}`}>
                   {/* Status Icon */}
                   <div className={`flex-shrink-0 size-10 md:size-12 rounded-xl bg-gradient-to-br ${getStatusColor(payment.status)} border flex items-center justify-center z-10 mx-auto sm:mx-0`}>
                     {getStatusIcon(payment.status)}
@@ -205,8 +298,9 @@ export function LuxuryPaymentConfirmation() {
                       </div>
                     </div>
 
-                    {/* Actions - Scrollable di mobile jika terlalu banyak tombol */}
+                    {/* Actions */}
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                      {getPaymentTypeBadge(payment.paymentType)}
                       <span className={`px-2 py-1 md:px-3 md:py-1.5 rounded-lg text-[10px] md:text-xs font-medium border ${getStatusColor(payment.status)}`}>
                         {t(payment.status.toLowerCase())}
                       </span>
@@ -245,10 +339,12 @@ export function LuxuryPaymentConfirmation() {
                       )}
                     </div>
                   </div>
-                </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()
         )}
       </motion.div>
 
@@ -256,13 +352,47 @@ export function LuxuryPaymentConfirmation() {
       <Dialog open={!!viewingPayment} onOpenChange={() => setViewingPayment(null)}>
         <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-2xl p-4 md:p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl md:text-2xl bg-gradient-to-r from-amber-500 to-amber-700 dark:from-amber-400 dark:to-amber-600 bg-clip-text text-transparent">
+            <DialogTitle className={`text-xl md:text-2xl bg-gradient-to-r ${
+              viewingPayment?.paymentType === 'extend'
+                ? 'from-teal-500 to-teal-700 dark:from-teal-400 dark:to-teal-600'
+                : viewingPayment?.paymentType === 'dp'
+                ? 'from-purple-500 to-purple-700 dark:from-purple-400 dark:to-purple-600'
+                : 'from-amber-500 to-amber-700 dark:from-amber-400 dark:to-amber-600'
+            } bg-clip-text text-transparent`}>
               {t('paymentDetails')}
             </DialogTitle>
           </DialogHeader>
 
           {viewingPayment && (
             <div className="space-y-6 mt-4">
+
+              {/* Payment type banner */}
+              {viewingPayment.paymentType === 'extend' ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800">
+                  <RefreshCw className="size-5 text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-teal-700 dark:text-teal-300">Perpanjang Sewa</p>
+                    <p className="text-xs text-teal-600/70 dark:text-teal-400/70">Tagihan ini adalah pembayaran perpanjangan masa sewa secara bulanan.</p>
+                  </div>
+                </div>
+              ) : viewingPayment.paymentType === 'dp' ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                  <CreditCard className="size-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-purple-700 dark:text-purple-300">DP Cicilan</p>
+                    <p className="text-xs text-purple-600/70 dark:text-purple-400/70">Pembayaran uang muka (DP) atau cicilan lanjutan untuk booking ini.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <Home className="size-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-blue-700 dark:text-blue-300">Booking Awal</p>
+                    <p className="text-xs text-blue-600/70 dark:text-blue-400/70">Pembayaran pertama untuk booking kamar baru.</p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { label: t('paymentId'), value: viewingPayment.id },
@@ -306,16 +436,22 @@ export function LuxuryPaymentConfirmation() {
               </div>
 
               {viewingPayment.status === 'Pending' && (
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <div className="flex flex-col sm:flex-row-reverse gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                   <Button
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 text-white"
-                    onClick={() => { handleConfirm(viewingPayment.id); setViewingPayment(null); }}
+                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-white font-bold h-11"
+                    disabled={processingId === viewingPayment.id}
+                    onClick={async () => { 
+                      await handleConfirm(viewingPayment.id); 
+                      setViewingPayment(null); 
+                    }}
                   >
-                    <Check className="size-4 mr-2" /> {t('confirm')}
+                    {processingId === viewingPayment.id ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Check className="size-4 mr-2" />} 
+                    {processingId === viewingPayment.id ? t('processing') || 'Memproses...' : t('confirm')}
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/20"
+                    className="w-full bg-white dark:bg-transparent border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-bold h-11"
+                    disabled={processingId === viewingPayment.id}
                     onClick={() => { handleReject(viewingPayment.id); setViewingPayment(null); }}
                   >
                     <X className="size-4 mr-2" /> {t('reject')}

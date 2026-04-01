@@ -13,12 +13,11 @@ import (
 )
 
 type PaymentHandler struct {
-	service    service.PaymentService
-	cloudinary *utils.CloudinaryService
+	service service.PaymentService
 }
 
-func NewPaymentHandler(s service.PaymentService, cld *utils.CloudinaryService) *PaymentHandler {
-	return &PaymentHandler{s, cld}
+func NewPaymentHandler(s service.PaymentService) *PaymentHandler {
+	return &PaymentHandler{service: s}
 }
 
 func (h *PaymentHandler) GetAllPayments(c *gin.Context) {
@@ -47,6 +46,22 @@ func (h *PaymentHandler) ConfirmPayment(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "payment confirmed successfully"})
+}
+
+func (h *PaymentHandler) RejectPayment(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid payment ID"})
+		return
+	}
+
+	if err := h.service.RejectPayment(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "payment rejected successfully"})
 }
 
 func (h *PaymentHandler) CreatePayment(c *gin.Context) {
@@ -103,24 +118,12 @@ func (h *PaymentHandler) UploadPaymentProof(c *gin.Context) {
 	}
 
 	var proofURL string
-	if h.cloudinary != nil {
-		src, err := file.Open()
-		if err == nil {
-			defer src.Close()
-			url, err := h.cloudinary.UploadImage(src, "koskosan/proofs")
-			if err == nil {
-				proofURL = url
-			} else {
-				utils.GlobalLogger.Error("Cloudinary upload failed: %v", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload proof to cloud: %v", err)})
-				return
-			}
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open proof file"})
-			return
-		}
+	url, err := utils.UploadToCloudinary(file, "proofs")
+	if err == nil {
+		proofURL = url
 	} else {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
+		utils.GlobalLogger.Error("Upload proof failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload proof: %v", err)})
 		return
 	}
 

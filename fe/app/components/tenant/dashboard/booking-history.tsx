@@ -23,14 +23,67 @@ import {
   Home,
   Wallet,
   Upload,
-  Search
+  Search,
+  AlertCircle
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs-component";
 import { UploadProofModal } from '../booking/upload-proof-modal';
 import { BookingDetailsModal } from '../booking/booking-details-modal';
+import { PaymentDetailsModal } from './payment-details-modal';
 import { useHistory } from './hooks/useHistory';
+import { PaymentReminder } from '@/app/services/api';
+
+const getReminderTitle = (reminder: PaymentReminder, t: (key: string) => string) => {
+  if (!reminder.pembayaran) return t('monthlyRentBill');
+  const type = reminder.pembayaran.tipe_pembayaran;
+  if (type === 'dp') return t('remainingDp');
+  if (type === 'extend') return `🔄 ${t('leaseExtension')}`;
+  if (type === 'full') return t('fullPayment');
+  return t('roomRentBill');
+};
+
+const getReminderDescription = (reminder: PaymentReminder, t: (key: string) => string) => {
+  if (!reminder.pembayaran?.pemesanan?.kamar) return t('standardRentBill');
+  const kamar = reminder.pembayaran.pemesanan.kamar;
+  const type = reminder.pembayaran.tipe_pembayaran;
+  const months = kamar.harga_per_bulan > 0
+    ? Math.round(reminder.jumlah_bayar / kamar.harga_per_bulan)
+    : 1;
+  const monthLabel = months > 0 ? ` (${months} ${months === 1 ? 'bulan' : 'bulan'})` : '';
+
+  if (type === 'extend') return `${t('extensionCostFor')} ${kamar.nomor_kamar}${monthLabel}`;
+  if (type === 'dp') return `${t('dpSettlementFor')} ${kamar.nomor_kamar}`;
+  return `${t('rentPaymentFor')} ${kamar.nomor_kamar}`;
+};
+
+const getReminderTypeBadge = (reminder: PaymentReminder) => {
+  const type = reminder.pembayaran?.tipe_pembayaran;
+  if (type === 'extend') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+        🔄 Perpanjang Sewa
+      </span>
+    );
+  }
+  if (type === 'dp') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+        💳 DP Cicilan
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+      🏠 Booking Awal
+    </span>
+  );
+};
+
+import { useTranslations } from 'next-intl';
 
 export function BookingHistory() {
+  const t = useTranslations('history');
+  
   const {
     activeTab,
     setActiveTab,
@@ -46,9 +99,13 @@ export function BookingHistory() {
     setUploadModalOpen,
     viewDetailsModalOpen,
     setViewDetailsModalOpen,
+    viewPaymentDetailsModalOpen,
+    setViewPaymentDetailsModalOpen,
     selectedBooking,
     selectedPaymentId,
     setSelectedPaymentId,
+    selectedPaidReminder,
+    setSelectedPaidReminder,
     bookings,
     reminders,
     activeBooking,
@@ -66,6 +123,7 @@ export function BookingHistory() {
       case 'Pending': return <Clock className="w-5 h-5" />;
       case 'Completed': return <CheckCircle2 className="w-5 h-5" />;
       case 'Cancelled': return <XCircle className="w-5 h-5" />;
+      case 'Rejected': return <XCircle className="w-5 h-5" />;
       default: return null;
     }
   };
@@ -76,6 +134,7 @@ export function BookingHistory() {
       case 'Pending': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800';
       case 'Completed': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800';
       case 'Cancelled': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
+      case 'Rejected': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
       default: return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700';
     }
   };
@@ -98,8 +157,8 @@ export function BookingHistory() {
               <Calendar className="w-6 h-6 text-white" />
             </motion.div>
             <div>
-              <h1 className="text-4xl font-bold text-slate-900 dark:text-white">My Bookings</h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-1">Track and manage all your rental reservations</p>
+              <h1 className="text-4xl font-bold text-slate-900 dark:text-white">{t('title')}</h1>
+              <p className="text-slate-600 dark:text-slate-400 mt-1">{t('subtitle')}</p>
             </div>
           </div>
         </motion.div>
@@ -113,25 +172,25 @@ export function BookingHistory() {
         >
           {[
             {
-              label: 'Total Rooms',
+              label: t('totalRooms'),
               value: bookings.length.toString(),
               icon: <Home className="w-6 h-6" />,
               delay: 0
             },
             {
-              label: 'Completed Bills',
+              label: t('completedBills'),
               value: bookings.filter(b => b.rawStatus === 'Confirmed').length.toString(),
               icon: <CheckCircle2 className="w-6 h-6" />,
               delay: 0.1
             },
             {
-              label: 'Pending Bills',
+              label: t('pendingBills'),
               value: bookings.filter(b => b.rawStatus === 'Pending').length.toString(),
               icon: <Clock className="w-6 h-6" />,
               delay: 0.2
             },
             {
-              label: 'Total Expenses',
+              label: t('totalExpenses'),
               value: `Rp ${bookings.reduce((sum, b) => sum + b.totalPaid, 0).toLocaleString()}`,
               icon: <Wallet className="w-6 h-6" />,
               delay: 0.3
@@ -168,9 +227,9 @@ export function BookingHistory() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex items-center justify-center mb-8">
             <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-full">
-              <TabsTrigger value="bookings" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-stone-900 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-white">Active Bookings</TabsTrigger>
+              <TabsTrigger value="bookings" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-stone-900 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-white">{t('activeBookings')}</TabsTrigger>
               <TabsTrigger value="bills" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-stone-900 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-white relative">
-                My Bills
+                {t('myBills')}
                 {reminders.filter(r => r.status_reminder !== 'Paid').length > 0 && (
                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
@@ -200,7 +259,7 @@ export function BookingHistory() {
                       <div className="w-10 h-10 bg-gradient-to-br from-stone-700 to-stone-900 rounded-lg flex items-center justify-center shadow-lg">
                         <Calendar className="w-5 h-5 text-white" />
                       </div>
-                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">Your Bookings Calendar</h2>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('bookingsCalendar')}</h2>
                     </div>
                     <motion.div
                       animate={{ rotate: calendarExpanded ? 180 : 0 }}
@@ -311,7 +370,7 @@ export function BookingHistory() {
                                         onClick={() => handleExtendClick(activeBooking)}
                                         className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-2 text-sm rounded-lg shadow-lg transition-all"
                                       >
-                                        Extend Stay
+                                        {t('extendStay')}
                                       </Button>
                                     </CardContent>
                                   </Card>
@@ -325,8 +384,8 @@ export function BookingHistory() {
                                   <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 shadow-sm">
                                     <Info className="w-8 h-8 text-slate-300" />
                                   </div>
-                                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Active Booking</h3>
-                                  <p className="text-sm text-slate-400 max-w-[200px]">Select a date to view your room status and important dates.</p>
+                                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{t('noActiveBooking')}</h3>
+                                  <p className="text-sm text-slate-400 max-w-[200px]">{t('selectDateNote')}</p>
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -349,7 +408,7 @@ export function BookingHistory() {
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <Loader2 className="w-10 h-10 text-stone-600 animate-spin" />
-                  <p className="text-slate-500 font-medium italic">Syncing your luxury reservations...</p>
+                  <p className="text-slate-500 font-medium italic">{t('syncingReservations')}</p>
                 </div>
               ) : bookings.map((booking, index) => (
                 <motion.div
@@ -385,10 +444,17 @@ export function BookingHistory() {
                             </div>
                           </div>
                           <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <Badge className={`${getStatusColor(booking.status)} border-2 flex items-center gap-2 px-4 py-2 font-semibold text-sm shadow-md hover:shadow-lg transition-all`}>
-                              {getStatusIcon(booking.status)}
-                              {booking.status}
-                            </Badge>
+                            {booking.paymentStatus === 'Rejected' ? (
+                              <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 border-2 flex items-center gap-2 px-4 py-2 font-semibold text-sm shadow-md hover:shadow-lg transition-all">
+                                <XCircle className="w-5 h-5" />
+                                Pembayaran Ditolak
+                              </Badge>
+                            ) : (
+                              <Badge className={`${getStatusColor(booking.status)} border-2 flex items-center gap-2 px-4 py-2 font-semibold text-sm shadow-md hover:shadow-lg transition-all`}>
+                                {getStatusIcon(booking.status)}
+                                {booking.status}
+                              </Badge>
+                            )}
                           </motion.div>
                         </div>
 
@@ -422,7 +488,7 @@ export function BookingHistory() {
                             <p className="text-[10px] md:text-xs text-purple-700 dark:text-purple-400 font-semibold mb-1 md:mb-2 uppercase tracking-wide">Duration</p>
                             <div className="flex items-center gap-1.5 md:gap-2">
                               <Clock className="w-4 h-4 md:w-5 md:h-5 text-purple-700 dark:text-purple-400" />
-                              <span className="font-semibold text-xs md:text-base text-purple-900 dark:text-purple-200">{booking.duration}</span>
+                              <span className="font-semibold text-xs md:text-base text-purple-900 dark:text-purple-200">{booking.duration} {t('months')}</span>
                             </div>
                           </motion.div>
 
@@ -441,7 +507,7 @@ export function BookingHistory() {
                         <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-800">
                           <motion.div whileHover={{ scale: 1.05 }}>
                             <div>
-                              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-1">Total Amount Paid</p>
+                              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium mb-1">{t('totalAmountPaid')}</p>
                               <p className="text-4xl font-bold bg-gradient-to-r from-stone-700 to-stone-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">
                                 Rp {booking.totalPaid.toLocaleString()}
                               </p>
@@ -456,7 +522,7 @@ export function BookingHistory() {
                                 className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold shadow-md hover:shadow-lg transition-all dark:text-white"
                               >
                                 <Eye className="w-4 h-4 mr-2" />
-                                View Details
+                                {t('viewDetails')}
                               </Button>
                             </motion.div>
                             
@@ -469,7 +535,7 @@ export function BookingHistory() {
                                             className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 hover:from-stone-600 hover:to-stone-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
                                           >
                                             <TrendingUp className="w-4 h-4 mr-2" />
-                                            Extend
+                                            {t('extend')}
                                           </Button>
                                         </motion.div>
                                     )}
@@ -481,23 +547,31 @@ export function BookingHistory() {
                                         className="border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 font-semibold shadow-md hover:shadow-lg transition-all"
                                       >
                                         <Trash2 className="w-4 h-4 mr-2" />
-                                        Cancel
+                                        {t('cancelBooking')}
                                       </Button>
                                     </motion.div>
+
+                                    {booking.status === 'Pending' && booking.paymentStatus === 'Rejected' && (
+                                       <div className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 rounded-xl mb-3 flex items-start gap-2 text-sm text-red-600 dark:text-red-400">
+                                         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                         <p>Pembayaran ditolak oleh admin. Silakan unggah ulang bukti pembayaran yang valid.</p>
+                                       </div>
+                                    )}
 
                                     {booking.status === 'Pending' && booking.pendingPaymentId && (
                                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                           <Button
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                              e.stopPropagation(); // Prevent card click
                                               if (booking.pendingPaymentId) {
                                                 setSelectedPaymentId(booking.pendingPaymentId);
                                                 setUploadModalOpen(true);
                                               }
                                             }}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+                                            className={`${booking.paymentStatus === 'Rejected' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-semibold shadow-lg hover:shadow-xl transition-all`}
                                           >
                                             <Upload className="w-4 h-4 mr-2" />
-                                            Upload Proof
+                                            {booking.paymentStatus === 'Rejected' ? 'Upload Ulang Bukti' : t('uploadProof')}
                                           </Button>
                                        </motion.div>
                                     )}
@@ -525,14 +599,14 @@ export function BookingHistory() {
                   >
                     <Calendar className="w-8 h-8 text-white" />
                   </motion.div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">No bookings yet</h3>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t('noBookingsYet')}</h3>
                   <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-sm mx-auto">
-                    Start your journey to premium living. Explore our collection of luxury boarding houses and apartments.
+                    {t('noBookingsDesc')}
                   </p>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 text-white font-semibold px-6 py-2 shadow-lg hover:shadow-xl transition-all">
                       <Search className="w-4 h-4 mr-2" />
-                      Browse Rooms
+                      {t('browseRooms')}
                     </Button>
                   </motion.div>
                 </Card>
@@ -549,15 +623,15 @@ export function BookingHistory() {
                 {isLoadingReminders ? (
                    <div className="flex flex-col items-center justify-center py-20">
                      <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
-                     <p className="mt-4 text-slate-500">Loading bills...</p>
+                     <p className="mt-4 text-slate-500">{t('loadingBills')}</p>
                    </div>
                 ) : reminders.length === 0 ? (
                    <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                      <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
                        <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                      </div>
-                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No Due Bills</h3>
-                     <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">Great! You have no pending bills at the moment.</p>
+                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t('noDueBills')}</h3>
+                     <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">{t('noDueBillsDesc')}</p>
                    </div>
                 ) : (
                    <div className="grid gap-6">
@@ -565,42 +639,118 @@ export function BookingHistory() {
                        <Card key={reminder.id} className="p-6 border-l-4 border-l-orange-500 shadow-lg hover:shadow-xl transition-all bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                            <div>
-                             <div className="flex items-center gap-3 mb-2">
+                             <div className="flex items-center gap-2 flex-wrap mb-2">
                                <Badge variant={reminder.status_reminder === 'Paid' ? 'default' : 'secondary'} className={
                                  reminder.status_reminder === 'Paid' 
                                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' 
                                    : 'bg-orange-100 text-orange-700 hover:bg-orange-100'
                                }>
-                                 {reminder.status_reminder === 'Paid' ? 'Paid' : 'Unpaid'}
+                                 {reminder.status_reminder === 'Paid' ? t('paid') : t('pendingPayment')}
                                </Badge>
+                               {getReminderTypeBadge(reminder)}
                                <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">
                                  ID: #{reminder.id}
                                </span>
                              </div>
                              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
-                               Monthly Rent Bill
+                               {getReminderTitle(reminder, t)}
                              </h3>
-                             <p className="text-slate-500 dark:text-slate-400 text-sm">
-                               Due Date: {new Date(reminder.tanggal_reminder).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                             <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">
+                               {getReminderDescription(reminder, t)}
                              </p>
+                             {reminder.status_reminder !== 'Paid' && (
+                               <p className="text-slate-400 dark:text-slate-500 text-xs font-medium bg-slate-100 dark:bg-slate-800 inline-block px-2 py-1 rounded">
+                                 {t('dueDate')}: {new Date(reminder.tanggal_reminder).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                               </p>
+                             )}
                            </div>
                            
                            <div className="flex flex-col items-end gap-2">
                              <p className="text-2xl font-bold text-slate-900 dark:text-white">
                                Rp {reminder.jumlah_bayar.toLocaleString()}
                              </p>
-                             {reminder.status_reminder !== 'Paid' && (
-                               <Button 
-                                 size="sm" 
-                                 onClick={() => {
-                                   setSelectedPaymentId(reminder.pembayaran_id);
-                                   setUploadModalOpen(true);
-                                 }} 
-                                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-500/20"
-                               >
-                                 Pay Now
-                               </Button>
-                             )}
+                             {(() => {
+                               if (reminder.status_reminder === 'Paid') {
+                                 return (
+                                   <div className="flex flex-col items-end gap-2 mt-1">
+                                     <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 px-3 py-1 font-semibold text-sm">
+                                       <CheckCircle2 className="w-4 h-4 mr-1.5" /> {t('paid')}
+                                     </Badge>
+                                     <div className="flex items-center gap-2">
+                                       {reminder.pembayaran?.tanggal_bayar && (
+                                         <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                                           {new Date(reminder.pembayaran.tanggal_bayar).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                         </span>
+                                       )}
+                                       <Button
+                                         variant="outline"
+                                         size="sm"
+                                         className="h-7 text-xs px-2 bg-transparent border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                                         onClick={() => {
+                                           console.log("Clicked Details. Reminder:", reminder);
+                                           console.log("Pembayaran object:", reminder.pembayaran);
+                                           setSelectedPaidReminder(reminder);
+                                           setViewPaymentDetailsModalOpen(true);
+                                         }}
+                                       >
+                                         {t('details')}
+                                       </Button>
+                                     </div>
+                                   </div>
+                                 );
+                               }
+
+                               // Pembayaran ditolak admin
+                               const isRejected = reminder.status_reminder === 'Rejected' || reminder.pembayaran?.status_pembayaran === 'Rejected';
+                               if (isRejected) {
+                                 return (
+                                   <div className="flex flex-col items-end gap-2">
+                                     <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 px-3 py-1 font-semibold text-sm">
+                                       <XCircle className="w-4 h-4 mr-1.5" /> Ditolak Admin
+                                     </Badge>
+                                     <p className="text-[11px] text-red-500 dark:text-red-400 text-right">Bukti pembayaran ditolak, silakan upload ulang.</p>
+                                     <Button
+                                       size="sm"
+                                       onClick={() => {
+                                         setSelectedPaymentId(reminder.pembayaran_id);
+                                         setUploadModalOpen(true);
+                                       }}
+                                       className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20"
+                                     >
+                                       <Upload className="w-4 h-4 mr-2" />
+                                       Upload Ulang Bukti
+                                     </Button>
+                                   </div>
+                                 );
+                               }
+
+
+                               const hasProof = !!reminder.pembayaran?.bukti_transfer;
+                               const isCash = (reminder.pembayaran?.metode_pembayaran || '').toLowerCase() === 'cash';
+                               const needsPaymentInfo = !hasProof && !isCash;
+
+                               if (needsPaymentInfo) {
+                                 return (
+                                   <Button 
+                                     size="sm" 
+                                     onClick={() => {
+                                       setSelectedPaymentId(reminder.pembayaran_id);
+                                       setUploadModalOpen(true);
+                                     }} 
+                                     className="bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-500/20"
+                                   >
+                                     <Upload className="w-4 h-4 mr-2" />
+                                     {t('uploadProofAndPay')}
+                                   </Button>
+                                 );
+                               }
+
+                               return (
+                                 <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800 px-3 py-1 text-sm text-center">
+                                   {t('waitingAdminConfirmation')}
+                                 </Badge>
+                               );
+                             })()}
                            </div>
                          </div>
                        </Card>
@@ -659,6 +809,14 @@ export function BookingHistory() {
           onClose={() => setUploadModalOpen(false)}
           paymentId={selectedPaymentId}
           onSuccess={refreshData}
+        />
+      )}
+
+      {selectedPaidReminder && (
+        <PaymentDetailsModal
+          isOpen={viewPaymentDetailsModalOpen}
+          onClose={() => setViewPaymentDetailsModalOpen(false)}
+          reminder={selectedPaidReminder}
         />
       )}
     </div>

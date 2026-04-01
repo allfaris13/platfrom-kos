@@ -18,11 +18,11 @@ type Config struct {
 	Port           string
 	AllowedOrigins string
 	IsProduction   bool
-	
+
 	// Application Config
 	FrontendURL string
 	AppVersion  string
-	
+
 	// Google OAuth
 	GoogleClientID     string
 	GoogleClientSecret string
@@ -36,6 +36,9 @@ type Config struct {
 
 	// Cloudinary Config
 	CloudinaryURL string
+
+	// WhatsApp Config
+	FonnteToken string
 }
 
 func LoadConfig() *Config {
@@ -54,11 +57,11 @@ func LoadConfig() *Config {
 		Port:           getEnv("PORT", "8080"),
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
 		IsProduction:   getEnv("GIN_MODE", "debug") == "release",
-		
+
 		// Application Config
 		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
 		AppVersion:  getEnv("APP_VERSION", "1.0.0"),
-		
+
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURL:  getEnv("GOOGLE_REDIRECT_URL", ""),
@@ -71,6 +74,9 @@ func LoadConfig() *Config {
 
 		// Cloudinary Config
 		CloudinaryURL: getEnv("CLOUDINARY_URL", ""),
+
+		// WhatsApp Config
+		FonnteToken: getEnv("FONNTE_TOKEN", ""),
 	}
 
 	// Validate required environment variables

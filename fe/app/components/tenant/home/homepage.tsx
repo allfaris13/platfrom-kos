@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import {
   motion,
   useInView,
@@ -29,7 +29,9 @@ import {
   Search,
   ArrowRight,
   X,
-  RotateCcw
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { getImageUrl } from '@/app/utils/api-url';
 import {
@@ -115,10 +117,26 @@ export function Homepage({
     isLoadingRooms,
     displayRooms,
     resetFilters,
-    reviews
+    reviews,
+    currentPage,
+    setCurrentPage
   } = useHome();
   const t = useTranslations('home');
   const tc = useTranslations('common');
+
+  // --- Pagination ---
+  const ROOMS_PER_PAGE = 6;
+
+  const totalPages = Math.ceil(displayRooms.length / ROOMS_PER_PAGE);
+  const paginatedRooms = displayRooms.slice(
+    (currentPage - 1) * ROOMS_PER_PAGE,
+    currentPage * ROOMS_PER_PAGE
+  );
+
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(page);
+    document.getElementById('featured-rooms')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [setCurrentPage]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -193,8 +211,7 @@ export function Homepage({
                   {t('guestSubtitle')}
                 </p>
                 <div className="flex flex-row gap-3 lg:gap-4">
-                  <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">{tc('explore')}</Button>
-                  <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">{tc('learn')}</Button>
+                  <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="w-fit md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-8 lg:px-10 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">{tc('explore')}</Button>
                 </div>
               </>
             )}
@@ -209,7 +226,7 @@ export function Homepage({
           >
             <div className="relative z-10 rounded-[1.5rem] lg:rounded-[3rem] overflow-hidden shadow-2xl border-[4px] lg:border-[12px] border-white dark:border-slate-800">
               <ImageWithFallback
-                src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=1080"
+                src="/koskosan/tampilandepankos/tampilandaridepankos.jpg"
                 alt="Main Interior"
                 className="w-full aspect-[4/3] md:aspect-square lg:aspect-[4/3] object-cover"
               />
@@ -242,7 +259,7 @@ export function Homepage({
               </div>
               <div className="w-full md:col-span-1">
                 <Select value={selectedPrice} onValueChange={setSelectedPrice}>
-                  <SelectTrigger className="h-12 lg:h-14 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base focus:ring-amber-500">
+                  <SelectTrigger className="h-auto min-h-12 lg:min-h-14 py-2 bg-slate-50/50 border-none rounded-xl lg:rounded-2xl text-sm lg:text-base focus:ring-amber-500 whitespace-normal text-left">
                     <SelectValue placeholder={t('priceLabel')} />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100 shadow-xl">
@@ -326,30 +343,39 @@ export function Homepage({
                 <div className="col-span-full">
                   <SkeletonGrid count={6} />
                 </div>
-              ) : displayRooms.length > 0 ? (
-                displayRooms.map((room) => (
+              ) : paginatedRooms.length > 0 ? (
+                paginatedRooms.map((room) => (
                   <motion.div
                     key={room.id}
-                    layout // Keep layout for smooth reordering
+                    layout
                     variants={fadeInUp}
                     initial="hidden"
                     animate="visible"
-                    whileHover={{ y: -5 }}
-                    className="group cursor-pointer h-full"
-                    onClick={() => onRoomClick(room.id)}
+                    whileHover={room.status?.toLowerCase() === 'penuh' ? {} : { y: -5 }}
+                    className={`group h-full ${room.status?.toLowerCase() === 'penuh' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => room.status?.toLowerCase() !== 'penuh' && onRoomClick(room.id)}
                   >
-                    <Card className="overflow-hidden border-0 bg-white dark:bg-slate-900 shadow-lg lg:shadow-xl lg:shadow-slate-200/50 dark:shadow-none rounded-[1.2rem] lg:rounded-[2.5rem] h-full flex flex-col transition-all duration-300 hover:shadow-2xl">
+                    <Card className={`overflow-hidden border-0 bg-white dark:bg-slate-900 shadow-lg lg:shadow-xl lg:shadow-slate-200/50 dark:shadow-none rounded-[1.2rem] lg:rounded-[2.5rem] h-full flex flex-col transition-all duration-300 hover:shadow-2xl ${room.status?.toLowerCase() === 'penuh' ? 'opacity-75 grayscale-[30%]' : ''}`}>
                       <div className="relative aspect-[4/3] overflow-hidden rounded-t-[1.2rem] lg:rounded-t-[2.5rem] transform-gpu">
                         <ImageWithFallback
                           src={room.image}
                           alt={room.name}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
+                        {/* Type Badge */}
                         <div className="absolute top-2 left-2 lg:top-4 lg:left-4">
-                          <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-0 px-2 lg:px-4 py-0.5 lg:py-1.5 rounded-full font-bold shadow-sm text-[8px] lg:text-xs">
+                          <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-0 px-2 lg:px-4 py-0.5 lg:py-1.5 rounded-full font-bold shadow-sm text-[8px] lg:text-xs max-w-[100px] lg:max-w-none truncate lg:whitespace-normal">
                             {room.type}
                           </Badge>
                         </div>
+                        {/* PENUH overlay badge */}
+                        {room.status?.toLowerCase() === 'penuh' && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                            <span className="bg-red-600 text-white text-xs lg:text-base font-black uppercase tracking-widest px-4 py-1.5 lg:px-6 lg:py-2 rounded-full shadow-2xl border-2 border-red-400 rotate-[-8deg]">
+                              PENUH
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <CardHeader className="p-3 lg:p-6 pb-2">
                         <div className="flex justify-between items-start mb-1">
@@ -387,17 +413,27 @@ export function Homepage({
                             {tc('perMonth')}
                           </span>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="h-7 lg:h-12 px-3 lg:px-6 bg-slate-900 hover:bg-amber-500 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-sm font-bold transition-all flex items-center gap-1 group/btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRoomClick(room.id);
-                          }}
-                        >
-                          {t('selectRoom')} <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </Button>
+                        {room.status?.toLowerCase() === 'penuh' ? (
+                          <Button
+                            size="sm"
+                            disabled
+                            className="h-7 lg:h-12 px-3 lg:px-6 bg-red-100 text-red-500 rounded-lg lg:rounded-xl text-[8px] lg:text-sm font-bold cursor-not-allowed"
+                          >
+                            Penuh
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-7 lg:h-12 px-3 lg:px-6 bg-slate-900 hover:bg-amber-500 text-white rounded-lg lg:rounded-xl text-[8px] lg:text-sm font-bold transition-all flex items-center gap-1 group/btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRoomClick(room.id);
+                            }}
+                          >
+                            {t('selectRoom')} <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
+                          </Button>
+                        )}
                       </CardFooter>
                     </Card>
                   </motion.div>
@@ -426,6 +462,78 @@ export function Homepage({
               )}
             </AnimatePresence>
           </motion.div>
+
+          {/* Pagination Controls */}
+          {!isLoadingRooms && totalPages > 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mt-10 lg:mt-14 flex items-center justify-center gap-2"
+            >
+              {/* Prev Button */}
+              <button
+                onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center justify-center w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1.5">
+                {(() => {
+                  const pages: (number | 'ellipsis')[] = [];
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (currentPage > 3) pages.push('ellipsis');
+                    const start = Math.max(2, currentPage - 1);
+                    const end = Math.min(totalPages - 1, currentPage + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (currentPage < totalPages - 2) pages.push('ellipsis');
+                    pages.push(totalPages);
+                  }
+                  return pages.map((page, idx) =>
+                    page === 'ellipsis' ? (
+                      <span key={`ellipsis-${idx}`} className="w-9 h-9 lg:w-11 lg:h-11 flex items-center justify-center text-slate-400 text-sm font-bold">…</span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => goToPage(page as number)}
+                        className={`w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl text-sm font-bold transition-all duration-200 ${
+                          currentPage === page
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg shadow-slate-900/20 scale-110'
+                            : 'border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white'
+                        }`}
+                        aria-label={`Page ${page}`}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    )
+                  );
+                })()}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center justify-center w-9 h-9 lg:w-11 lg:h-11 rounded-xl lg:rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-900 hover:text-slate-900 dark:hover:border-white dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              {/* Page Info */}
+              <span className="ml-3 text-xs lg:text-sm text-slate-400 font-medium hidden sm:block">
+                {(currentPage - 1) * ROOMS_PER_PAGE + 1}–{Math.min(currentPage * ROOMS_PER_PAGE, displayRooms.length)} dari {displayRooms.length} kamar
+              </span>
+            </motion.div>
+          )}
         </div>
       </section>
 
@@ -486,7 +594,7 @@ export function Homepage({
           </div>
           <div className="col-span-1 md:col-span-5 lg:col-span-6 relative flex items-center justify-center">
             <div className="relative z-10 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] lg:rounded-[5rem] p-3 lg:p-12 aspect-square w-full max-w-lg">
-              <ImageWithFallback src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000" alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
+              <ImageWithFallback src="/koskosan/fasilitaskos/fasilitaslemaridanmejabelajarkos.jpg" alt="Guide illustration" className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[4rem] shadow-2xl" />
             </div>
             {/* Decorative blob */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-amber-500/5 rounded-full blur-[60px] lg:blur-[120px] -z-10" />
@@ -511,14 +619,14 @@ export function Homepage({
             <motion.div className="col-span-12 lg:col-span-6 relative order-2 lg:order-1">
               <div className="aspect-square bg-white dark:bg-slate-900 rounded-[2rem] lg:rounded-[3rem] p-4 lg:p-8 shadow-2xl relative z-10">
                 <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000"
+                  src="/koskosan/tampilandalam/tampilandalamkoslantaikedua2.jpeg"
                   className="w-full h-full object-cover rounded-[1.5rem] lg:rounded-[2rem]"
                   alt="History Image"
                 />
               </div>
               <div className="absolute -bottom-4 -right-4 lg:-bottom-6 lg:-right-6 bg-amber-500 text-white p-4 lg:p-8 rounded-[1.5rem] lg:rounded-[2rem] shadow-xl z-20">
                 <p className="text-xl lg:text-5xl font-black italic leading-none">
-                  EST. 2018
+                  EST. 2024
                 </p>
                 <p className="uppercase tracking-widest font-bold text-[8px] lg:text-sm text-white/80">
                   Malang
@@ -538,7 +646,7 @@ export function Homepage({
               <div className="flex gap-3 lg:gap-4">
                 <div className="p-4 lg:p-6 bg-white dark:bg-slate-900 rounded-[1.2rem] lg:rounded-[2rem] shadow-sm border border-slate-100 flex-1">
                   <p className="text-xl lg:text-4xl font-extrabold text-slate-900 dark:text-white">
-                    6++
+                    2++
                   </p>
                   <p className="text-[8px] lg:text-sm text-slate-500 font-bold uppercase tracking-wider">
                     {t('yearsExcellence')}
@@ -546,7 +654,7 @@ export function Homepage({
                 </div>
                 <div className="p-4 lg:p-6 bg-white dark:bg-slate-900 rounded-[1.2rem] lg:rounded-[2rem] shadow-sm border border-slate-100 flex-1">
                   <p className="text-xl lg:text-4xl font-extrabold text-slate-900 dark:text-white">
-                    200++
+                    100++
                   </p>
                   <p className="text-[8px] lg:text-sm text-slate-500 font-bold uppercase tracking-wider">
                     {t('alumni')}
@@ -605,7 +713,7 @@ export function Homepage({
           </div>
         </div>
       </section>
-
+      
       {/* 7. Ulasan Section (Infinite Auto-Scroller - Smaller Cards on Mobile) */}
       <section className="py-16 lg:py-24 bg-slate-50 dark:bg-slate-950 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 mb-10 lg:mb-16 text-center">

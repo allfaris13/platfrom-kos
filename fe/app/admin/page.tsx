@@ -28,9 +28,10 @@ export default function AdminPage() {
     
     const checkAdminAuth = async () => {
       try {
-        // 1. First check local for quick UX
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
+        // 1. Broadly check for the possibility of a session (including cookies)
+        const likelyAuthenticated = !!localStorage.getItem('token') || !!sessionStorage.getItem('token') || document.cookie.includes('access_token') || !!localStorage.getItem('user');
+        
+        if (!likelyAuthenticated) {
           setIsAdminAuthenticated(false);
           return;
         }

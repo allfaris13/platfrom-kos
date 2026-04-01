@@ -56,49 +56,53 @@ export default function App() {
   const t = useTranslations('common');
 
   useLayoutEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
     
-    // FETCH STORED DATA FIRST
-    const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token');
-    const storedUserStr = localStorage.getItem('user') || sessionStorage.getItem('user');
-    const isAuthenticated = !!storedToken || !!storedUserStr; // Support both checks
-    
-    const storedViewMode = localStorage.getItem(STORAGE_KEYS.VIEW_MODE) as ViewMode;
-    const storedUserCheckRole = localStorage.getItem(STORAGE_KEYS.USER_ROLE) as "admin" | "tenant" | "guest";
-    
-    // If user is authenticated, force them to their dashboard unless they are explicitly admin
-    if (isAuthenticated) {
-        if (storedUserCheckRole === 'admin') {
-           // Admin logic
-           if (storedViewMode === 'login' || storedViewMode === 'register' || storedViewMode === 'forgot-password') {
-               setViewMode('admin');
-           } else {
-               setViewMode(storedViewMode || 'admin');
-           }
-        } else {
-           // For tenant/users
-           if (storedViewMode === 'login' || storedViewMode === 'register' || storedViewMode === 'forgot-password' || !storedViewMode) {
-               setViewMode('tenant');
-               setUserRole('tenant');
-           } else {
+    const initializeAuth = async () => {
+      // Check if there might be a token (session or persistent)
+      const likelyAuthenticated = !!localStorage.getItem('token') || !!sessionStorage.getItem('token') || document.cookie.includes('access_token') || !!localStorage.getItem('user');
+      const storedViewMode = localStorage.getItem(STORAGE_KEYS.VIEW_MODE) as ViewMode;
+      const storedAdminPage = localStorage.getItem(STORAGE_KEYS.ADMIN_PAGE) as AdminPage;
+      if (storedAdminPage) setAdminPage(storedAdminPage);
+
+      if (likelyAuthenticated) {
+        try {
+          // DATABASE AS SINGLE SOURCE OF TRUTH
+          const { user } = await import('@/app/services/api').then(mod => mod.api.getProfile());
+          
+          if (user.role === 'admin') {
+            setUserRole('admin');
+            // Fix: NEVER auto-remember "tenant" view for admins on hard-reload.
+            // Always restore them to their primary admin dashboard safely.
+            setViewMode('admin');
+          } else {
+            setUserRole('tenant');
+            if (storedViewMode === 'login' || storedViewMode === 'register' || storedViewMode === 'forgot-password' || !storedViewMode || storedViewMode === 'admin') {
+               setViewMode('home');
+            } else {
                setViewMode(storedViewMode);
-               if (storedUserCheckRole) setUserRole(storedUserCheckRole);
-           }
+            }
+          }
+        } catch {
+          // Token expired or invalid
+          Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+          localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUserRole(null);
+          setViewMode(storedViewMode && !['admin', 'tenant'].includes(storedViewMode) ? storedViewMode : 'home');
         }
-    } else {
-        // No token, respect stored view or default to home
-        setViewMode(storedViewMode || "home");
-        // Also restore user role if checking logic falls through but we have one stored (edge case)
-        if (storedUserCheckRole) setUserRole(storedUserCheckRole);
-    }
+      } else {
+        // No token, respect stored view (if it's not a private view) or default to home
+        if (storedViewMode === 'admin' || storedViewMode === 'tenant') {
+            setViewMode('home');
+        } else {
+            setViewMode(storedViewMode || "home");
+        }
+      }
+    };
 
-    const storedAdminPage = localStorage.getItem(
-      STORAGE_KEYS.ADMIN_PAGE,
-    ) as AdminPage;
-    if (storedAdminPage) setAdminPage(storedAdminPage);
-
-    // Role is handled above with token check slightly, but let's keep this for non-token cases or consistency
+    initializeAuth();
   }, []);
 
   // Save state to localStorage whenever it changes
@@ -216,7 +220,7 @@ export default function App() {
         )}
 
         {/* Admin Portal */}
-        {(viewMode === "admin" || userRole === "admin") && (
+        {viewMode === "admin" && (
           <div className="flex h-screen bg-gray-100 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             <AdminSidebar
               currentPage={adminPage}
@@ -241,11 +245,12 @@ export default function App() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
+                  onClick={async () => {
                     clearStoredState();
                     setUserRole(null);
                     setAdminPage("dashboard");
-                    setViewMode("login");
+                    await import('@/app/services/api').then(mod => mod.api.logout());
+                    window.location.href = '/login'; // Hard flush SWR cache memory
                   }}
                   className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950 font-medium"
                 >
@@ -278,10 +283,13 @@ export default function App() {
         {/* Tenant/Default Portal */}
         {(viewMode === "tenant" || viewMode === "home" || (!viewMode && isClient)) && (
             <UserPlatform 
-                onLogout={() => {
+                isLoggedIn={!!userRole}
+                isAdmin={userRole === 'admin'}
+                onLogout={async () => {
                     clearStoredState();
                     setUserRole(null);
-                    setViewMode("login");
+                    await import('@/app/services/api').then(mod => mod.api.logout());
+                    window.location.href = '/login'; // Hard flush memory
                 }}
                 onBackToAdmin={() => setViewMode("admin")}
             />

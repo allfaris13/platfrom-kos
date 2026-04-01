@@ -27,7 +27,7 @@ func (s *Scheduler) Start() {
 	// Cron format: "0 8 * * *" (At 08:00)
 	_, err := s.cron.AddFunc("0 8 * * *", func() {
 		log.Println("[Scheduler] Running daily payment reminder check...")
-		
+
 		// 1. Create monthly reminders if needed
 		if err := s.reminderService.CreateMonthlyReminders(); err != nil {
 			log.Printf("[Scheduler] Error creating reminders: %v", err)
@@ -48,6 +48,18 @@ func (s *Scheduler) Start() {
 
 	s.cron.Start()
 	log.Println("Scheduler started: Daily payment reminders at 08:00 AM")
+
+	// Trigger immediately on start for testing/catch-up
+	go func() {
+		log.Println("[Scheduler] Running initial startup payment reminder check...")
+		if err := s.reminderService.CreateMonthlyReminders(); err != nil {
+			log.Printf("[Scheduler] Error creating reminders on startup: %v", err)
+		}
+		reminders, err := s.reminderService.SendPendingReminders()
+		if err == nil {
+			log.Printf("[Scheduler] Sent %d reminders on startup", len(reminders))
+		}
+	}()
 }
 
 func (s *Scheduler) Stop() {

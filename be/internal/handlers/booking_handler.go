@@ -11,12 +11,11 @@ import (
 )
 
 type BookingHandler struct {
-	service    service.BookingService
-	cloudinary *utils.CloudinaryService
+	service service.BookingService
 }
 
-func NewBookingHandler(s service.BookingService, cld *utils.CloudinaryService) *BookingHandler {
-	return &BookingHandler{s, cld}
+func NewBookingHandler(s service.BookingService) *BookingHandler {
+	return &BookingHandler{service: s}
 }
 
 func (h *BookingHandler) GetMyBookings(c *gin.Context) {
@@ -118,7 +117,7 @@ func (h *BookingHandler) CreateBookingWithProof(c *gin.Context) {
 
 	var proofURL string
 	file, err := c.FormFile("proof")
-	
+
 	switch paymentMethod {
 	case "transfer":
 		if err != nil {
@@ -131,24 +130,11 @@ func (h *BookingHandler) CreateBookingWithProof(c *gin.Context) {
 			return
 		}
 
-		if h.cloudinary != nil {
-			src, err := file.Open()
-			if err == nil {
-				defer src.Close()
-				url, err := h.cloudinary.UploadImage(src, "koskosan/proofs")
-				if err == nil {
-					proofURL = url
-				} else {
-					utils.GlobalLogger.Error("Cloudinary upload failed: %v", err)
-					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload proof to cloud: %v", err)})
-					return
-				}
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open proof file"})
-				return
-			}
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Cloud storage not configured"})
+		var errUpload error
+		proofURL, errUpload = utils.UploadToCloudinary(file, "proofs")
+		if errUpload != nil {
+			utils.GlobalLogger.Error("Upload proof failed: %v", errUpload)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload proof: %v", errUpload)})
 			return
 		}
 	case "cash":
@@ -235,7 +221,8 @@ func (h *BookingHandler) ExtendBooking(c *gin.Context) {
 	}
 
 	var req struct {
-		Months int `json:"months" binding:"required,min=1"`
+		Months        int    `json:"months" binding:"required,min=1"`
+		PaymentMethod string `json:"payment_method" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -243,7 +230,7 @@ func (h *BookingHandler) ExtendBooking(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.service.ExtendBooking(uint(id), req.Months, userID)
+	payment, err := h.service.ExtendBooking(uint(id), req.Months, userID, req.PaymentMethod)
 	if err != nil {
 		if err.Error() == "unauthorized: you can only extend your own bookings" {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})

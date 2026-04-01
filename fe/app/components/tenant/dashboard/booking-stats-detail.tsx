@@ -8,6 +8,7 @@ import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { api } from '@/app/services/api';
 import { getImageUrl } from '@/app/utils/api-url';
+import { useTranslations } from 'next-intl';
 
 interface Booking {
   id: string;
@@ -29,6 +30,7 @@ interface BookingStatsDetailProps {
 }
 
 export function BookingStatsDetail({ bookings: initialBookings, onBack }: BookingStatsDetailProps) {
+  const t = useTranslations('history');
   const [bookings, setBookings] = useState<Booking[]>(initialBookings || []);
   const [isLoading, setIsLoading] = useState(!initialBookings || initialBookings.length === 0);
   const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 4));
@@ -69,7 +71,7 @@ export function BookingStatsDetail({ bookings: initialBookings, onBack }: Bookin
             moveOutDate: moveOut.toISOString().split('T')[0],
             monthlyRent: room.harga_per_bulan,
             totalPaid: b.total_bayar || 0,
-            duration: `${b.durasi_sewa} Months`,
+            duration: b.durasi_sewa.toString(),
             rawStatus: b.status_bayar || 'Pending'
           };
         });
@@ -485,7 +487,7 @@ export function BookingStatsDetail({ bookings: initialBookings, onBack }: Bookin
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Duration</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{booking.duration}</p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{booking.duration} {t('months')}</p>
                       </div>
                     </div>
                     <div className="pt-3 border-t border-slate-200 dark:border-slate-700">

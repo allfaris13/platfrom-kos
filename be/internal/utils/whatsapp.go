@@ -48,8 +48,14 @@ func (s *FonnteSender) SendWhatsApp(to, message string) error {
 	}
 	defer resp.Body.Close()
 
+	// Log the response for debugging Fonnte issues
+	var buf bytes.Buffer
+	buf.ReadFrom(resp.Body)
+	respBody := buf.String()
+	log.Printf("[Fonnte API Response] Status: %s, Body: %s", resp.Status, respBody)
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("fonnte api returned status: %s", resp.Status)
+		return fmt.Errorf("fonnte api returned status: %s, body: %s", resp.Status, respBody)
 	}
 
 	return nil
@@ -66,21 +72,11 @@ func (s *LogWASender) SendWhatsApp(to, message string) error {
 }
 
 func NewWhatsAppSender(cfg *config.Config) WhatsAppSender {
-	// Assuming you add WhatsAppToken to config later. 
-	// For now, if you have a token env var, use it.
-	// Since Config struct update isn't in the plan explicitly, 
-	// we'll check if a specific env var exists or just default to Log/Simulation 
-	// if we don't want to break the build by accessing a non-existent cfg field yet.
-	
-	//Ideally we should update config.Config. 
-	// For this step I'll assume we might add it or just use a hardcoded check or empty string for now to be safe,
-	// checking if we can update config.go first is better but to follow "Atomic" steps:
-	
-	// Let's rely on the Config struct update which I should probably do.
-	// But to avoid compilation error before config update, I will use a placeholder or check cfg map if it was a map (it's a struct).
-	
-	// I'll stick to LogSender for now and let the user know they need to set the token, 
-	// OR I'll update Config.go in the next step.
-	
+	if cfg.FonnteToken != "" {
+		log.Println("[INFO] Initializing Real Fonnte WhatsApp Sender")
+		return NewFonnteSender(cfg.FonnteToken)
+	}
+
+	log.Println("[WARNING] FONNTE_TOKEN is not set. WhatsApp messages will only be logged locally (Simulation Mode).")
 	return &LogWASender{}
 }

@@ -9,11 +9,13 @@ import (
 
 type PenyewaRepository interface {
 	FindByUserID(userID uint) (*models.Penyewa, error)
+	FindByID(id uint) (*models.Penyewa, error)
 	FindByEmail(email string) (*models.Penyewa, error)
 	FindAll() ([]models.Penyewa, error)
 	FindByRole(role string) ([]models.Penyewa, error)
 	Create(penyewa *models.Penyewa) error
 	Update(penyewa *models.Penyewa) error
+	Delete(id uint) error
 	UpdateRole(penyewaID uint, role string) error
 	FindAllPaginated(pagination *utils.Pagination, search, role string) ([]models.Penyewa, int64, error)
 	WithTx(tx *gorm.DB) PenyewaRepository
@@ -30,6 +32,12 @@ func NewPenyewaRepository(db *gorm.DB) PenyewaRepository {
 func (r *penyewaRepository) FindByUserID(userID uint) (*models.Penyewa, error) {
 	var penyewa models.Penyewa
 	err := r.db.Where("user_id = ?", userID).First(&penyewa).Error
+	return &penyewa, err
+}
+
+func (r *penyewaRepository) FindByID(id uint) (*models.Penyewa, error) {
+	var penyewa models.Penyewa
+	err := r.db.Where("id = ?", id).First(&penyewa).Error
 	return &penyewa, err
 }
 
@@ -53,6 +61,10 @@ func (r *penyewaRepository) Update(penyewa *models.Penyewa) error {
 	return r.db.Save(penyewa).Error
 }
 
+func (r *penyewaRepository) Delete(id uint) error {
+	return r.db.Where("id = ?", id).Delete(&models.Penyewa{}).Error
+}
+
 func (r *penyewaRepository) FindByRole(role string) ([]models.Penyewa, error) {
 	var penyewas []models.Penyewa
 	err := r.db.Where("role = ?", role).Preload("User").Find(&penyewas).Error
@@ -67,15 +79,21 @@ func (r *penyewaRepository) FindAllPaginated(pagination *utils.Pagination, searc
 	var penyewas []models.Penyewa
 	var totalRows int64
 
-	query := r.db.Model(&models.Penyewa{}).Preload("User")
+	// Selalu kecualikan admin dari daftar penyewa
+	// Gunakan Joins untuk pencarian kolom di tabel User
+	query := r.db.Model(&models.Penyewa{}).
+		Preload("User").
+		Joins("JOIN users ON users.id = penyewas.user_id").
+		Where("penyewas.role != ?", "admin")
 
 	if role != "" {
-		query = query.Where("role = ?", role)
+		query = query.Where("penyewas.role = ?", role)
 	}
 
 	if search != "" {
 		searchLike := "%" + search + "%"
-		query = query.Where("nama_lengkap ILIKE ? OR email ILIKE ? OR nomor_hp ILIKE ? OR nik ILIKE ?", searchLike, searchLike, searchLike, searchLike)
+		query = query.Where("penyewas.nama_lengkap ILIKE ? OR penyewas.email ILIKE ? OR penyewas.nomor_hp ILIKE ? OR penyewas.nik ILIKE ? OR users.username ILIKE ?", 
+			searchLike, searchLike, searchLike, searchLike, searchLike)
 	}
 
 	query.Count(&totalRows)

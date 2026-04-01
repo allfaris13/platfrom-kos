@@ -13,6 +13,7 @@ import (
 type PaymentService interface {
 	GetAllPayments() ([]models.Pembayaran, error)
 	ConfirmPayment(paymentID uint) error
+	RejectPayment(paymentID uint) error
 	CreatePaymentSession(pemesananID uint, paymentType string) (*models.Pembayaran, error)
 	ConfirmCashPayment(paymentID uint, buktiTransfer string) error
 	GetPaymentReminders(userID uint) ([]models.PaymentReminder, error)
@@ -56,15 +57,31 @@ func (s *paymentService) ConfirmPayment(paymentID uint) error {
 			return err
 		}
 
+		// Update the reminder status to Paid
+		if err := tx.Model(&models.PaymentReminder{}).Where("pembayaran_id = ?", payment.ID).Update("status_reminder", "Paid").Error; err != nil {
+			return err
+		}
+
 		// Also update booking status if needed
 		booking, err := txBookingRepo.FindByID(payment.PemesananID)
 		if err == nil {
+			// If this is an extension payment, increase the DurasiSewa based on payment amount and room price
+			if payment.TipePembayaran == "extend" {
+				kamar, kamarErr := txKamarRepo.FindByID(booking.KamarID)
+				if kamarErr == nil && kamar.HargaPerBulan > 0 {
+					months := int(payment.JumlahBayar / kamar.HargaPerBulan)
+					if months > 0 {
+						booking.DurasiSewa += months
+					}
+				}
+			}
+
 			booking.StatusPemesanan = "Confirmed"
 			if err := txBookingRepo.Update(booking); err != nil {
 				return err
 			}
 
-			// Update room status to 'Penuh'
+			// 1 kamar = 1 penyewa: langsung tandai Penuh saat ada booking Confirmed
 			kamar, err := txKamarRepo.FindByID(booking.KamarID)
 			if err == nil {
 				kamar.Status = "Penuh"
@@ -99,6 +116,27 @@ func (s *paymentService) ConfirmPayment(paymentID uint) error {
 		go s.sendSuccessNotifications(payment.ID)
 
 		return nil
+	})
+}
+
+func (s *paymentService) RejectPayment(paymentID uint) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		txRepo := s.repo.WithTx(tx)
+
+		payment, err := txRepo.FindByID(paymentID)
+		if err != nil {
+			return err
+		}
+
+		payment.StatusPembayaran = "Rejected"
+		if err := txRepo.Update(payment); err != nil {
+			return err
+		}
+
+		// Also update the reminder status to Rejected so frontend reflects it
+		return tx.Model(&models.PaymentReminder{}).
+			Where("pembayaran_id = ?", payment.ID).
+			Update("status_reminder", "Rejected").Error
 	})
 }
 
@@ -180,9 +218,22 @@ func (s *paymentService) UploadPaymentProof(paymentID uint, buktiTransfer string
 	}
 
 	payment.BuktiTransfer = buktiTransfer
-	// We keep status as Pending, but now it has a proof. Admin will see it.
+	// Reset status to Pending so admin can process the new proof.
+	// This handles the re-upload case where payment was previously Rejected.
+	payment.StatusPembayaran = "Pending"
 
-	return s.repo.Update(payment)
+	if err := s.repo.Update(payment); err != nil {
+		return err
+	}
+
+	// Also reset the reminder status to Pending so it shows correctly in My Bills
+	if s.db != nil {
+		s.db.Model(&models.PaymentReminder{}).
+			Where("pembayaran_id = ?", payment.ID).
+			Update("status_reminder", "Pending")
+	}
+
+	return nil
 }
 
 func (s *paymentService) ConfirmCashPayment(paymentID uint, buktiTransfer string) error {
@@ -210,15 +261,19 @@ func (s *paymentService) ConfirmCashPayment(paymentID uint, buktiTransfer string
 
 func (s *paymentService) GetPaymentReminders(userID uint) ([]models.PaymentReminder, error) {
 	var reminders []models.PaymentReminder
-	// Join tables to find reminders for the specific user
-	// User -> Penyewa -> Pemesanan -> Pembayaran -> PaymentReminder
-	err := s.db.Table("payment_reminders").
-		Joins("JOIN pembayarans ON pembayarans.id = payment_reminders.pembayaran_id").
+
+	// Use subquery to find pembayaran_ids for the specific user
+	// This ensures GORM's Preload works perfectly without Joins-related interference
+	subQuery := s.db.Table("pembayarans").
+		Select("pembayarans.id").
 		Joins("JOIN pemesanans ON pemesanans.id = pembayarans.pemesanan_id").
 		Joins("JOIN penyewas ON penyewas.id = pemesanans.penyewa_id").
-		Where("penyewas.user_id = ?", userID).
+		Where("penyewas.user_id = ?", userID)
+
+	err := s.db.Model(&models.PaymentReminder{}).
+		Where("pembayaran_id IN (?)", subQuery).
 		Preload("Pembayaran.Pemesanan.Kamar").
-		Order("payment_reminders.tanggal_reminder ASC").
+		Order("tanggal_reminder ASC").
 		Find(&reminders).Error
 
 	return reminders, err

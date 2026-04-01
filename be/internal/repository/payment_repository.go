@@ -14,6 +14,7 @@ type PaymentRepository interface {
 	CreateReminder(reminder *models.PaymentReminder) error
 	Update(payment *models.Pembayaran) error
 	DeleteByBookingID(bookingID uint) error
+	DeleteRemindersByBookingID(bookingID uint) error
 	WithTx(tx *gorm.DB) PaymentRepository
 }
 
@@ -27,19 +28,19 @@ func NewPaymentRepository(db *gorm.DB) PaymentRepository {
 
 func (r *paymentRepository) FindAll() ([]models.Pembayaran, error) {
 	var payments []models.Pembayaran
-	err := r.db.Preload("Pemesanan.Penyewa").Preload("Pemesanan.Kamar").Find(&payments).Error
+	err := r.db.Preload("Pemesanan.Penyewa.User").Preload("Pemesanan.Kamar").Find(&payments).Error
 	return payments, err
 }
 
 func (r *paymentRepository) FindByID(id uint) (*models.Pembayaran, error) {
 	var payment models.Pembayaran
-	err := r.db.Preload("Pemesanan.Penyewa").Preload("Pemesanan.Kamar").First(&payment, id).Error
+	err := r.db.Preload("Pemesanan.Penyewa.User").Preload("Pemesanan.Kamar").First(&payment, id).Error
 	return &payment, err
 }
 
 func (r *paymentRepository) FindByOrderID(orderID string) (*models.Pembayaran, error) {
 	var payment models.Pembayaran
-	err := r.db.Preload("Pemesanan.Penyewa").Preload("Pemesanan.Kamar").Where("order_id = ?", orderID).First(&payment).Error
+	err := r.db.Preload("Pemesanan.Penyewa.User").Preload("Pemesanan.Kamar").Where("order_id = ?", orderID).First(&payment).Error
 	return &payment, err
 }
 
@@ -60,5 +61,17 @@ func (r *paymentRepository) WithTx(tx *gorm.DB) PaymentRepository {
 }
 
 func (r *paymentRepository) DeleteByBookingID(bookingID uint) error {
+	// First delete associated reminders, then delete payments
+	if err := r.DeleteRemindersByBookingID(bookingID); err != nil {
+		return err
+	}
 	return r.db.Where("pemesanan_id = ?", bookingID).Delete(&models.Pembayaran{}).Error
+}
+
+func (r *paymentRepository) DeleteRemindersByBookingID(bookingID uint) error {
+	// Delete all reminders linked to payments of this booking
+	return r.db.Where(
+		"pembayaran_id IN (SELECT id FROM pembayarans WHERE pemesanan_id = ?)",
+		bookingID,
+	).Delete(&models.PaymentReminder{}).Error
 }

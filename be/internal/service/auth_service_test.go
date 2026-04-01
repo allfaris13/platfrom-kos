@@ -90,6 +90,11 @@ func (m *MockPenyewaRepository) Update(penyewa *models.Penyewa) error {
 	return args.Error(0)
 }
 
+func (m *MockPenyewaRepository) Delete(id uint) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
 func (m *MockPenyewaRepository) FindByEmail(email string) (*models.Penyewa, error) {
 	args := m.Called(email)
 	if args.Get(0) == nil {
@@ -125,6 +130,14 @@ func (m *MockPenyewaRepository) WithTx(tx *gorm.DB) repository.PenyewaRepository
 		return nil
 	}
 	return args.Get(0).(repository.PenyewaRepository)
+}
+
+func (m *MockPenyewaRepository) FindByID(id uint) (*models.Penyewa, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Penyewa), args.Error(1)
 }
 
 // MockEmailSender implements utils.EmailSender interface

@@ -37,11 +37,17 @@ func NewAuthService(repo repository.UserRepository, penyewaRepo repository.Penye
 func (s *authService) Login(username, password string) (string, *models.User, error) {
 	user, err := s.repo.FindByUsername(username)
 	if err != nil {
-		return "", nil, errors.New("invalid credentials")
+		return "", nil, errors.New("Username tidak ditemukan")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", nil, errors.New("invalid credentials")
+		return "", nil, errors.New("Password yang Anda masukkan salah")
+	}
+
+	// Check if penyewa account is non_active
+	penyewa, err := s.penyewaRepo.FindByUserID(user.ID)
+	if err == nil && penyewa.Role == "non_active" {
+		return "", nil, errors.New("akun Anda telah dinonaktifkan, silakan hubungi admin")
 	}
 
 	// Generate token pair (access + refresh)
@@ -148,6 +154,12 @@ func (s *authService) GoogleLogin(idToken, username, picture string) (string, *m
 			Role:        "guest", // Google OAuth users start as guest
 		}
 		s.penyewaRepo.Create(penyewa)
+	}
+
+	// Check if penyewa account is non_active
+	existingPenyewa, pErr := s.penyewaRepo.FindByUserID(user.ID)
+	if pErr == nil && existingPenyewa.Role == "non_active" {
+		return "", nil, errors.New("akun Anda telah dinonaktifkan, silakan hubungi admin")
 	}
 
 	// 5. Generate JWT Token
