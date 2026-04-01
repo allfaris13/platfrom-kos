@@ -11,7 +11,7 @@ Pastikan tools berikut sudah terinstall:
 | **Git** | 2.x | `git --version` |
 | **Go** | 1.24+ | `go version` |
 | **Node.js** | 18+ | `node --version` |
-| **npm** | 9+ | `npm --version` |
+| **pnpm** | 9+ | `pnpm --version` |
 | **PostgreSQL** | 15+ | `psql --version` |
 | **Docker** *(opsional)* | 24+ | `docker --version` |
 
@@ -112,7 +112,7 @@ make build   # Build binary
 make lint    # Jalankan linter
 ```
 
-Sumber: [`be/Makefile`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/Makefile)
+Sumber: [`be/Makefile`](file:///home/arkan/coding/UPK_semester_2/be/Makefile)
 
 Output yang diharapkan:
 
@@ -125,6 +125,27 @@ Server running on http://localhost:8081
 
 > [!NOTE]
 > GORM akan **auto-migrate** semua tabel saat pertama kali server dijalankan. Tidak perlu menjalankan SQL migration secara manual.
+
+### 2.4 Mengisi Data Awal (Seeding)
+
+Project ini menyertakan file **Seed Data** untuk memudahkan testing dengan akun admin dan data penyewa dummy.
+
+**File Seed**:
+- [`be/docs/seed_admin.json`](file:///home/arkan/coding/UPK_semester_2/be/docs/seed_admin.json)
+- [`be/docs/seed_tenant_guest.json`](file:///home/arkan/coding/UPK_semester_2/be/docs/seed_tenant_guest.json)
+
+**Cara Menjalankan Seed**:
+Kamu bisa menggunakan script yang ada di folder `be`:
+
+```bash
+# Untuk Linux/macOS
+cd be
+bash run-migration.sh
+```
+
+Script ini akan menjalankan migration SQL tambahan dan menginisialisasi database dengan data awal. Akun default setelah seeding:
+- **Username**: `admin`
+- **Password**: `password123` (Cek detail di file JSON jika tidak berhasil)
 
 ## Langkah 3: Setup Frontend
 
@@ -155,8 +176,8 @@ Sumber: [`fe/.env.example`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos
 ### 3.2 Install Dependencies & Jalankan
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Output yang diharapkan:

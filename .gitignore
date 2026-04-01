@@ -8,6 +8,7 @@ bin/
 *.dll
 *.so
 *.exe_
+.claude
 
 # Environment files
 .env

@@ -25,6 +25,7 @@ export interface Room {
     bathrooms: number;
     description: string;
     image_url: string;
+    Images?: { id: number; kamar_id: number; image_url: string }[];
 }
 ```
 
@@ -47,7 +48,11 @@ export const api = {
 
 ### Admin CRUD (Backend)
 
-Admin bisa membuat, mengupdate, dan menghapus kamar. Upload gambar diproses via Cloudinary:
+Admin bisa membuat, mengupdate, dan menghapus kamar. Sistem kini mendukung **Multi-Image** per kamar:
+1. **Primary Image**: Disimpan di `image_url` pada tabel `Kamar`.
+2. **Additional Gallery**: Koleksi gambar tambahan disimpan di tabel `KamarImage`.
+
+Upload gambar diproses via Cloudinary:
 
 ```go
 // Flow di backend:
@@ -258,9 +263,17 @@ export interface DashboardStats {
     occupied_rooms: number;
     pending_payments: number;
     pending_revenue: number;
+    rejected_payments: number;
+    potential_revenue: number;
     monthly_trend: { month: string; revenue: number }[];
-    type_breakdown: { type: string; revenue: number; count: number }[];
+    type_breakdown: { type: string; revenue: number; count: number; occupied: number }[];
     demographics: { name: string; value: number; color: string }[];
+    recent_checkouts: {
+        room_name: string;
+        tenant_name: string;
+        checkout_date: string;
+        reason: string;
+    }[];
 }
 ```
 
@@ -298,4 +311,15 @@ Halaman `LuxuryReports.tsx` memiliki fitur export laporan ke **PDF** menggunakan
 
 > [!IMPORTANT]
 > Semua upload gambar (kamar, galeri, profil, bukti transfer) diproses melalui **Cloudinary**. Gambar disimpan di cloud folder `koskosan/rooms`, bukan di server lokal.
+
+---
+
+## 7. Advanced Reporting & Monitoring
+
+Sistem menyediakan endpoint khusus untuk monitoring performa bisnis secara mendalam:
+
+- **Room Occupancy**: Status okupansi real-time per kamar (`GET /room-occupancy`).
+- **Tenant Room Mapping**: Data penyewa yang aktif per kamar (`GET /tenant-rooms`).
+- **Granular History**: Riwayat pembayaran per kamar (`GET /room-payments/:id`) atau per penyewa (`GET /tenant-payments/:id`).
+- **Public Stats**: Statistik publik untuk halaman utama (Total penyewa, rating rata-rata, total review).
 

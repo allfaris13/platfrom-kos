@@ -42,7 +42,7 @@ func InitDB(cfg *config.Config) {
 }
 ```
 
-Sumber: [`be/internal/database/database.go`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/internal/database/database.go)
+Sumber: [`be/internal/database/database.go`](file:///home/arkan/coding/UPK_semester_2/be/internal/database/database.go)
 
 ## Entity Relationship Diagram
 
@@ -146,7 +146,7 @@ erDiagram
 
 ## Model Definitions
 
-Semua model didefinisikan di satu file [`be/internal/models/models.go`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/internal/models/models.go):
+Semua model didefinisikan di satu file [`be/internal/models/models.go`](file:///home/arkan/coding/UPK_semester_2/be/internal/models/models.go):
 
 ### User
 
@@ -173,15 +173,21 @@ type Kamar struct {
     TipeKamar     string         `json:"tipe_kamar"`
     Fasilitas     string         `json:"fasilitas"`
     HargaPerBulan float64        `json:"harga_per_bulan"`
-    Status        string         `json:"status"`       // Tersedia, Terisi, Booked, Perbaikan
+    Status        string         `json:"status"`
     Capacity      int            `json:"capacity"`
     Floor         int            `json:"floor"`
-    Size          string         `json:"size"`          // e.g. "3x4m"
+    Size          string         `json:"size"`
     Bedrooms      int            `json:"bedrooms"`
     Bathrooms     int            `json:"bathrooms"`
     Description   string         `json:"description"`
     ImageURL      string         `json:"image_url"`
-    // ... timestamps & soft delete
+    Images        []KamarImage   `gorm:"foreignKey:KamarID" json:"Images,omitempty"`
+}
+
+type KamarImage struct {
+    ID        uint           `gorm:"primaryKey" json:"id"`
+    KamarID   uint           `json:"kamar_id"`
+    ImageURL  string         `json:"image_url"`
 }
 ```
 
