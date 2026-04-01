@@ -145,12 +145,45 @@ networks:
 # Build and start
 docker compose -f compose.prod.yaml up -d --build
 
-# Check logs
-docker compose -f compose.prod.yaml logs -f
-
 # Check status
 docker compose -f compose.prod.yaml ps
 ```
+
+---
+
+### Option 2: Caddy Deployment (Native / Systemd)
+
+Jika Anda ingin performa terbaik tanpa overhead container untuk reverse proxy, gunakan Caddy yang terinstal langsung di server.
+
+#### Step-by-Step
+
+**1. Install Caddy**
+```bash
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/lists/caddy-stable.list
+sudo apt update
+sudo apt install caddy
+```
+
+**2. Configure Caddyfile**
+Pastikan file [`Caddyfile`](file:///home/arkan/coding/UPK_semester_2/Caddyfile) di root project sudah benar:
+- **Port Backend**: 8087
+- **Port Frontend**: 3007
+
+**3. Run & Reload**
+```bash
+# Verify Caddyfile
+caddy validate --config Caddyfile
+
+# Reload config
+sudo systemctl reload caddy
+```
+
+**4. Update Backend & Frontend Ports**
+Pastikan `.env` production Anda menggunakan port yang sesuai:
+- **Backend**: `PORT=8087`
+- **Frontend**: `PORT=3007` (atau diproxy oleh Next.js server)
 
 **6. Setup Nginx Reverse Proxy (Optional but Recommended)**
 

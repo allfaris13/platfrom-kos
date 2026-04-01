@@ -41,7 +41,8 @@ Sumber: [`fe/package.json`](file:///home/arkan/coding/UPK_semester_2/fe/package.
 |-----------|--------|
 | **Docker** | Containerization (multi-stage build) |
 | **Docker Compose** | Orchestrasi multi-container |
-| **Nginx** | Reverse proxy & SSL termination |
+| **Caddy v2** | Reverse proxy, SSL (HSTS), & Static File Server |
+| **Nginx** | Alternative reverse proxy & SSL termination |
 | **GitHub Actions** | CI/CD pipeline |
 | **Cloudinary CDN** | Image delivery & optimization |
 

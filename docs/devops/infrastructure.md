@@ -6,12 +6,11 @@ Infrastruktur Platform Kos dirancang untuk deployment yang mudah, monitoring rea
 
 ```mermaid
 graph TD
-    A[Internet] --> B[Nginx - Port 80/443]
-    B --> C[Frontend - Next.js :3000]
-    B --> D[Backend - Go API :8080]
+    A[Internet] --> B{Reverse Proxy}
+    B -->|Caddy/Nginx| C[Frontend - Next.js :3007]
+    B -->|Caddy/Nginx| D[Backend - Go API :8087]
     D --> E[(PostgreSQL :5432)]
     D --> F[Cloudinary CDN]
-    D --> G[SMTP Server]
     H[Prometheus] --> D
 ```
 
@@ -46,7 +45,7 @@ EXPOSE 8080
 CMD ["./main"]
 ```
 
-Sumber: [`be/Dockerfile`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/Dockerfile)
+Sumber: [`be/Dockerfile`](file:///home/arkan/coding/UPK_semester_2/be/Dockerfile)
 
 > **Hasil**: Image production hanya berisi binary Go (~15MB), tanpa source code atau build tools.
 
@@ -130,7 +129,37 @@ volumes:
     driver: local
 ```
 
-Sumber: [`docker-compose.yml`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/docker-compose.yml)
+Sumber: [`docker-compose.yml`](file:///home/arkan/coding/UPK_semester_2/docker-compose.yml)
+
+---
+
+## Production Reverse Proxy: Caddy
+
+Project ini menggunakan **Caddy v2** sebagai *primary reverse proxy* di lingkungan production. Caddy dipilih karena kemudahannya dalam mengelola SSL secara otomatis dan performa tinggi (Gzip/Zstd).
+
+### Caddy Configuration
+
+Konfigurasi utama berada di file [`Caddyfile`](file:///home/arkan/coding/UPK_semester_2/Caddyfile).
+
+**Fitur yang diaktifkan**:
+- **Encoding**: Gzip & Zstd untuk kompresi data yang lebih cepat.
+- **Security Headers**: 
+  - `HSTS` (Strict-Transport-Security)
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: SAMEORIGIN`
+- **Routing**:
+  - `/api/*` diteruskan ke Backend (Port 8087)
+  - `/*` diteruskan ke Frontend (Port 3007)
+
+### Cara Reload Caddy
+Jika ada perubahan pada `Caddyfile`:
+```bash
+# Menggunakan command Caddy langsung
+caddy reload --config Caddyfile
+
+# Jika berjalan sebagai systemd service
+sudo systemctl reload caddy
+```
 
 ### Dependency & Health Check Flow
 
@@ -240,7 +269,7 @@ make docker-down  # docker compose down
 make lint         # golangci-lint run
 ```
 
-Sumber: [`be/Makefile`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/Makefile)
+Sumber: [`be/Makefile`](file:///home/arkan/coding/UPK_semester_2/be/Makefile)
 
 ---
 

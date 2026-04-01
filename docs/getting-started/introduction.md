@@ -2,7 +2,7 @@
 
 ## Tentang Platform Kos
 
-**Platform Kos** adalah aplikasi web manajemen kos-kosan modern yang mendigitalisasi seluruh proses pengelolaan properti kos — mulai dari pencarian kamar, pemesanan, pembayaran, hingga manajemen admin. Dibangun dengan arsitektur **Go (Backend)** + **Next.js (Frontend)**, platform ini menghadirkan pengalaman yang cepat, aman, dan elegan.
+**Platform Kos** adalah aplikasi web manajemen kos-kosan modern yang mendigitalisasi seluruh proses pengelolaan properti kos — mulai dari pencarian kamar, pemesanan, pembayaran, hingga manajemen admin. Didirikan pada tahun **2024**, platform ini menghadirkan pengalaman yang cepat, aman, dan elegan.
 
 ## Fitur Utama
 

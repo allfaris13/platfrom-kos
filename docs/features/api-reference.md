@@ -2,13 +2,18 @@
 
 Daftar lengkap semua endpoint API, dikelompokkan berdasarkan level akses.
 
-Sumber: [`be/internal/routes/routes.go`](file:///c:/Users/Arkan/Documents/coding/platfrom-kos/be/internal/routes/routes.go)
-
-## Base URL
+Sumber: [`be/internal/routes/routes.go`](file:///home/arkan/coding/UPK_semester_2/be/internal/routes/routes.go)
 
 ```
 http://localhost:8081/api
 ```
+
+## Swagger Documentation
+
+Project ini sekarang menyertakan spesifikasi **OpenAPI / Swagger** lengkap untuk mempermudah testing dan integrasi.
+
+- **File**: [`be/docs/swagger.json`](file:///home/arkan/coding/UPK_semester_2/be/docs/swagger.json)
+- **Cara Penggunaan**: Kamu bisa mengimpor file ini ke [Swagger Editor](https://editor.swagger.io/) atau Postman untuk melihat dokumentasi interaktif dan mencoba endpoint secara langsung.
 
 ## Public Routes (Tanpa Auth)
 
