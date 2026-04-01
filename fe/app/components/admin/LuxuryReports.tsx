@@ -5,8 +5,7 @@ import { TrendingUp, Download, Calendar, DollarSign, Loader2, BarChart3, Activit
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { api, Room, Payment as ApiPayment, DashboardStats, Tenant } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
-// import jsPDF from 'jspdf';
-// import autoTable from 'jspdf-autotable';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 import { useTranslations } from 'next-intl';
 import { motion } from "framer-motion";
 
@@ -47,11 +46,6 @@ export function LuxuryReports() {
     void fetchData();
   }, []);
 
-  // Use backend-calculated values
-  const totalRevenue = stats?.total_revenue || 0;
-  const pendingRevenue = stats?.pending_revenue || 0;
-
-
   const filteredPayments = payments.filter(p => {
     if (dateFilter === 'all') return true;
     const date = new Date(p.tanggal_bayar);
@@ -61,6 +55,34 @@ export function LuxuryReports() {
     if (dateFilter === 'year') return now.getTime() - date.getTime() < 365 * 24 * 60 * 60 * 1000;
     return true;
   });
+
+  // Use filtered values for revenue metrics
+  const totalRevenue = filteredPayments
+    .filter(p => p.status_pembayaran === 'Confirmed')
+    .reduce((sum, p) => sum + p.jumlah_bayar, 0);
+
+  const pendingRevenue = filteredPayments
+    .filter(p => p.status_pembayaran === 'Pending')
+    .reduce((sum, p) => sum + p.jumlah_bayar, 0);
+
+  // Derived metrics for Property & User Overview (Activity based)
+  const periodOccupiedRoomIds = new Set(filteredPayments.filter(p => p.status_pembayaran === 'Confirmed' || p.status_pembayaran === 'Pending').map(p => p.pemesanan?.kamar_id).filter(id => !!id));
+  const periodActiveTenantIds = new Set(filteredPayments.filter(p => p.status_pembayaran === 'Confirmed' || p.status_pembayaran === 'Pending').map(p => p.pemesanan?.penyewa_id).filter(id => !!id));
+  
+  const periodNewGuestsCount = tenants.filter(t => {
+    const isGuest = t.role === 'guest' || !t.role;
+    if (!isGuest) return false;
+    if (dateFilter === 'all') return true;
+    
+    const regDate = new Date(t.created_at || t.user?.created_at || '');
+    const now = new Date();
+    if (dateFilter === '30days') return now.getTime() - regDate.getTime() < 30 * 24 * 60 * 60 * 1000;
+    if (dateFilter === '6months') return now.getTime() - regDate.getTime() < 6 * 30 * 24 * 60 * 60 * 1000;
+    if (dateFilter === 'year') return now.getTime() - regDate.getTime() < 365 * 24 * 60 * 60 * 1000;
+    return true;
+  }).length;
+
+  const occupancyRate = rooms.length > 0 ? Math.round((periodOccupiedRoomIds.size / rooms.length) * 100) : 0;
 
   // Calculate derived stats from filtered payments
   const derivedRevenueByType = rooms.map(room => {
@@ -134,10 +156,16 @@ export function LuxuryReports() {
     doc.setFont("helvetica", "normal");
     doc.text(dateStr, pageWidth - 14, 26, { align: "right" });
 
+    // Period Label
+    const periodLabel = dateFilter === 'all' ? t('allTime') : dateFilter === '30days' ? t('last30Days') : dateFilter === '6months' ? t('last6Months') : t('lastYearFilter');
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Periode: ${periodLabel}`, 14, 38);
+
     // Divider Line
     doc.setLineWidth(0.5);
     doc.setDrawColor(203, 213, 225); // Slate 300
-    doc.line(14, 40, pageWidth - 14, 40);
+    doc.line(14, 42, pageWidth - 14, 42);
 
     // --- Executive Summary Section ---
     const summaryY = 48;
@@ -174,7 +202,6 @@ export function LuxuryReports() {
     doc.text(formatPrice(pendingRevenue), 14 + boxWidth + 10, summaryY + 18);
 
     // Box 3: Occupancy Rate
-    const occupancyRate = rooms.length > 0 ? Math.round((rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length / rooms.length) * 100) : 0;
     doc.setFillColor(239, 246, 255); // Blue 50
     doc.setDrawColor(219, 234, 254); // Blue 100
     doc.roundedRect(14 + (boxWidth * 2) + 10, summaryY, boxWidth, boxHeight, 3, 3, "FD");
@@ -205,7 +232,7 @@ export function LuxuryReports() {
     doc.setFontSize(14);
     doc.setTextColor(21, 128, 61); // Green 700
     doc.setFont("helvetica", "bold");
-    doc.text(`${rooms.filter(r => r.status === 'Tersedia').length}`, 14 + 5, summaryY2 + 18);
+    doc.text(`${rooms.length - periodOccupiedRoomIds.size}`, 14 + 5, summaryY2 + 18);
 
     // Box 5: Maintenance
     doc.setFillColor(254, 242, 242); // Red 50
@@ -220,7 +247,7 @@ export function LuxuryReports() {
     doc.setFontSize(14);
     doc.setTextColor(185, 28, 28); // Red 700
     doc.setFont("helvetica", "bold");
-    doc.text(`${rooms.filter(r => r.status === 'Perbaikan').length}`, 14 + boxWidth + 10, summaryY2 + 18);
+    doc.text(`${rooms.filter(r => ['maintenance', 'perbaikan'].includes(r.status?.toLowerCase())).length}`, 14 + boxWidth + 10, summaryY2 + 18);
 
     // Box 6: Active Tenants
     doc.setFillColor(245, 243, 255); // Purple 50
@@ -235,7 +262,7 @@ export function LuxuryReports() {
     doc.setFontSize(14);
     doc.setTextColor(109, 40, 217); // Purple 700
     doc.setFont("helvetica", "bold");
-    doc.text(`${tenants.filter(t => t.role === 'tenant').length}`, 14 + (boxWidth * 2) + 15, summaryY2 + 18);
+    doc.text(`${periodActiveTenantIds.size}`, 14 + (boxWidth * 2) + 15, summaryY2 + 18);
 
     // --- Transaction Details Table ---
     doc.setFontSize(12);
@@ -245,8 +272,8 @@ export function LuxuryReports() {
     const tableColumn = [t('date'), t('tenantName'), t('roomType'), t('roomNo'), t('status'), t('amount')];
     const tableRows: (string | number)[][] = [];
 
-    // Sort payments by date desc
-    const sortedPayments = [...payments].sort((a, b) => 
+    // Sort filtered payments by date desc
+    const sortedPayments = [...filteredPayments].sort((a, b) => 
       new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
     );
 
@@ -435,18 +462,23 @@ export function LuxuryReports() {
           <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">{t('reportsSubtitle')}</p>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <Button
-            variant="outline"
-            onClick={() => {
-              const filters: ('all' | '30days' | '6months' | 'year')[] = ['all', '30days', '6months', 'year'];
-              const nextIndex = (filters.indexOf(dateFilter) + 1) % filters.length;
-              setDateFilter(filters[nextIndex]);
-            }}
-            className="flex-1 sm:flex-none bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-xs md:text-sm"
+          <Select 
+            value={dateFilter} 
+            onValueChange={(value: 'all' | '30days' | '6months' | 'year') => setDateFilter(value)}
           >
-            <Calendar className="size-4 mr-2" />
-            {dateFilter === 'all' ? t('allTime') : dateFilter === '30days' ? t('last30Days') : dateFilter === '6months' ? t('last6Months') : t('lastYear')}
-          </Button>
+            <SelectTrigger className="w-[140px] md:w-[180px] bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-xs md:text-sm h-9 md:h-10">
+              <div className="flex items-center">
+                <Calendar className="size-4 mr-2" />
+                <SelectValue placeholder={t('allTime')} />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+              <SelectItem value="all">{t('allTime')}</SelectItem>
+              <SelectItem value="30days">{t('last30Days')}</SelectItem>
+              <SelectItem value="6months">{t('last6Months')}</SelectItem>
+              <SelectItem value="year">{t('lastYearFilter')}</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             onClick={handleExport}
             disabled={isExporting}
@@ -709,7 +741,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-green-200 dark:border-green-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('availableRooms')}</p>
             <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
-              {rooms.filter(r => ['tersedia', 'available'].includes(r.status?.toLowerCase())).length}
+              {rooms.length - periodOccupiedRoomIds.size}
             </p>
           </div>
 
@@ -717,7 +749,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('occupiedRooms')}</p>
             <p className="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400">
-              {rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length}
+              {periodOccupiedRoomIds.size}
             </p>
           </div>
 
@@ -733,7 +765,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('totalActiveTenants')}</p>
             <p className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {tenants.filter(t => t.role === 'tenant').length}
+              {periodActiveTenantIds.size}
             </p>
           </div>
 
@@ -741,7 +773,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('totalGuests')}</p>
             <p className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400">
-              {tenants.filter(te => te.role === 'guest' || !te.role).length}
+              {periodNewGuestsCount}
             </p>
           </div>
         </div>
