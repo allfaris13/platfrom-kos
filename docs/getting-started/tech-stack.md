@@ -9,6 +9,7 @@ Pemilihan teknologi didasarkan pada **performa**, **type safety**, dan **produkt
 | [Go](https://go.dev/) | 1.24.9 | Bahasa utama backend |
 | [Gin Gonic](https://gin-gonic.com/) | v1.11.0 | HTTP web framework |
 | [GORM](https://gorm.io/) | v1.31.1 | ORM untuk PostgreSQL |
+| [pnpm](https://pnpm.io/) | 9+ | Package manager |
 | [PostgreSQL](https://www.postgresql.org/) | 15 (Alpine) | Database relasional |
 | [JWT](https://github.com/golang-jwt/jwt) | v5.3.0 | Token autentikasi |
 | [Cloudinary](https://cloudinary.com/) | v2.14.1 | Cloud image hosting |

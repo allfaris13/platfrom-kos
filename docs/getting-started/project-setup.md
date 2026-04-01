@@ -11,7 +11,7 @@ Pastikan tools berikut sudah terinstall:
 | **Git** | 2.x | `git --version` |
 | **Go** | 1.24+ | `go version` |
 | **Node.js** | 18+ | `node --version` |
-| **npm** | 9+ | `npm --version` |
+| **pnpm** | 9+ | `pnpm --version` |
 | **PostgreSQL** | 15+ | `psql --version` |
 | **Docker** *(opsional)* | 24+ | `docker --version` |
 
@@ -126,9 +126,12 @@ Server running on http://localhost:8081
 > [!NOTE]
 > GORM akan **auto-migrate** semua tabel saat pertama kali server dijalankan. Tidak perlu menjalankan SQL migration secara manual.
 
+<<<<<<< HEAD
+=======
 > [!CAUTION]
 > Di lingkungan **Production**, backend menggunakan port **8087** dan frontend port **3007** (sesuai konfigurasi `Caddyfile`). Pastikan port ini tidak tertukar dengan default development (8081/3000).
 
+>>>>>>> 839f4a26608ad70f87046b52e7de6c16df6d886e
 ### 2.4 Mengisi Data Awal (Seeding)
 
 Project ini menyertakan file **Seed Data** untuk memudahkan testing dengan akun admin dan data penyewa dummy.
@@ -179,8 +182,8 @@ Sumber: [`fe/.env.example`](file:///home/arkan/coding/UPK_semester_2/fe/.env.exa
 ### 3.2 Install Dependencies & Jalankan
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Output yang diharapkan:
