@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import {
   motion,
   useInView,
@@ -117,18 +117,15 @@ export function Homepage({
     isLoadingRooms,
     displayRooms,
     resetFilters,
-    reviews
+    reviews,
+    currentPage,
+    setCurrentPage
   } = useHome();
   const t = useTranslations('home');
   const tc = useTranslations('common');
 
   // --- Pagination ---
   const ROOMS_PER_PAGE = 6;
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // Reset page when filters change — calling setState in effect is intentional here
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setCurrentPage(1); }, [searchLocation, selectedPrice, selectedType]); // NOSONAR
 
   const totalPages = Math.ceil(displayRooms.length / ROOMS_PER_PAGE);
   const paginatedRooms = displayRooms.slice(
@@ -139,7 +136,7 @@ export function Homepage({
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
     document.getElementById('featured-rooms')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  }, [setCurrentPage]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("id-ID", {

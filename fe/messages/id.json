@@ -313,6 +313,8 @@
     "amount": "Jumlah",
     "unknown": "Tidak Diketahui",
     "reportsLoading": "Menyiapkan laporan keuangan...",
+    "allTime": "Sepanjang Waktu",
+    "last30Days": "30 Hari Terakhir",
     "last6Months": "6 Bulan Terakhir",
     "propertyOverview": "Ringkasan Properti & Pengguna",
     "totalRooms": "Total Kamar",

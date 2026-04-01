@@ -313,6 +313,8 @@
     "amount": "Amount",
     "unknown": "Unknown",
     "reportsLoading": "Preparing financial reports...",
+    "allTime": "All Time",
+    "last30Days": "Last 30 Days",
     "last6Months": "Last 6 Months",
     "propertyOverview": "Property & User Overview",
     "totalRooms": "Total Rooms",

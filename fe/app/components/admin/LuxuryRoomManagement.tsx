@@ -27,6 +27,7 @@ interface Room {
   bathrooms: number;
   description: string;
   image: string;
+  additionalImages: string[];
   facilities: string[];
 }
 
@@ -43,6 +44,7 @@ interface BackendRoom {
   bathrooms: number;
   description: string;
   image_url: string;
+  Images: { image_url: string }[];
   fasilitas: string;
 }
 
@@ -97,6 +99,7 @@ export function LuxuryRoomManagement() {
         bathrooms: r.bathrooms || 1,
         description: r.description || '',
         image: getImageUrl(r.image_url) || 'https://via.placeholder.com/300',
+        additionalImages: r.Images ? r.Images.map(img => getImageUrl(img.image_url)) : [],
         facilities: r.fasilitas ? r.fasilitas.split(',').map(f => f.trim()) : []
       }));
       setRooms(mapped);
@@ -198,7 +201,7 @@ export function LuxuryRoomManagement() {
 
     const newImages = imageFiles.filter(f => f !== null);
     if (newImages.length > 0 && newImages.length < 3) {
-      toast.error('Minimal 3 foto kamar diperlukan');
+      toast.error('Jika ingin mengubah foto, minimal upload 3 foto baru');
       return;
     }
     if (!editingRoom && newImages.length < 3) {
@@ -522,7 +525,7 @@ export function LuxuryRoomManagement() {
                         imageFiles.map((file, idx) => {
                           if (!file) return null;
                           return (
-                            <div key={idx} className="relative w-full h-32 md:h-40 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
+                            <div key={idx} className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
                               <ImageWithFallback
                                 src={URL.createObjectURL(file)}
                                 alt={`New Room Preview ${idx + 1}`}
@@ -547,16 +550,30 @@ export function LuxuryRoomManagement() {
                           );
                         })
                       ) : (
-                        <div className="relative w-full h-32 md:h-40 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
-                          <ImageWithFallback
-                            src={formData.image!}
-                            alt={`Current Room Preview`}
-                            className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <p className="text-white font-medium text-xs">Gambar Saat Ini (1 dari 3)</p>
-                          </div>
-                        </div>
+                        <>
+                          {formData.additionalImages && formData.additionalImages.length > 0 ? (
+                            formData.additionalImages.map((src, idx) => (
+                              <div key={idx} className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
+                                <ImageWithFallback
+                                  src={src}
+                                  alt={`Current Room Preview ${idx + 1}`}
+                                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <p className="text-white font-medium text-xs text-center px-1">Gambar {idx + 1}</p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
+                              <ImageWithFallback
+                                src={formData.image!}
+                                alt={`Current Room Preview`}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              />
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
@@ -565,6 +582,7 @@ export function LuxuryRoomManagement() {
                   {imageFiles.filter(f => f !== null).length < 3 && (
                     <div className="relative">
                       <input
+
                         type="file"
                         id="image-upload-multiple"
                         className="hidden"
@@ -880,6 +898,24 @@ export function LuxuryRoomManagement() {
                   <p className="text-amber-400 text-xs md:text-sm font-bold uppercase tracking-tight mt-1">{viewingRoom.type} • {t('floor')} {viewingRoom.floor}</p>
                 </div>
               </div>
+
+              {/* Additional Images Gallery */}
+              {viewingRoom.additionalImages && viewingRoom.additionalImages.length > 0 && (
+                <div className="p-4 md:px-8 md:pt-4 md:pb-0 grid grid-cols-3 gap-2 md:gap-4">
+                  {viewingRoom.additionalImages.map((src, idx) => (
+                    <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 group cursor-pointer">
+                      <ImageWithFallback
+                        src={src}
+                        alt={`${viewingRoom.name} gallery ${idx + 1}`}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                         <span className="text-white text-[10px] font-bold">Image {idx + 1}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="p-4 md:p-8 space-y-6 md:space-y-8">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">

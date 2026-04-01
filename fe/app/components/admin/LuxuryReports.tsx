@@ -71,7 +71,7 @@ export function LuxuryReports() {
       type: room.tipe_kamar,
       revenue,
       count: 1,
-      occupied: room.status === 'Terisi' ? 1 : 0
+      occupied: ['terisi', 'penuh', 'occupied'].includes(room.status?.toLowerCase()) ? 1 : 0
     };
   }).reduce((acc, current) => {
     const existing = acc.find(a => a.type === current.type);
@@ -86,13 +86,6 @@ export function LuxuryReports() {
   }, [] as { type: string; revenue: number; count: number; occupied: number }[]);
 
   const revenueByType = derivedRevenueByType;
-  const totalRevenueFiltered = filteredPayments
-    .filter(p => p.status_pembayaran === 'Confirmed')
-    .reduce((sum, p) => sum + p.jumlah_bayar, 0);
-  
-  const pendingRevenueFiltered = filteredPayments
-    .filter(p => p.status_pembayaran === 'Pending')
-    .reduce((sum, p) => sum + p.jumlah_bayar, 0);
 
   const tenantDemographics = stats?.demographics || [
     { name: '18-25', value: 33, color: '#f59e0b' },
@@ -181,7 +174,7 @@ export function LuxuryReports() {
     doc.text(formatPrice(pendingRevenue), 14 + boxWidth + 10, summaryY + 18);
 
     // Box 3: Occupancy Rate
-    const occupancyRate = rooms.length > 0 ? Math.round((rooms.filter(r => r.status === 'Terisi').length / rooms.length) * 100) : 0;
+    const occupancyRate = rooms.length > 0 ? Math.round((rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length / rooms.length) * 100) : 0;
     doc.setFillColor(239, 246, 255); // Blue 50
     doc.setDrawColor(219, 234, 254); // Blue 100
     doc.roundedRect(14 + (boxWidth * 2) + 10, summaryY, boxWidth, boxHeight, 3, 3, "FD");
@@ -518,9 +511,9 @@ export function LuxuryReports() {
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm mb-1">{t('occupancy')}</p>
             <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
-              {rooms.length > 0 ? Math.round((rooms.filter(r => r.status === 'Terisi').length / rooms.length) * 100) : 0}%
+              {rooms.length > 0 ? Math.round((rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length / rooms.length) * 100) : 0}%
             </p>
-            <p className="text-[10px] text-purple-600 dark:text-purple-400">{rooms.filter(r => r.status === 'Terisi').length}/{rooms.length} rooms</p>
+            <p className="text-[10px] text-purple-600 dark:text-purple-400">{rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length}/{rooms.length} rooms</p>
           </div>
         </div>
       </motion.div>
@@ -591,7 +584,11 @@ export function LuxuryReports() {
                     <div className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
                     <span className="text-xs md:text-sm text-slate-600 dark:text-slate-300">{item.name} {t('years')}</span>
                   </div>
-                  <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.value}%</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {tenantDemographics.reduce((sum, d) => sum + d.value, 0) > 0 
+                      ? Math.round((item.value / tenantDemographics.reduce((sum, d) => sum + d.value, 0)) * 100) 
+                      : 0}%
+                  </span>
                 </div>
               ))}
             </div>
@@ -712,7 +709,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-green-200 dark:border-green-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('availableRooms')}</p>
             <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
-              {rooms.filter(r => r.status === 'Tersedia').length}
+              {rooms.filter(r => ['tersedia', 'available'].includes(r.status?.toLowerCase())).length}
             </p>
           </div>
 
@@ -720,7 +717,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('occupiedRooms')}</p>
             <p className="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400">
-              {rooms.filter(r => r.status === 'Terisi').length}
+              {rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length}
             </p>
           </div>
 
@@ -728,7 +725,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('maintenanceRooms')}</p>
             <p className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">
-              {rooms.filter(r => r.status === 'Perbaikan').length}
+              {rooms.filter(r => ['maintenance', 'perbaikan'].includes(r.status?.toLowerCase())).length}
             </p>
           </div>
 

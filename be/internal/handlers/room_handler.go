@@ -67,13 +67,13 @@ func (h *KamarHandler) CreateKamar(c *gin.Context) {
 	// Parse multipart form to get multiple files
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal memproses form data: " + err.Error()})
 		return
 	}
 
 	imageFiles := form.File["images"]
 	if len(imageFiles) < 3 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Minimal 3 foto kamar diperlukan"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Minimal 3 foto kamar diperlukan untuk kamar baru"})
 		return
 	}
 
@@ -184,11 +184,11 @@ func (h *KamarHandler) UpdateKamar(c *gin.Context) {
 
 	// Check for new multi-image upload
 	form, err := c.MultipartForm()
-	if err == nil {
+	if err == nil && form != nil {
 		imageFiles := form.File["images"]
 		if len(imageFiles) > 0 {
 			if len(imageFiles) < 3 {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Minimal 3 foto kamar diperlukan"})
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Jika mengunggah foto baru, minimal harus ada 3 foto kamar"})
 				return
 			}
 

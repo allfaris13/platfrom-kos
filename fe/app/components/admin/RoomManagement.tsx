@@ -34,6 +34,7 @@ interface Room {
   bathrooms: number;
   description: string;
   image: string;
+  additionalImages: string[];
   facilities: string[];
 }
 
@@ -50,6 +51,7 @@ interface BackendRoom {
   bathrooms: number;
   description: string;
   image_url: string;
+  Images: { image_url: string }[];
   fasilitas: string;
 }
 
@@ -80,6 +82,7 @@ export function RoomManagement() {
         bathrooms: r.bathrooms || 1,
         description: r.description || '',
         image: getImageUrl(r.image_url) || 'https://via.placeholder.com/300',
+        additionalImages: r.Images ? r.Images.map(img => getImageUrl(img.image_url)) : [],
         facilities: r.fasilitas ? r.fasilitas.split(',').map((f: string) => f.trim()) : []
       }));
       setRooms(mapped);
@@ -128,6 +131,16 @@ export function RoomManagement() {
     // Handle facilities array to string
     data.append('fasilitas', Array.isArray(formData.facilities) ? formData.facilities.join(', ') : formData.facilities || '');
     
+    // Validation for image count
+    if (!editingRoom && imageFiles.length < 3) {
+      toast.error("Minimal 3 foto kamar diperlukan");
+      return;
+    }
+    if (editingRoom && imageFiles.length > 0 && imageFiles.length < 3) {
+      toast.error("Jika ingin mengubah foto, minimal upload 3 foto baru");
+      return;
+    }
+
     imageFiles.forEach((file) => {
       data.append('images', file);
     });
@@ -202,7 +215,7 @@ export function RoomManagement() {
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingRoom(null); setFormData({ name: '', type: 'Single', price: 0, status: 'Tersedia', capacity: 1, facilities: [], floor: 1, description: '' }); }}>
+            <Button onClick={() => { setEditingRoom(null); setFormData({ name: '', type: 'Standard', price: 0, status: 'Tersedia', capacity: 1, facilities: [], floor: 1, description: '' }); }}>
               <Plus className="size-4 mr-2" />
               Add Room
             </Button>
@@ -378,9 +391,9 @@ export function RoomManagement() {
 
                 {/* Preview thumbnails */}
                 {imagePreviews.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
                     {imagePreviews.map((src, idx) => (
-                      <div key={idx} className="relative group h-20 rounded-lg overflow-hidden border border-slate-200">
+                      <div key={idx} className="relative group h-24 rounded-lg overflow-hidden border border-slate-200">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={src} alt={`foto-${idx + 1}`} className="w-full h-full object-cover" />
                         {idx === 0 && (
@@ -399,6 +412,21 @@ export function RoomManagement() {
                         >
                           <X className="w-3 h-3" />
                         </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Show current images when editing */}
+                {editingRoom && !imageFiles.length && formData.additionalImages && formData.additionalImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+                    {formData.additionalImages.map((src, idx) => (
+                      <div key={idx} className="relative h-24 rounded-lg overflow-hidden border border-slate-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt={`current-foto-${idx + 1}`} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                           <span className="text-white text-[10px] font-bold">Current {idx + 1}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -525,13 +553,24 @@ export function RoomManagement() {
           </DialogHeader>
           {viewingRoom && (
             <div className="space-y-4">
-              <div className="relative w-full h-48">
-                <Image
-                  src={viewingRoom.image}
-                  alt={viewingRoom.name}
-                  fill
-                  className="object-cover rounded-lg"
-                />
+              <div className="space-y-2">
+                <div className="relative w-full h-48">
+                  <Image
+                    src={viewingRoom.image}
+                    alt={viewingRoom.name}
+                    fill
+                    className="object-cover rounded-lg"
+                  />
+                </div>
+                {viewingRoom.additionalImages && viewingRoom.additionalImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {viewingRoom.additionalImages.map((src, idx) => (
+                      <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border">
+                         <Image src={src} alt={`${viewingRoom.name} gallery ${idx}`} fill className="object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

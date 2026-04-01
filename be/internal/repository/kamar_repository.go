@@ -28,7 +28,7 @@ func NewKamarRepository(db *gorm.DB) KamarRepository {
 
 func (r *kamarRepository) FindAll() ([]models.Kamar, error) {
 	var kamars []models.Kamar
-	err := r.db.Find(&kamars).Error
+	err := r.db.Preload("Images").Find(&kamars).Error
 	return kamars, err
 }
 

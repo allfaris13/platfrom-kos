@@ -124,7 +124,7 @@ export function LuxuryDashboard() {
   // Use real data
   const availableRooms = stats.available_rooms;
   const occupiedRooms = stats.occupied_rooms;
-  const activeTenants = stats.active_tenants;
+  const activeTenants = tenants.filter(t => t.role === 'tenant').length;
   const pendingPayments = stats.pending_payments;
   const totalRevenue = stats.total_revenue;
 

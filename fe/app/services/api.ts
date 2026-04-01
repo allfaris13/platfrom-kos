@@ -255,7 +255,7 @@ const apiCall = async <T>(method: string, endpoint: string, body?: unknown): Pro
   let res: Response;
   try {
     res = await fetch(`${API_URL}${endpoint}`, config);
-  } catch (_err) {
+  } catch {
     // Catch network errors
     throw new ApiErrorClass('Koneksi ke server gagal. Harap periksa jaringan Anda atau hubungi admin.', 0);
   }

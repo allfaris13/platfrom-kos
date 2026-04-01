@@ -242,7 +242,8 @@ export function TenantData() {
               user.nama_lengkap?.toLowerCase().includes(searchQuery.toLowerCase()) ||
               user.user?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
               user.nik?.includes(searchQuery) ||
-              user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+              user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              user.nomor_hp?.includes(searchQuery)
             ).map((user) => (
               <div key={user.id}>
                 {/* Desktop Row */}

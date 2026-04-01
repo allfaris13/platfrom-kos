@@ -80,15 +80,20 @@ func (r *penyewaRepository) FindAllPaginated(pagination *utils.Pagination, searc
 	var totalRows int64
 
 	// Selalu kecualikan admin dari daftar penyewa
-	query := r.db.Model(&models.Penyewa{}).Preload("User").Where("role != ?", "admin")
+	// Gunakan Joins untuk pencarian kolom di tabel User
+	query := r.db.Model(&models.Penyewa{}).
+		Preload("User").
+		Joins("JOIN users ON users.id = penyewas.user_id").
+		Where("penyewas.role != ?", "admin")
 
 	if role != "" {
-		query = query.Where("role = ?", role)
+		query = query.Where("penyewas.role = ?", role)
 	}
 
 	if search != "" {
 		searchLike := "%" + search + "%"
-		query = query.Where("nama_lengkap ILIKE ? OR email ILIKE ? OR nomor_hp ILIKE ? OR nik ILIKE ?", searchLike, searchLike, searchLike, searchLike)
+		query = query.Where("penyewas.nama_lengkap ILIKE ? OR penyewas.email ILIKE ? OR penyewas.nomor_hp ILIKE ? OR penyewas.nik ILIKE ? OR users.username ILIKE ?", 
+			searchLike, searchLike, searchLike, searchLike, searchLike)
 	}
 
 	query.Count(&totalRows)
