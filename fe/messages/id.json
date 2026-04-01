@@ -538,6 +538,20 @@
     "ourRooms": "Kamar Kami",
     "seeAllUnits": "Lihat Semua Unit",
     "availableFrom": "Tersedia mulai",
+    "categories": {
+      "standard": {
+        "title": "Kamar Standar",
+        "features": "WiFi Cepat, Kamar Mandi Luar, Kasur, Lemari, Meja Belajar"
+      },
+      "multipurpose": {
+        "title": "Ruang Serbaguna",
+        "features": "Kamar Mandi, Dapur, Musholla"
+      },
+      "premium": {
+        "title": "Kamar Premium",
+        "features": "WiFi Cepat, Kamar Mandi Dalam, Kasur, Lemari, Meja Belajar"
+      }
+    },
     "findOtherUnits": "Cari Unit Lainnya"
   },
 

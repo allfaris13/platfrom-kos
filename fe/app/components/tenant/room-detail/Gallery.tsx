@@ -56,32 +56,33 @@ export function Gallery() {
 
         {/* --- KATEGORI KOS GRID --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-40">
-          {[
-            { title: "Standard Deluxe", features: ["Fast WiFi", "Private Bath", "AC Room"] },
-            { title: "Executive Studio", features: ["Smart TV", "Mini Kitchen", "Cleaning Service"] },
-            { title: "Premium Loft", features: ["City View", "Private Balcony", "Gym Access"] }
-          ].map((cat, i) => (
-            <motion.div
-              key={cat.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              viewport={{ once: true }}
-              className="group cursor-pointer"
-            >
-              <div className="flex justify-between items-center border-b border-stone-300 dark:border-slate-800 pb-4 mb-8">
-                <h3 className="text-2xl font-medium tracking-tight text-slate-900 dark:text-slate-100">{cat.title}</h3>
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-2 text-slate-400" />
-              </div>
-              <div className="space-y-4 font-sans text-sm text-stone-600 dark:text-slate-400">
-                {cat.features.map((feat) => (
-                  <p key={feat} className="hover:text-black dark:hover:text-white transition-colors flex items-center gap-2">
-                    <span className="text-[10px]">→</span> {feat}
-                  </p>
-                ))}
-              </div>
-            </motion.div>
-          ))}
+          {(["standard", "multipurpose", "premium"] as const).map((key, i) => {
+            const title = t(`categories.${key}.title`);
+            const features = t(`categories.${key}.features`).split(",").map(f => f.trim());
+            
+            return (
+              <motion.div
+                key={key}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className="group cursor-pointer"
+              >
+                <div className="flex justify-between items-center border-b border-stone-300 dark:border-slate-800 pb-4 mb-8">
+                  <h3 className="text-2xl font-medium tracking-tight text-slate-900 dark:text-slate-100">{title}</h3>
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-2 text-slate-400" />
+                </div>
+                <div className="space-y-4 font-sans text-sm text-stone-600 dark:text-slate-400">
+                  {features.map((feat) => (
+                    <p key={feat} className="hover:text-black dark:hover:text-white transition-colors flex items-center gap-2">
+                      <span className="text-[10px]">→</span> {feat}
+                    </p>
+                  ))}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* --- COLLECTION GRID (ASIMETRIS) --- */}

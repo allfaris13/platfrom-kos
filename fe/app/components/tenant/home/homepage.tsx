@@ -214,8 +214,7 @@ export function Homepage({
                   {t('guestSubtitle')}
                 </p>
                 <div className="flex flex-row gap-3 lg:gap-4">
-                  <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">{tc('explore')}</Button>
-                  <Button variant="ghost" className="flex-1 md:flex-none px-6 lg:px-8 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800">{tc('learn')}</Button>
+                  <Button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="w-fit md:flex-none bg-slate-900 hover:bg-slate-800 text-white px-8 lg:px-10 py-5 lg:py-6 rounded-xl lg:rounded-2xl text-base lg:text-lg font-bold shadow-xl">{tc('explore')}</Button>
                 </div>
               </>
             )}

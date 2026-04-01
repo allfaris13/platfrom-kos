@@ -538,6 +538,20 @@
     "ourRooms": "Our Rooms",
     "seeAllUnits": "See All Units",
     "availableFrom": "Available from",
+    "categories": {
+      "standard": {
+        "title": "Standard Room",
+        "features": "Fast WiFi, Outside Bath, Mattress, Wardrobe, Study Desk"
+      },
+      "multipurpose": {
+        "title": "Multipurpose Room",
+        "features": "Bathroom, Kitchen, Prayer Room"
+      },
+      "premium": {
+        "title": "Premium Room",
+        "features": "Fast WiFi, Private Bath, Mattress, Wardrobe, Study Desk"
+      }
+    },
     "findOtherUnits": "Find Other Units"
   },
 
