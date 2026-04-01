@@ -12,11 +12,13 @@ import { motion } from "framer-motion";
 
 export function LuxuryReports() {
   const t = useTranslations('admin');
+  const [dateFilter, setDateFilter] = useState<'all' | '30days' | '6months' | 'year'>('all');
   const [payments, setPayments] = useState<ApiPayment[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]); // Add tenants state
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,8 +52,40 @@ export function LuxuryReports() {
   const pendingRevenue = stats?.pending_revenue || 0;
 
 
-  // Revenue by Room Type Data
-  const revenueByType = stats?.type_breakdown || [];
+  const filteredPayments = payments.filter(p => {
+    if (dateFilter === 'all') return true;
+    const date = new Date(p.tanggal_bayar);
+    const now = new Date();
+    if (dateFilter === '30days') return now.getTime() - date.getTime() < 30 * 24 * 60 * 60 * 1000;
+    if (dateFilter === '6months') return now.getTime() - date.getTime() < 6 * 30 * 24 * 60 * 60 * 1000;
+    if (dateFilter === 'year') return now.getTime() - date.getTime() < 365 * 24 * 60 * 60 * 1000;
+    return true;
+  });
+
+  // Calculate derived stats from filtered payments
+  const derivedRevenueByType = rooms.map(room => {
+    const revenue = filteredPayments
+      .filter(p => p.pemesanan?.kamar_id === room.id && p.status_pembayaran === 'Confirmed')
+      .reduce((sum, p) => sum + p.jumlah_bayar, 0);
+    return {
+      type: room.tipe_kamar,
+      revenue,
+      count: 1,
+      occupied: ['terisi', 'penuh', 'occupied'].includes(room.status?.toLowerCase()) ? 1 : 0
+    };
+  }).reduce((acc, current) => {
+    const existing = acc.find(a => a.type === current.type);
+    if (existing) {
+      existing.revenue += current.revenue;
+      existing.count += 1;
+      existing.occupied += current.occupied;
+    } else {
+      acc.push({ ...current });
+    }
+    return acc;
+  }, [] as { type: string; revenue: number; count: number; occupied: number }[]);
+
+  const revenueByType = derivedRevenueByType;
 
   const tenantDemographics = stats?.demographics || [
     { name: '18-25', value: 33, color: '#f59e0b' },
@@ -60,23 +94,16 @@ export function LuxuryReports() {
     { name: '45+', value: 7, color: '#8b5cf6' }
   ];
 
-  // Monthly Data from Backend
-
-
-  const monthlyComparison = [
-    { month: 'Jan', thisYear: 4200000, lastYear: 3800000 },
-    { month: 'Feb', thisYear: 5100000, lastYear: 4500000 },
-    { month: 'Mar', thisYear: 4800000, lastYear: 4200000 },
-    { month: 'Apr', thisYear: 5400000, lastYear: 4900000 },
-    { month: 'May', thisYear: 6200000, lastYear: 5500000 },
-    { month: 'Jun', thisYear: 5900000, lastYear: 5200000 }
-  ];
+  // Monthly Data from Backend (static for now as it's harder to re-calculate per month locally without more data)
+  const monthlyData = stats?.monthly_trend || [];
 
   const handleExport = async () => {
-    const jsPDF = (await import('jspdf')).default;
-    const autoTable = (await import('jspdf-autotable')).default;
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
+    setIsExporting(true);
+    try {
+      const jsPDF = (await import('jspdf')).default;
+      const autoTable = (await import('jspdf-autotable')).default;
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     
     // --- Header Section ---
@@ -147,7 +174,7 @@ export function LuxuryReports() {
     doc.text(formatPrice(pendingRevenue), 14 + boxWidth + 10, summaryY + 18);
 
     // Box 3: Occupancy Rate
-    const occupancyRate = rooms.length > 0 ? Math.round((rooms.filter(r => r.status === 'Terisi').length / rooms.length) * 100) : 0;
+    const occupancyRate = rooms.length > 0 ? Math.round((rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length / rooms.length) * 100) : 0;
     doc.setFillColor(239, 246, 255); // Blue 50
     doc.setDrawColor(219, 234, 254); // Blue 100
     doc.roundedRect(14 + (boxWidth * 2) + 10, summaryY, boxWidth, boxHeight, 3, 3, "FD");
@@ -162,10 +189,58 @@ export function LuxuryReports() {
     doc.setFont("helvetica", "bold");
     doc.text(`${occupancyRate}%`, 14 + (boxWidth * 2) + 15, summaryY + 18);
 
+    // --- Row 2: Secondary Metrics ---
+    const summaryY2 = summaryY + boxHeight + 5;
+    
+    // Box 4: Available Rooms
+    doc.setFillColor(240, 253, 244); // Green 50
+    doc.setDrawColor(220, 252, 231); // Green 100
+    doc.roundedRect(14, summaryY2, boxWidth, boxHeight, 3, 3, "FD");
+
+    doc.setFontSize(9);
+    doc.setTextColor(22, 163, 74); // Green 600
+    doc.setFont("helvetica", "normal");
+    doc.text(t('availableRooms').toUpperCase(), 14 + 5, summaryY2 + 8);
+
+    doc.setFontSize(14);
+    doc.setTextColor(21, 128, 61); // Green 700
+    doc.setFont("helvetica", "bold");
+    doc.text(`${rooms.filter(r => r.status === 'Tersedia').length}`, 14 + 5, summaryY2 + 18);
+
+    // Box 5: Maintenance
+    doc.setFillColor(254, 242, 242); // Red 50
+    doc.setDrawColor(254, 226, 226); // Red 100
+    doc.roundedRect(14 + boxWidth + 5, summaryY2, boxWidth, boxHeight, 3, 3, "FD");
+
+    doc.setFontSize(9);
+    doc.setTextColor(220, 38, 38); // Red 600
+    doc.setFont("helvetica", "normal");
+    doc.text(t('maintenanceRooms').toUpperCase(), 14 + boxWidth + 10, summaryY2 + 8);
+
+    doc.setFontSize(14);
+    doc.setTextColor(185, 28, 28); // Red 700
+    doc.setFont("helvetica", "bold");
+    doc.text(`${rooms.filter(r => r.status === 'Perbaikan').length}`, 14 + boxWidth + 10, summaryY2 + 18);
+
+    // Box 6: Active Tenants
+    doc.setFillColor(245, 243, 255); // Purple 50
+    doc.setDrawColor(237, 233, 254); // Purple 100
+    doc.roundedRect(14 + (boxWidth * 2) + 10, summaryY2, boxWidth, boxHeight, 3, 3, "FD");
+
+    doc.setFontSize(9);
+    doc.setTextColor(124, 58, 237); // Purple 600
+    doc.setFont("helvetica", "normal");
+    doc.text(t('totalActiveTenants').toUpperCase(), 14 + (boxWidth * 2) + 15, summaryY2 + 8);
+
+    doc.setFontSize(14);
+    doc.setTextColor(109, 40, 217); // Purple 700
+    doc.setFont("helvetica", "bold");
+    doc.text(`${tenants.filter(t => t.role === 'tenant').length}`, 14 + (boxWidth * 2) + 15, summaryY2 + 18);
+
     // --- Transaction Details Table ---
     doc.setFontSize(12);
     doc.setTextColor(15, 23, 42); // Slate 900
-    doc.text(t('transactionDetails'), 14, 80);
+    doc.text(t('transactionDetails'), 14, summaryY2 + boxHeight + 15);
 
     const tableColumn = [t('date'), t('tenantName'), t('roomType'), t('roomNo'), t('status'), t('amount')];
     const tableRows: (string | number)[][] = [];
@@ -190,7 +265,7 @@ export function LuxuryReports() {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 85,
+      startY: summaryY2 + boxHeight + 20,
       theme: 'grid',
       headStyles: { 
         fillColor: [245, 158, 11], // Amber 500
@@ -291,6 +366,11 @@ export function LuxuryReports() {
     });
 
     doc.save(`Financial_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -357,17 +437,23 @@ export function LuxuryReports() {
         <div className="flex items-center gap-2 md:gap-3">
           <Button
             variant="outline"
+            onClick={() => {
+              const filters: ('all' | '30days' | '6months' | 'year')[] = ['all', '30days', '6months', 'year'];
+              const nextIndex = (filters.indexOf(dateFilter) + 1) % filters.length;
+              setDateFilter(filters[nextIndex]);
+            }}
             className="flex-1 sm:flex-none bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-xs md:text-sm"
           >
             <Calendar className="size-4 mr-2" />
-            {t('last6Months')}
+            {dateFilter === 'all' ? t('allTime') : dateFilter === '30days' ? t('last30Days') : dateFilter === '6months' ? t('last6Months') : t('lastYear')}
           </Button>
           <Button
             onClick={handleExport}
+            disabled={isExporting}
             className="flex-1 sm:flex-none bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 text-xs md:text-sm"
           >
-            <Download className="size-4 mr-2" />
-            {t('exportReport')}
+            {isExporting ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Download className="size-4 mr-2" />}
+            {isExporting ? t('processing') || 'Memproses...' : t('exportReport')}
           </Button>
         </div>
       </motion.div>
@@ -425,9 +511,9 @@ export function LuxuryReports() {
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm mb-1">{t('occupancy')}</p>
             <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
-              {rooms.length > 0 ? Math.round((rooms.filter(r => r.status === 'Terisi').length / rooms.length) * 100) : 0}%
+              {rooms.length > 0 ? Math.round((rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length / rooms.length) * 100) : 0}%
             </p>
-            <p className="text-[10px] text-purple-600 dark:text-purple-400">{rooms.filter(r => r.status === 'Terisi').length}/{rooms.length} rooms</p>
+            <p className="text-[10px] text-purple-600 dark:text-purple-400">{rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length}/{rooms.length} rooms</p>
           </div>
         </div>
       </motion.div>
@@ -498,7 +584,11 @@ export function LuxuryReports() {
                     <div className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
                     <span className="text-xs md:text-sm text-slate-600 dark:text-slate-300">{item.name} {t('years')}</span>
                   </div>
-                  <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.value}%</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {tenantDemographics.reduce((sum, d) => sum + d.value, 0) > 0 
+                      ? Math.round((item.value / tenantDemographics.reduce((sum, d) => sum + d.value, 0)) * 100) 
+                      : 0}%
+                  </span>
                 </div>
               ))}
             </div>
@@ -523,21 +613,16 @@ export function LuxuryReports() {
               <div className="size-3 bg-amber-500 rounded-full" />
               <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">{t('thisYear')}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="size-3 bg-blue-500 rounded-full" />
-              <span className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">{t('lastYear')}</span>
-            </div>
           </div>
         </div>
         <div className="h-64 md:h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyComparison}>
+            <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.1} vertical={false} />
               <XAxis dataKey="month" stroke="#64748b" style={{ fontSize: '10px' }} axisLine={false} tickLine={false} />
               <YAxis stroke="#64748b" style={{ fontSize: '10px' }} axisLine={false} tickLine={false} tickFormatter={(value) => formatPrice(value)} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="thisYear" name={t('thisYear')} fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={30} />
-              <Bar dataKey="lastYear" name={t('lastYear')} fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={30} />
+              <Bar dataKey="revenue" name={t('thisYear')} fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -551,9 +636,8 @@ export function LuxuryReports() {
         className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8"
       >
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 shadow-sm dark:shadow-none">
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">{t('revenueBreakdown')}</h3>
           <div className="space-y-4">
-            {revenueByType.map((item) => (
+            {revenueByType.filter(item => item.type !== 'Single Room').map((item) => (
               <div key={item.type} className="p-5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:border-amber-500/30 transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -599,6 +683,66 @@ export function LuxuryReports() {
                 {formatPrice(rooms.reduce((sum, r) => sum + (r.harga_per_bulan || 0), 0))}
               </p>
             </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Property & User Overview Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.4 }}
+        className="space-y-4"
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{t('propertyOverview')}</h3>
+        </div>
+        
+        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
+          {/* Total Rooms */}
+          <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm dark:shadow-none">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('totalRooms')}</p>
+            <p className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{rooms.length}</p>
+          </div>
+
+          {/* Available Rooms */}
+          <div className="p-4 bg-white dark:bg-slate-900 border border-green-200 dark:border-green-500/20 rounded-2xl shadow-sm dark:shadow-none">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('availableRooms')}</p>
+            <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
+              {rooms.filter(r => ['tersedia', 'available'].includes(r.status?.toLowerCase())).length}
+            </p>
+          </div>
+
+          {/* Occupied Rooms */}
+          <div className="p-4 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/20 rounded-2xl shadow-sm dark:shadow-none">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('occupiedRooms')}</p>
+            <p className="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400">
+              {rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length}
+            </p>
+          </div>
+
+          {/* Maintenance Rooms */}
+          <div className="p-4 bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-500/20 rounded-2xl shadow-sm dark:shadow-none">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('maintenanceRooms')}</p>
+            <p className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">
+              {rooms.filter(r => ['maintenance', 'perbaikan'].includes(r.status?.toLowerCase())).length}
+            </p>
+          </div>
+
+          {/* Active Tenants */}
+          <div className="p-4 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-500/20 rounded-2xl shadow-sm dark:shadow-none">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('totalActiveTenants')}</p>
+            <p className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {tenants.filter(t => t.role === 'tenant').length}
+            </p>
+          </div>
+
+          {/* Total Guests */}
+          <div className="p-4 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-500/20 rounded-2xl shadow-sm dark:shadow-none">
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('totalGuests')}</p>
+            <p className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400">
+              {tenants.filter(te => te.role === 'guest' || !te.role).length}
+            </p>
           </div>
         </div>
       </motion.div>
