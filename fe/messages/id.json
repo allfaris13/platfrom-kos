@@ -58,6 +58,8 @@
     "phoneNumber": "Nomor Telepon",
     "homeAddress": "Alamat Asal",
     "birthDate": "Tanggal Lahir",
+    "gender": "Jenis Kelamin",
+    "selectGender": "Pilih Jenis Kelamin",
     "confirmPassword": "Konfirmasi Password",
     "creatingAccount": "Membuat Akun...",
     "registerButton": "Daftar Akun",

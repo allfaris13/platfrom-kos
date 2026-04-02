@@ -16,8 +16,15 @@ services:
       GIN_MODE: release
       ALLOWED_ORIGINS: https://rahmatzaw.elarisnoir.my.id
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_EMAIL: ${SMTP_EMAIL}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      CONTACT_EMAIL: ${CONTACT_EMAIL}
     ports:
       - "8087:8080"
+    volumes:
+      - ./be/public:/app/public
     networks:
       - app-network
     deploy:

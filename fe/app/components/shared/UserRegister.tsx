@@ -10,6 +10,7 @@ import { api } from "@/app/services/api";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
 
 interface UserRegisterProps {
   onRegisterSuccess: () => void;
@@ -45,7 +46,17 @@ export function UserRegister({
 
     setIsLoading(true);
     try {
-      await api.register({ username, password, email, nomor_hp: phone, alamat_asal: address, tanggal_lahir: birthdate, nik, role: "tenant" });
+      await api.register({ 
+        username, 
+        password, 
+        email, 
+        nomor_hp: phone, 
+        alamat_asal: address, 
+        tanggal_lahir: birthdate, 
+        nik, 
+        jenis_kelamin: "Laki-laki",
+        role: "tenant" 
+      });
       toast.success(t('accountCreatedToast'), {
         description: t('accountCreatedToastDesc'),
         duration: 5000,

@@ -202,7 +202,11 @@ export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLog
             )}
 
             {activeView === 'history' && (
-              <HistoryView isLoggedIn={isLoggedIn} onLogout={onLogout} />
+              <HistoryView 
+                isLoggedIn={isLoggedIn} 
+                onLogout={onLogout} 
+                onBrowseRooms={() => setActiveView('home')} 
+              />
             )}
 
             {activeView === 'profile' && isLoggedIn && (

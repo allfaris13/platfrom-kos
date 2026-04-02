@@ -350,9 +350,12 @@ export const api = {
   },
 
   // --- KAMAR / ROOMS ---
-  getRooms: async () => {
-    // Backend returns raw array []Kamar
-    return apiCall<Room[]>('GET', '/kamar');
+  getRooms: async (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const endpoint = query.toString() ? `/kamar?${query.toString()}` : '/kamar';
+    return apiCall<Room[]>( 'GET', endpoint);
   },
 
   getRoomById: async (id: string) => {
@@ -448,8 +451,12 @@ export const api = {
     return apiCall<MessageResponse>('PUT', `/tenants/${id}/deactivate`);
   },
 
-  getAllPayments: async () => {
-    return apiCall<Payment[]>('GET', '/payments');
+  getAllPayments: async (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const endpoint = query.toString() ? `/payments?${query.toString()}` : '/payments';
+    return apiCall<Payment[]>('GET', endpoint);
   },
 
   confirmPayment: async (paymentId: string) => {

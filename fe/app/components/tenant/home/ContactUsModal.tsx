@@ -12,6 +12,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/app/components/ui/select';
+import { api } from '@/app/services/api';
+import { toast } from 'sonner';
 
 interface ContactFormData {
   name: string;
@@ -55,7 +57,7 @@ export function ContactUsModal({ isOpen, onClose }: ContactUsModalProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateEmail(formData.email)) {
@@ -64,15 +66,26 @@ export function ContactUsModal({ isOpen, onClose }: ContactUsModalProps) {
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      // Send the form data to the backend API
+      await api.sendContactForm({
+        name: formData.name,
+        email: formData.email,
+        message: `[Subject: ${formData.subject}] [Phone: ${formData.phone}] - ${formData.message}`
+      });
+      
       setLoading(false);
       setSubmitted(true);
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
       setTimeout(() => {
         setSubmitted(false);
         onClose();
-      }, 2000);
-    }, 1500);
+      }, 3000);
+    } catch (error: unknown) {
+      setLoading(false);
+      const errorMessage = error instanceof Error ? error.message : "Gagal mengirim pesan. Harap cek konfigurasi server.";
+      toast.error(errorMessage);
+    }
   };
 
   const handleClose = () => {

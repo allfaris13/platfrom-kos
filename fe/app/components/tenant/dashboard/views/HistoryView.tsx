@@ -6,9 +6,10 @@ import { useTranslations } from 'next-intl';
 interface HistoryViewProps {
   isLoggedIn: boolean;
   onLogout?: () => void;
+  onBrowseRooms?: () => void;
 }
 
-export function HistoryView({ isLoggedIn, onLogout }: HistoryViewProps) {
+export function HistoryView({ isLoggedIn, onLogout, onBrowseRooms }: HistoryViewProps) {
   const t = useTranslations('history');
 
   if (!isLoggedIn) {
@@ -24,5 +25,5 @@ export function HistoryView({ isLoggedIn, onLogout }: HistoryViewProps) {
     );
   }
 
-  return <BookingHistory />;
+  return <BookingHistory onBrowseRooms={onBrowseRooms} />;
 }

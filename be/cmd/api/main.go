@@ -103,6 +103,9 @@ func main() {
 
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
+	
+	// Socket.io mount
+	r.Any("/socket.io/*any", gin.WrapH(socketServer.Server))
 
 	// Global Middleware
 	r.Use(middleware.ErrorHandlingMiddleware())
@@ -118,11 +121,6 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
-
-	// Socket.io mount
-	r.GET("/socket.io/*any", gin.WrapH(socketServer.Server))
-	r.POST("/socket.io/*any", gin.WrapH(socketServer.Server))
-	r.Handle("ANY", "/socket.io/*any", gin.WrapH(socketServer.Server))
 
 	// Serve Static Files for local uploads
 	r.Static("/uploads", "./public/uploads")

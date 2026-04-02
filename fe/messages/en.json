@@ -58,6 +58,8 @@
     "phoneNumber": "Phone Number",
     "homeAddress": "Home Address",
     "birthDate": "Date of Birth",
+    "gender": "Gender",
+    "selectGender": "Select Gender",
     "confirmPassword": "Confirm Password",
     "creatingAccount": "Creating Account...",
     "registerButton": "Create Account",

@@ -81,7 +81,11 @@ const getReminderTypeBadge = (reminder: PaymentReminder) => {
 
 import { useTranslations } from 'next-intl';
 
-export function BookingHistory() {
+interface BookingHistoryProps {
+  onBrowseRooms?: () => void;
+}
+
+export function BookingHistory({ onBrowseRooms }: BookingHistoryProps) {
   const t = useTranslations('history');
   
   const {
@@ -604,7 +608,10 @@ export function BookingHistory() {
                     {t('noBookingsDesc')}
                   </p>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 text-white font-semibold px-6 py-2 shadow-lg hover:shadow-xl transition-all">
+                    <Button 
+                      onClick={onBrowseRooms}
+                      className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 text-white font-semibold px-6 py-2 shadow-lg hover:shadow-xl transition-all"
+                    >
                       <Search className="w-4 h-4 mr-2" />
                       {t('browseRooms')}
                     </Button>

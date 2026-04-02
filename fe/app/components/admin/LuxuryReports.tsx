@@ -23,10 +23,10 @@ export function LuxuryReports() {
     const fetchData = async () => {
       try {
         const [pData, rData, sData, tData] = await Promise.all([
-          api.getAllPayments(),
-          api.getRooms(),
+          api.getAllPayments({ limit: 1000 }), // Fetch all payments
+          api.getRooms({ limit: 1000 }), // Fetch all rooms
           api.getDashboardStats(),
-          api.getAllTenants() // Fetch tenants
+          api.getAllTenants({ limit: 1000 }) // Fetch all tenants
         ]);
         setPayments(pData);
         setRooms(rData);
@@ -65,24 +65,15 @@ export function LuxuryReports() {
     .filter(p => p.status_pembayaran === 'Pending')
     .reduce((sum, p) => sum + p.jumlah_bayar, 0);
 
-  // Derived metrics for Property & User Overview (Activity based)
-  const periodOccupiedRoomIds = new Set(filteredPayments.filter(p => p.status_pembayaran === 'Confirmed' || p.status_pembayaran === 'Pending').map(p => p.pemesanan?.kamar_id).filter(id => !!id));
-  const periodActiveTenantIds = new Set(filteredPayments.filter(p => p.status_pembayaran === 'Confirmed' || p.status_pembayaran === 'Pending').map(p => p.pemesanan?.penyewa_id).filter(id => !!id));
+  // Real-time Property & User Summary (Synchronized with Room Data & Tenant Data)
+  const currentOccupiedRooms = rooms.filter(r => r.status?.toLowerCase() === 'penuh' || ['terisi', 'occupied'].includes(r.status?.toLowerCase()));
+  const currentAvailableRooms = rooms.filter(r => r.status?.toLowerCase() === 'tersedia' || r.status?.toLowerCase() === 'available');
+  const currentMaintenanceRooms = rooms.filter(r => ['maintenance', 'perbaikan'].includes(r.status?.toLowerCase()));
   
-  const periodNewGuestsCount = tenants.filter(t => {
-    const isGuest = t.role === 'guest' || !t.role;
-    if (!isGuest) return false;
-    if (dateFilter === 'all') return true;
-    
-    const regDate = new Date(t.created_at || t.user?.created_at || '');
-    const now = new Date();
-    if (dateFilter === '30days') return now.getTime() - regDate.getTime() < 30 * 24 * 60 * 60 * 1000;
-    if (dateFilter === '6months') return now.getTime() - regDate.getTime() < 6 * 30 * 24 * 60 * 60 * 1000;
-    if (dateFilter === 'year') return now.getTime() - regDate.getTime() < 365 * 24 * 60 * 60 * 1000;
-    return true;
-  }).length;
+  const currentActiveTenants = tenants.filter(t => t.role === 'tenant');
+  const currentGuests = tenants.filter(t => t.role === 'guest' || !t.role);
 
-  const occupancyRate = rooms.length > 0 ? Math.round((periodOccupiedRoomIds.size / rooms.length) * 100) : 0;
+  const occupancyRate = rooms.length > 0 ? Math.round((currentOccupiedRooms.length / rooms.length) * 100) : 0;
 
   // Calculate derived stats from filtered payments
   const derivedRevenueByType = rooms.map(room => {
@@ -109,15 +100,70 @@ export function LuxuryReports() {
 
   const revenueByType = derivedRevenueByType;
 
-  const tenantDemographics = stats?.demographics || [
-    { name: '18-25', value: 33, color: '#f59e0b' },
-    { name: '26-35', value: 45, color: '#3b82f6' },
-    { name: '36-45', value: 15, color: '#10b981' },
-    { name: '45+', value: 7, color: '#8b5cf6' }
-  ];
+  // Recalculate demographics based on filtered period
+  const derivedDemographics = () => {
+    const ageGroups = {
+      '18-25': 0,
+      '26-35': 0,
+      '36-45': 0,
+      '45+': 0,
+    };
 
-  // Monthly Data from Backend (static for now as it's harder to re-calculate per month locally without more data)
-  const monthlyData = stats?.monthly_trend || [];
+    const periodTenants = tenants.filter(t => {
+      if (dateFilter === 'all') return true;
+      const regDate = new Date(t.created_at || t.user?.created_at || '');
+      const now = new Date();
+      if (dateFilter === '30days') return now.getTime() - regDate.getTime() < 30 * 24 * 60 * 60 * 1000;
+      if (dateFilter === '6months') return now.getTime() - regDate.getTime() < 6 * 30 * 24 * 60 * 60 * 1000;
+      if (dateFilter === 'year') return now.getTime() - regDate.getTime() < 365 * 24 * 60 * 60 * 1000;
+      return true;
+    });
+
+    periodTenants.forEach(t => {
+      const dob = t.tanggal_lahir ? new Date(t.tanggal_lahir) : null;
+      if (!dob) return;
+      const age = new Date().getFullYear() - dob.getFullYear();
+      if (age >= 18 && age <= 25) ageGroups['18-25']++;
+      else if (age >= 26 && age <= 35) ageGroups['26-35']++;
+      else if (age >= 36 && age <= 45) ageGroups['36-45']++;
+      else if (age > 45) ageGroups['45+']++;
+    });
+
+    return [
+      { name: '18-25', value: ageGroups['18-25'], color: '#f59e0b' },
+      { name: '26-35', value: ageGroups['26-35'], color: '#3b82f6' },
+      { name: '36-45', value: ageGroups['36-45'], color: '#10b981' },
+      { name: '45+', value: ageGroups['45+'], color: '#8b5cf6' }
+    ];
+  };
+
+  const tenantDemographics = derivedDemographics();
+
+  // Recalculate Monthly Data from filtered payments
+  const derivedMonthlyTrend = () => {
+    const monthMap: Record<string, number> = {};
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Default show last 6 months or all months in filtered payments
+    filteredPayments.forEach(p => {
+      const date = new Date(p.tanggal_bayar);
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      const key = `${month} ${year}`;
+      monthMap[key] = (monthMap[key] || 0) + p.jumlah_bayar;
+    });
+
+    return Object.entries(monthMap).map(([month, revenue]) => ({
+      month,
+      revenue
+    })).sort((a, b) => {
+      const [mA, yA] = a.month.split(' ');
+      const [mB, yB] = b.month.split(' ');
+      return new Date(`${mA} 1, ${yA}`).getTime() - new Date(`${mB} 1, ${yB}`).getTime();
+    });
+  };
+
+  const monthlyData = derivedMonthlyTrend();
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -232,7 +278,7 @@ export function LuxuryReports() {
     doc.setFontSize(14);
     doc.setTextColor(21, 128, 61); // Green 700
     doc.setFont("helvetica", "bold");
-    doc.text(`${rooms.length - periodOccupiedRoomIds.size}`, 14 + 5, summaryY2 + 18);
+    doc.text(`${currentAvailableRooms.length}`, 14 + 5, summaryY2 + 18);
 
     // Box 5: Maintenance
     doc.setFillColor(254, 242, 242); // Red 50
@@ -247,7 +293,7 @@ export function LuxuryReports() {
     doc.setFontSize(14);
     doc.setTextColor(185, 28, 28); // Red 700
     doc.setFont("helvetica", "bold");
-    doc.text(`${rooms.filter(r => ['maintenance', 'perbaikan'].includes(r.status?.toLowerCase())).length}`, 14 + boxWidth + 10, summaryY2 + 18);
+    doc.text(`${currentMaintenanceRooms.length}`, 14 + boxWidth + 10, summaryY2 + 18);
 
     // Box 6: Active Tenants
     doc.setFillColor(245, 243, 255); // Purple 50
@@ -262,7 +308,7 @@ export function LuxuryReports() {
     doc.setFontSize(14);
     doc.setTextColor(109, 40, 217); // Purple 700
     doc.setFont("helvetica", "bold");
-    doc.text(`${periodActiveTenantIds.size}`, 14 + (boxWidth * 2) + 15, summaryY2 + 18);
+    doc.text(`${currentActiveTenants.length}`, 14 + (boxWidth * 2) + 15, summaryY2 + 18);
 
     // --- Transaction Details Table ---
     doc.setFontSize(12);
@@ -543,9 +589,9 @@ export function LuxuryReports() {
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm mb-1">{t('occupancy')}</p>
             <p className="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-0.5 md:mb-1">
-              {rooms.length > 0 ? Math.round((rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length / rooms.length) * 100) : 0}%
+              {occupancyRate}%
             </p>
-            <p className="text-[10px] text-purple-600 dark:text-purple-400">{rooms.filter(r => ['terisi', 'penuh', 'occupied'].includes(r.status?.toLowerCase())).length}/{rooms.length} rooms</p>
+            <p className="text-[10px] text-purple-600 dark:text-purple-400">{currentOccupiedRooms.length}/{rooms.length} rooms</p>
           </div>
         </div>
       </motion.div>
@@ -565,7 +611,7 @@ export function LuxuryReports() {
           </div>
           <div className="h-64 md:h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueByType}>
+              <BarChart data={revenueByType.filter(item => item.type !== 'Single Room')}>
                 <defs>
                   <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
@@ -741,7 +787,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-green-200 dark:border-green-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('availableRooms')}</p>
             <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
-              {rooms.length - periodOccupiedRoomIds.size}
+              {currentAvailableRooms.length}
             </p>
           </div>
 
@@ -749,7 +795,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('occupiedRooms')}</p>
             <p className="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400">
-              {periodOccupiedRoomIds.size}
+              {currentOccupiedRooms.length}
             </p>
           </div>
 
@@ -757,7 +803,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('maintenanceRooms')}</p>
             <p className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">
-              {rooms.filter(r => ['maintenance', 'perbaikan'].includes(r.status?.toLowerCase())).length}
+              {currentMaintenanceRooms.length}
             </p>
           </div>
 
@@ -765,7 +811,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('totalActiveTenants')}</p>
             <p className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {periodActiveTenantIds.size}
+              {currentActiveTenants.length}
             </p>
           </div>
 
@@ -773,7 +819,7 @@ export function LuxuryReports() {
           <div className="p-4 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-500/20 rounded-2xl shadow-sm dark:shadow-none">
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">{t('totalGuests')}</p>
             <p className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-400">
-              {periodNewGuestsCount}
+              {currentGuests.length}
             </p>
           </div>
         </div>
