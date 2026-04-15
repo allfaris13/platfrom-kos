@@ -7,9 +7,10 @@ interface HistoryViewProps {
   isLoggedIn: boolean;
   onLogout?: () => void;
   onBrowseRooms?: () => void;
+  onNavigateToRoom?: (roomId: string, bookedKamarIds: number[]) => void;
 }
 
-export function HistoryView({ isLoggedIn, onLogout, onBrowseRooms }: HistoryViewProps) {
+export function HistoryView({ isLoggedIn, onLogout, onBrowseRooms, onNavigateToRoom }: HistoryViewProps) {
   const t = useTranslations('history');
 
   if (!isLoggedIn) {
@@ -25,5 +26,5 @@ export function HistoryView({ isLoggedIn, onLogout, onBrowseRooms }: HistoryView
     );
   }
 
-  return <BookingHistory onBrowseRooms={onBrowseRooms} />;
+  return <BookingHistory onBrowseRooms={onBrowseRooms} onNavigateToRoom={onNavigateToRoom} />;
 }

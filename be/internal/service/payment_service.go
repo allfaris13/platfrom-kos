@@ -15,7 +15,7 @@ type PaymentService interface {
 	ConfirmPayment(paymentID uint) error
 	RejectPayment(paymentID uint) error
 	CreatePaymentSession(pemesananID uint, paymentType string) (*models.Pembayaran, error)
-	ConfirmCashPayment(paymentID uint, buktiTransfer string) error
+	ConfirmCashPayment(paymentID uint) error
 	GetPaymentReminders(userID uint) ([]models.PaymentReminder, error)
 	CreatePaymentReminder(pembayaranID uint, jumlahBayar float64, daysUntilDue int) error
 	UploadPaymentProof(paymentID uint, buktiTransfer string, userID uint) error
@@ -236,8 +236,7 @@ func (s *paymentService) UploadPaymentProof(paymentID uint, buktiTransfer string
 	return nil
 }
 
-func (s *paymentService) ConfirmCashPayment(paymentID uint, buktiTransfer string) error {
-	// Reusing ConfirmPayment logic but allowing to set proof if provided
+func (s *paymentService) ConfirmCashPayment(paymentID uint) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		txRepo := s.repo.WithTx(tx)
 
@@ -246,16 +245,14 @@ func (s *paymentService) ConfirmCashPayment(paymentID uint, buktiTransfer string
 			return err
 		}
 
-		if buktiTransfer != "" {
-			payment.BuktiTransfer = buktiTransfer
-		}
+		// Update status pembayaran menjadi Menunggu Konfirmasi Admin
+		payment.StatusPembayaran = "Menunggu Konfirmasi Admin"
 
 		if err := txRepo.Update(payment); err != nil {
 			return err
 		}
 
-		// Use the main confirmation logic
-		return s.ConfirmPayment(paymentID)
+		return nil
 	})
 }
 

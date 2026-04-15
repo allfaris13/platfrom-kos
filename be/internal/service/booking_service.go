@@ -11,6 +11,7 @@ import (
 
 type BookingResponse struct {
 	ID              uint                `json:"id"`
+	KamarID         uint                `json:"kamar_id"`
 	Kamar           models.Kamar        `json:"kamar"`
 	TanggalMulai    string              `json:"tanggal_mulai"`
 	DurasiSewa      int                 `json:"durasi_sewa"`
@@ -59,11 +60,16 @@ func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error)
 
 		var totalPaid float64
 		var lastStatus string
+		var latestPaymentID uint
 		for _, p := range payments {
 			if p.StatusPembayaran == "Confirmed" {
 				totalPaid += p.JumlahBayar
 			}
-			lastStatus = p.StatusPembayaran
+			// Use the most recent payment's status (highest ID = newest)
+			if p.ID > latestPaymentID {
+				latestPaymentID = p.ID
+				lastStatus = p.StatusPembayaran
+			}
 		}
 
 		actualDurasi := b.DurasiSewa
@@ -76,6 +82,7 @@ func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error)
 
 		response = append(response, BookingResponse{
 			ID:              b.ID,
+			KamarID:         b.KamarID,
 			Kamar:           b.Kamar, // Already preloaded
 			TanggalMulai:    b.TanggalMulai.Format("2006-01-02"),
 			DurasiSewa:      actualDurasi,
@@ -347,6 +354,15 @@ func (s *bookingService) ExtendBooking(bookingID uint, months int, userID uint, 
 
 	if booking.StatusPemesanan != "Confirmed" {
 		return nil, fmt.Errorf("hanya booking yang sudah dikonfirmasi yang bisa diperpanjang")
+	}
+
+	// Check if there's any pending or rejected payment
+	if len(booking.Pembayaran) > 0 {
+		for _, payment := range booking.Pembayaran {
+			if payment.StatusPembayaran == "Pending" || payment.StatusPembayaran == "Rejected" {
+				return nil, fmt.Errorf("pengajuan gagal karena anda masih punya pembayaran yang belum terkonfirmasi")
+			}
+		}
 	}
 
 	// Calculate amount

@@ -48,6 +48,9 @@ func (s *reviewService) CreateReview(review *models.Review, userID uint) error {
 		return fmt.Errorf("unauthorized: you must have a confirmed booking for this room to review it")
 	}
 
+	// Set UserID from authenticated user context
+	review.UserID = userID
+
 	return s.repo.Create(review)
 }
 

@@ -99,6 +99,7 @@ interface HomepageProps {
   onLoginPrompt?: () => void;
   userName?: string;
   onViewHistory?: () => void;
+  userBookedKamarIds?: number[];
 }
 
 export function Homepage({
@@ -106,6 +107,7 @@ export function Homepage({
   isLoggedIn,
   userName,
   onViewHistory,
+  userBookedKamarIds = [],
 }: HomepageProps) {
   const {
     searchLocation,
@@ -351,11 +353,17 @@ export function Homepage({
                     variants={fadeInUp}
                     initial="hidden"
                     animate="visible"
-                    whileHover={room.status?.toLowerCase() === 'penuh' ? {} : { y: -5 }}
-                    className={`group h-full ${room.status?.toLowerCase() === 'penuh' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                    onClick={() => room.status?.toLowerCase() !== 'penuh' && onRoomClick(room.id)}
+                    whileHover={(room.status?.toLowerCase() === 'penuh' && !userBookedKamarIds.includes(Number(room.id))) ? {} : { y: -5 }}
+                    className={`group h-full ${(room.status?.toLowerCase() === 'penuh' && !userBookedKamarIds.includes(Number(room.id))) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                    onClick={() => {
+                      const isRoomFull = room.status?.toLowerCase() === 'penuh';
+                      const isUserBooked = userBookedKamarIds.includes(Number(room.id));
+                      if (!isRoomFull || isUserBooked) {
+                        onRoomClick(room.id);
+                      }
+                    }}
                   >
-                    <Card className={`overflow-hidden border-0 bg-white dark:bg-slate-900 shadow-lg lg:shadow-xl lg:shadow-slate-200/50 dark:shadow-none rounded-[1.2rem] lg:rounded-[2.5rem] h-full flex flex-col transition-all duration-300 hover:shadow-2xl ${room.status?.toLowerCase() === 'penuh' ? 'opacity-75 grayscale-[30%]' : ''}`}>
+                    <Card className={`overflow-hidden border-0 bg-white dark:bg-slate-900 shadow-lg lg:shadow-xl lg:shadow-slate-200/50 dark:shadow-none rounded-[1.2rem] lg:rounded-[2.5rem] h-full flex flex-col transition-all duration-300 hover:shadow-2xl ${(room.status?.toLowerCase() === 'penuh' && !userBookedKamarIds.includes(Number(room.id))) ? 'opacity-75 grayscale-[30%]' : ''}`}>
                       <div className="relative aspect-[4/3] overflow-hidden rounded-t-[1.2rem] lg:rounded-t-[2.5rem] transform-gpu">
                         <ImageWithFallback
                           src={room.image}
@@ -368,8 +376,16 @@ export function Homepage({
                             {room.type}
                           </Badge>
                         </div>
-                        {/* PENUH overlay badge */}
-                        {room.status?.toLowerCase() === 'penuh' && (
+                        {/* Show PENUH if room is full AND user hasn't booked it, or show Dihuni if user has booked */}
+                        {room.status?.toLowerCase() === 'penuh' && userBookedKamarIds.includes(Number(room.id)) && (
+                          <div className="absolute top-2 right-2 lg:top-4 lg:right-4">
+                            <Badge className="bg-green-500/90 backdrop-blur-md text-white border-0 px-2 lg:px-4 py-0.5 lg:py-1.5 rounded-full font-bold shadow-sm text-[8px] lg:text-xs">
+                              ✓ Dihuni
+                            </Badge>
+                          </div>
+                        )}
+                        {/* PENUH overlay badge - only show if user hasn't booked */}
+                        {room.status?.toLowerCase() === 'penuh' && !userBookedKamarIds.includes(Number(room.id)) && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
                             <span className="bg-red-600 text-white text-xs lg:text-base font-black uppercase tracking-widest px-4 py-1.5 lg:px-6 lg:py-2 rounded-full shadow-2xl border-2 border-red-400 rotate-[-8deg]">
                               PENUH
@@ -413,7 +429,7 @@ export function Homepage({
                             {tc('perMonth')}
                           </span>
                         </div>
-                        {room.status?.toLowerCase() === 'penuh' ? (
+                        {room.status?.toLowerCase() === 'penuh' && !userBookedKamarIds.includes(Number(room.id)) ? (
                           <Button
                             size="sm"
                             disabled
@@ -431,7 +447,7 @@ export function Homepage({
                               onRoomClick(room.id);
                             }}
                           >
-                            {t('selectRoom')} <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
+                            {userBookedKamarIds.includes(Number(room.id)) ? 'Lihat Detail' : t('selectRoom')} <ArrowRight className="w-2 h-2 lg:w-4 lg:h-4 group-hover/btn:translate-x-1 transition-transform" />
                           </Button>
                         )}
                       </CardFooter>

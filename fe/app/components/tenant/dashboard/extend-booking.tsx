@@ -59,17 +59,27 @@ export function ExtendBooking({ isOpen, onClose, bookingData, onSuccess }: Exten
         await api.uploadPaymentProof(paymentResponse.id, proofFile);
       }
 
-      toast.success('Permintaan perpanjangan sewa berhasil dibuat!', {
-        description: `Tagihan baru sebesar Rp ${totalCost.toLocaleString()} telah dibuat. Silakan tunggu konfirmasi dari admin.`,
-        duration: 5000,
-      });
-      
-      onSuccess?.();
+      if (onSuccess) onSuccess();
+      toast.success('Perpanjangan berhasil diajukan. Menunggu konfirmasi admin.');
       onClose();
     } catch (error) {
       console.error("Failed to extend booking", error);
-      toast.error("Gagal memperpanjang sewa", {
-        description: "Terjadi kesalahan saat memproses permintaan anda."
+      
+      // Extract specific error message from backend
+      let errorMessage = 'Gagal mengajukan perpanjangan. Silahkan coba lagi.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('pembayaran yang belum terkonfirmasi')) {
+          errorMessage = 'Pengajuan gagal karena Anda masih punya pembayaran yang belum terkonfirmasi. Selesaikan pembayaran terlebih dahulu.';
+        } else if (error.message.includes('sudah dikonfirmasi')) {
+          errorMessage = 'Hanya booking yang sudah dikonfirmasi yang bisa diperpanjang.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error('Perpanjangan Gagal', {
+        description: errorMessage
       });
     } finally {
       setLoading(false);
@@ -130,7 +140,7 @@ export function ExtendBooking({ isOpen, onClose, bookingData, onSuccess }: Exten
                   </Badge>
                 </div>
               </div>
-
+              
               {/* Duration Selector */}
               <div className="space-y-4">
                 <label className="text-sm font-bold text-slate-700 flex items-center gap-2">

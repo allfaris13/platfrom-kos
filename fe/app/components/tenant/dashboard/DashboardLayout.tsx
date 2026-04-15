@@ -18,6 +18,7 @@ import { Footer } from './Footer';
 import { useProfile } from './hooks/useProfile';
 import { MenuItem } from './types';
 import { useTranslations } from 'next-intl';
+import { api } from '@/app/services/api';
 
 import { LayoutDashboard } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
@@ -34,6 +35,8 @@ export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLog
   const [activeView, setActiveView] = useState('home');
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [bookingDraft, setBookingDraft] = useState<{ moveInDate?: string; duration?: string; guests?: string } | undefined>(undefined);
+  // List of kamar IDs user has a confirmed booking for (used to gate review form)
+  const [userBookedKamarIds, setUserBookedKamarIds] = useState<number[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -81,6 +84,34 @@ export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLog
     if (storedMobileMenu) setMobileMenuOpen(storedMobileMenu === 'true');
   }, []);
 
+  // Fetch user's booked kamar IDs on mount (only if logged in)
+  useEffect(() => {
+    const fetchUserBookedKamars = async () => {
+      if (!effectiveIsLoggedIn) {
+        setUserBookedKamarIds([]);
+        return;
+      }
+
+      try {
+        // Fetch all bookings for the current user
+        const bookings = await api.getMyBookings();
+        
+        // Extract kamar IDs from confirmed bookings
+        const bookedKamarIds = bookings
+          ?.filter((b: any) => b.status_pemesanan === 'Confirmed')
+          ?.map((b: any) => Number(b.kamar_id || b.kamar?.id))
+          ?.filter((id: number) => !!id && id > 0) || [];
+        
+        setUserBookedKamarIds(bookedKamarIds);
+      } catch (error) {
+        console.error('Failed to fetch user bookings:', error);
+        setUserBookedKamarIds([]);
+      }
+    };
+
+    fetchUserBookedKamars();
+  }, [effectiveIsLoggedIn]);
+
   // Sync basic dashboard state to storage
   useEffect(() => {
     if (isClient) {
@@ -97,6 +128,13 @@ export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLog
   // -- Handlers --
   const navigateToRoomDetail = (roomId: string) => {
     setSelectedRoomId(roomId);
+    setActiveView('room-detail');
+  };
+
+  // Navigate to room detail from booking history, also tracks which rooms user has booked
+  const navigateToRoomDetailFromHistory = (roomId: string, bookedKamarIds: number[]) => {
+    setSelectedRoomId(roomId);
+    setUserBookedKamarIds(bookedKamarIds);
     setActiveView('room-detail');
   };
 
@@ -174,6 +212,7 @@ export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLog
                 onLogout={onLogout}
                 setActiveView={setActiveView}
                 navigateToRoomDetail={navigateToRoomDetail}
+                userBookedKamarIds={userBookedKamarIds}
               />
             )}
             
@@ -188,6 +227,7 @@ export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLog
                 onBack={() => setActiveView('home')}
                 isLoggedIn={isLoggedIn}
                 onLoginPrompt={onLogout}
+                userBookedKamarIds={userBookedKamarIds}
               />
             )}
 
@@ -205,7 +245,8 @@ export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLog
               <HistoryView 
                 isLoggedIn={isLoggedIn} 
                 onLogout={onLogout} 
-                onBrowseRooms={() => setActiveView('home')} 
+                onBrowseRooms={() => setActiveView('home')}
+                onNavigateToRoom={navigateToRoomDetailFromHistory}
               />
             )}
 
