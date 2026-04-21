@@ -8,37 +8,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockReviewRepository implements repository.ReviewRepository interface
-type MockReviewRepository struct {
-	mock.Mock
-}
-
-func (m *MockReviewRepository) Create(review *models.Review) error {
-	args := m.Called(review)
-	return args.Error(0)
-}
-
-func (m *MockReviewRepository) FindByKamarID(kamarID uint) ([]models.Review, error) {
-	args := m.Called(kamarID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]models.Review), args.Error(1)
-}
-
-func (m *MockReviewRepository) FindAll() ([]models.Review, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]models.Review), args.Error(1)
-}
-
-func (m *MockReviewRepository) Delete(id uint) error {
-	args := m.Called(id)
-	return args.Error(0)
-}
-
 // Test CreateReview - Success
 func TestReviewService_CreateReview_Success(t *testing.T) {
 	mockReviewRepo := new(MockReviewRepository)

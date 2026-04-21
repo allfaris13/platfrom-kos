@@ -98,8 +98,8 @@ export function UserPlatform({ onLogout, onBackToAdmin, isLoggedIn: initialIsLog
         
         // Extract kamar IDs from confirmed bookings
         const bookedKamarIds = bookings
-          ?.filter((b: any) => b.status_pemesanan === 'Confirmed')
-          ?.map((b: any) => Number(b.kamar_id || b.kamar?.id))
+          ?.filter((b: { status_pemesanan?: string }) => b.status_pemesanan === 'Confirmed')
+          ?.map((b: { kamar_id?: number, kamar?: { id: number } }) => Number(b.kamar_id || b.kamar?.id))
           ?.filter((id: number) => !!id && id > 0) || [];
         
         setUserBookedKamarIds(bookedKamarIds);

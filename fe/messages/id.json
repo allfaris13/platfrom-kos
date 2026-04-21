@@ -55,6 +55,7 @@
     "emailAddress": "Alamat Email",
     "nik": "NIK",
     "nikPlaceholder": "Nomor Induk Kependudukan",
+    "nikValidationError": "NIK harus terdiri dari 16 digit angka",
     "phoneNumber": "Nomor Telepon",
     "homeAddress": "Alamat Asal",
     "birthDate": "Tanggal Lahir",

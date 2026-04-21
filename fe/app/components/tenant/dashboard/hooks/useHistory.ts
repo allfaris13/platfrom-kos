@@ -127,6 +127,7 @@ export function useHistory() {
   }, []);
 
   const refreshData = useCallback(() => {
+    // Revalidate SWR cache to reflect latest changes from backend
     mutateBookings();
     mutateReminders();
   }, [mutateBookings, mutateReminders]);

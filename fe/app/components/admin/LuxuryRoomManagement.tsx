@@ -282,9 +282,14 @@ export function LuxuryRoomManagement() {
         await api.deleteRoom(id);
         await fetchRooms();
         toast.success(t('roomDeletedSuccess') || 'Kamar berhasil dihapus');
-      } catch (e) {
+      } catch (e: unknown) {
         console.error(e);
-        toast.error(t('failedToDelete'));
+        // Extract error message if available
+        if (e instanceof Error && e.message.includes('pemesanan aktif')) {
+          toast.error('Kamar tidak dapat dihapus karena masih ada pemesanan aktif. Ubah status kamar terlebih dahulu.');
+        } else {
+          toast.error(t('failedToDelete') || 'Gagal menghapus kamar');
+        }
       } finally {
         setDeletingId(null);
       }
@@ -430,6 +435,11 @@ export function LuxuryRoomManagement() {
                         <SelectItem value="Maintenance">{t('status_maintenance')}</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {formData.status === 'Penuh' && '⚠️ Kamar dengan status "Penuh" tidak dapat dihapus. Gunakan status ini saat ada penyewa aktif.'}
+                      {formData.status === 'Maintenance' && '🔧 Kamar sedang dalam perbaikan dan tidak tersedia untuk disewa.'}
+                      {formData.status === 'Tersedia' && '✓ Kamar siap untuk disewa.'}
+                    </p>
                   </div>
                 </div>
 

@@ -129,7 +129,7 @@ export function BookingHistory({ onBrowseRooms, onNavigateToRoom }: BookingHisto
     .map(b => b.kamarId)
     .filter(id => !!id && id > 0);
 
-  const handleRoomCardClick = (booking: any) => {
+  const handleRoomCardClick = (booking: { kamarId?: string | number }) => {
     if (!onNavigateToRoom || !booking.kamarId) return;
     onNavigateToRoom(String(booking.kamarId), allConfirmedKamarIds);
   };

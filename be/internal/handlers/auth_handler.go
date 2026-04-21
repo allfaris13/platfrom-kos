@@ -97,6 +97,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	// Validate NIK (must be exactly 16 digits)
+	if validationErr := utils.ValidateNIK(input.NIK); validationErr != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Message})
+		return
+	}
+
 	// Parse birthdate
 
 	user, err := h.service.Register(input.Username, input.Password, "guest", input.Email, input.Phone, input.Address, input.Birthdate, input.NIK, input.Gender)

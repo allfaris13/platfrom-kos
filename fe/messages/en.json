@@ -55,6 +55,7 @@
     "emailAddress": "Email Address",
     "nik": "National ID Number",
     "nikPlaceholder": "National ID Number",
+    "nikValidationError": "NIK must consist of 16 digits",
     "phoneNumber": "Phone Number",
     "homeAddress": "Home Address",
     "birthDate": "Date of Birth",

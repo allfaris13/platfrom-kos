@@ -51,12 +51,12 @@ func main() {
 	// Removed Cloudinary Initialization
 
 	authService := service.NewAuthService(userRepo, penyewaRepo, cfg, emailSender, &utils.RealIDTokenVerifier{})
-	kamarService := service.NewKamarService(kamarRepo)
+	kamarService := service.NewKamarService(kamarRepo, bookingRepo)
 	galleryService := service.NewGalleryService(galleryRepo)
 	dashboardService := service.NewDashboardService(db)
 	reviewService := service.NewReviewService(reviewRepo, bookingRepo, penyewaRepo)
 	profileService := service.NewProfileService(userRepo, penyewaRepo)
-	bookingService := service.NewBookingService(bookingRepo, userRepo, penyewaRepo, kamarRepo, paymentRepo, db)
+	bookingService := service.NewBookingService(bookingRepo, userRepo, penyewaRepo, kamarRepo, paymentRepo, db, waSender)
 	paymentService := service.NewPaymentService(paymentRepo, bookingRepo, kamarRepo, penyewaRepo, db, emailSender, waSender)
 	tenantService := service.NewTenantService(penyewaRepo)
 	contactService := service.NewContactService()

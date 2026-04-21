@@ -32,6 +32,8 @@ type Kamar struct {
 	Bathrooms     int            `json:"bathrooms"`
 	Description   string         `json:"description"`
 	ImageURL      string         `json:"image_url"`
+	IsLocked      bool           `gorm:"default:false" json:"is_locked"` // Flag to prevent deletion if room is booked/has active tenant
+	LockedReason  string         `json:"locked_reason"`                   // Reason for lock (e.g., "tenant_non_payment", "active_booking")
 	Images        []KamarImage   `gorm:"foreignKey:KamarID" json:"Images,omitempty"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
@@ -93,6 +95,7 @@ type Pemesanan struct {
 	KamarID         uint           `gorm:"index" json:"kamar_id"`
 	Kamar           Kamar          `gorm:"foreignKey:KamarID" json:"kamar"`
 	TanggalMulai    time.Time      `json:"tanggal_mulai"`
+	TanggalKeluar   time.Time      `json:"tanggal_keluar"`
 	DurasiSewa      int            `json:"durasi_sewa"`
 	StatusPemesanan string         `gorm:"index" json:"status_pemesanan"`   // enum
 	Pembayaran      []Pembayaran   `gorm:"foreignKey:PemesananID" json:"-"` // Relation for eager loading
@@ -108,15 +111,17 @@ type Pembayaran struct {
 	JumlahBayar       float64        `json:"jumlah_bayar"`
 	TanggalBayar      time.Time      `json:"tanggal_bayar"`
 	BuktiTransfer     string         `json:"bukti_transfer"`
-	StatusPembayaran  string         `gorm:"index" json:"status_pembayaran"` // enum: Pending, Confirmed, Failed, Settled
+	StatusPembayaran  string         `gorm:"index" json:"status_pembayaran"` // enum: Pending, Confirmed, Failed, Settled, Cancelled
 	OrderID           string         `json:"order_id"`
 	MetodePembayaran  string         `json:"metode_pembayaran"`   // enum: transfer, cash
-	TipePembayaran    string         `json:"tipe_pembayaran"`     // enum: full, dp (down payment)
+	TipePembayaran    string         `json:"tipe_pembayaran"`     // enum: full, dp (down payment), extend
 	JumlahDP          float64        `json:"jumlah_dp"`           // Jumlah DP jika tipe_pembayaran = dp
 	TanggalJatuhTempo time.Time      `json:"tanggal_jatuh_tempo"` // Tanggal pembayaran cicilan berikutnya
+	IdempotencyKey    string         `gorm:"uniqueIndex:idx_payment_idempotency;index" json:"idempotency_key"` // FIX #19: Prevent duplicate confirmations
+	ConfirmedAt       time.Time      `json:"confirmed_at"`        // FIX #1, #3: Track exact confirmation time for audit
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at"`
-	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
+	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`      // FIX #2, #9: Soft delete instead of hard delete
 }
 
 // PaymentReminder untuk tracking pembayaran bulanan

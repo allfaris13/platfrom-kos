@@ -3,12 +3,14 @@ package repository
 import (
 	"koskosan-be/internal/models"
 
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm"
 )
 
 type KamarRepository interface {
 	FindAll() ([]models.Kamar, error)
 	FindByID(id uint) (*models.Kamar, error)
+	FindByIDForUpdate(id uint) (*models.Kamar, error) // FIX #12: Pessimistic lock
 	Create(kamar *models.Kamar) error
 	Update(kamar *models.Kamar) error
 	UpdateStatus(id uint, status string) error
@@ -35,6 +37,13 @@ func (r *kamarRepository) FindAll() ([]models.Kamar, error) {
 func (r *kamarRepository) FindByID(id uint) (*models.Kamar, error) {
 	var kamar models.Kamar
 	err := r.db.Preload("Images").First(&kamar, id).Error
+	return &kamar, err
+}
+
+// FIX #12: FindByIDForUpdate with pessimistic lock (SELECT...FOR UPDATE)
+func (r *kamarRepository) FindByIDForUpdate(id uint) (*models.Kamar, error) {
+	var kamar models.Kamar
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&kamar, id).Error
 	return &kamar, err
 }
 

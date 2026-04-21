@@ -3,67 +3,12 @@ package service
 import (
 	"errors"
 	"koskosan-be/internal/models"
-	"koskosan-be/internal/repository"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"gorm.io/gorm"
 )
-
-// MockPaymentRepository implements repository.PaymentRepository interface
-type MockPaymentRepository struct {
-	mock.Mock
-}
-
-func (m *MockPaymentRepository) Create(payment *models.Pembayaran) error {
-	args := m.Called(payment)
-	return args.Error(0)
-}
-
-func (m *MockPaymentRepository) Update(payment *models.Pembayaran) error {
-	args := m.Called(payment)
-	return args.Error(0)
-}
-
-func (m *MockPaymentRepository) FindAll() ([]models.Pembayaran, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]models.Pembayaran), args.Error(1)
-}
-
-func (m *MockPaymentRepository) FindByID(id uint) (*models.Pembayaran, error) {
-	args := m.Called(id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*models.Pembayaran), args.Error(1)
-}
-
-func (m *MockPaymentRepository) FindByBookingID(bookingID uint) (*models.Pembayaran, error) {
-	args := m.Called(bookingID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*models.Pembayaran), args.Error(1)
-}
-
-func (m *MockPaymentRepository) WithTx(tx *gorm.DB) repository.PaymentRepository {
-	return m
-}
-
-// MockWhatsAppSender implements utils.WhatsAppSender interface
-type MockWhatsAppSender struct {
-	mock.Mock
-}
-
-func (m *MockWhatsAppSender) SendWhatsApp(to, message string) error {
-	args := m.Called(to, message)
-	return args.Error(0)
-}
 
 // Test GetAllPayments - Happy Path
 func TestPaymentService_GetAllPayments_Success(t *testing.T) {
@@ -300,25 +245,4 @@ func TestPaymentService_UploadPaymentProof_UpdateError(t *testing.T) {
 	mockPenyewaRepo.AssertExpectations(t)
 }
 
-func (m *MockPaymentRepository) CreateReminder(reminder *models.PaymentReminder) error {
-	args := m.Called(reminder)
-	return args.Error(0)
-}
 
-func (m *MockPaymentRepository) DeleteByBookingID(bookingID uint) error {
-	args := m.Called(bookingID)
-	return args.Error(0)
-}
-
-func (m *MockPaymentRepository) DeleteRemindersByBookingID(bookingID uint) error {
-	args := m.Called(bookingID)
-	return args.Error(0)
-}
-
-func (m *MockPaymentRepository) FindByOrderID(orderID string) (*models.Pembayaran, error) {
-	args := m.Called(orderID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*models.Pembayaran), args.Error(1)
-}
