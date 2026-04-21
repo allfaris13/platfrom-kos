@@ -5,6 +5,7 @@ import { getImageUrl } from '@/app/utils/api-url';
 
 export interface UIBooking {
   id: string;
+  kamarId: number;  // kamar_id untuk navigasi ke room detail
   roomName: string;
   roomImage: string;
   location: string;
@@ -73,6 +74,7 @@ export function useHistory() {
 
       return {
         id: b.id.toString(),
+        kamarId: b.kamar_id,
         roomName: `${b.kamar?.nomor_kamar || 'Kamar'} - ${b.kamar?.tipe_kamar || ''}`,
         roomImage: getImageUrl(b.kamar?.image_url),
         location: `Floor ${b.kamar?.floor || '-'}`,
@@ -125,6 +127,7 @@ export function useHistory() {
   }, []);
 
   const refreshData = useCallback(() => {
+    // Revalidate SWR cache to reflect latest changes from backend
     mutateBookings();
     mutateReminders();
   }, [mutateBookings, mutateReminders]);

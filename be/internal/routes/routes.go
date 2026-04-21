@@ -150,9 +150,10 @@ func (r *Routes) registerAdminRoutes(protected *gin.RouterGroup) {
 		// Kamar management
 		kamar := admin.Group("/kamar")
 		{
-			kamar.POST("", r.kamarHandler.CreateKamar)       // POST /api/kamar
-			kamar.PUT("/:id", r.kamarHandler.UpdateKamar)    // PUT /api/kamar/:id
-			kamar.DELETE("/:id", r.kamarHandler.DeleteKamar) // DELETE /api/kamar/:id
+			kamar.POST("", r.kamarHandler.CreateKamar)             // POST /api/kamar
+			kamar.PUT("/:id", r.kamarHandler.UpdateKamar)          // PUT /api/kamar/:id
+			kamar.PATCH("/:id/status", r.kamarHandler.UpdateKamarStatus) // PATCH /api/kamar/:id/status
+			kamar.DELETE("/:id", r.kamarHandler.DeleteKamar)       // DELETE /api/kamar/:id
 		}
 
 		// Gallery management

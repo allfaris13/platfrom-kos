@@ -7,6 +7,7 @@ import (
 	"koskosan-be/internal/utils"
 	"time"
 
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm"
 )
 
@@ -14,8 +15,8 @@ type PaymentService interface {
 	GetAllPayments() ([]models.Pembayaran, error)
 	ConfirmPayment(paymentID uint) error
 	RejectPayment(paymentID uint) error
-	CreatePaymentSession(pemesananID uint, paymentType string) (*models.Pembayaran, error)
-	ConfirmCashPayment(paymentID uint, buktiTransfer string) error
+	CreatePaymentSession(pemesananID uint, paymentType string, userID uint) (*models.Pembayaran, error)
+	ConfirmCashPayment(paymentID uint) error
 	GetPaymentReminders(userID uint) ([]models.PaymentReminder, error)
 	CreatePaymentReminder(pembayaranID uint, jumlahBayar float64, daysUntilDue int) error
 	UploadPaymentProof(paymentID uint, buktiTransfer string, userID uint) error
@@ -50,7 +51,13 @@ func (s *paymentService) ConfirmPayment(paymentID uint) error {
 			return err
 		}
 
+		// FIX #19: Idempotency check - prevent duplicate confirmation
+		if payment.StatusPembayaran == "Confirmed" {
+			return fmt.Errorf("pembayaran sudah dikonfirmasi sebelumnya pada %s", payment.ConfirmedAt.Format("02 January 2006 15:04"))
+		}
+
 		payment.StatusPembayaran = "Confirmed"
+		payment.ConfirmedAt = time.Now() // FIX #1: Track exact confirmation time
 		payment.TanggalBayar = time.Now() // Set payment date to now if not set
 
 		if err := txRepo.Update(payment); err != nil {
@@ -65,27 +72,49 @@ func (s *paymentService) ConfirmPayment(paymentID uint) error {
 		// Also update booking status if needed
 		booking, err := txBookingRepo.FindByID(payment.PemesananID)
 		if err == nil {
-			// If this is an extension payment, increase the DurasiSewa based on payment amount and room price
+			// FIX #3: Pessimistic lock for extend payment with race condition protection
 			if payment.TipePembayaran == "extend" {
-				kamar, kamarErr := txKamarRepo.FindByID(booking.KamarID)
-				if kamarErr == nil && kamar.HargaPerBulan > 0 {
-					months := int(payment.JumlahBayar / kamar.HargaPerBulan)
-					if months > 0 {
-						booking.DurasiSewa += months
+				// Re-fetch booking with lock to prevent race condition
+				var lockedBooking models.Pemesanan
+				if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&lockedBooking, booking.ID).Error; err == nil {
+					booking = &lockedBooking
+					kamar, kamarErr := txKamarRepo.FindByID(booking.KamarID)
+					if kamarErr == nil && kamar.HargaPerBulan > 0 {
+						months := int(payment.JumlahBayar / kamar.HargaPerBulan)
+						if months > 0 {
+							// FIX #11: Update both duration AND extend end date
+							booking.DurasiSewa += months
+							// Recalculate TanggalKeluar based on new total duration
+							booking.TanggalKeluar = booking.TanggalMulai.AddDate(0, booking.DurasiSewa, 0)
+						}
 					}
 				}
 			}
 
-			booking.StatusPemesanan = "Confirmed"
+			// FIX #10: Check if it's a DP payment without full payment
+			if payment.TipePembayaran == "dp" && payment.StatusPembayaran == "Confirmed" {
+				// We can check if there are any other Confirmed non-dp payments for this booking
+				// Simplest way: For DP, just set status to Partially Paid to block move-in
+				booking.StatusPemesanan = "Partially Paid"
+			} else {
+				booking.StatusPemesanan = "Confirmed"
+			}
+
+			// Ensure TanggalKeluar is calculated if for some reason it's zero
+			if booking.TanggalKeluar.IsZero() {
+				booking.TanggalKeluar = booking.TanggalMulai.AddDate(0, booking.DurasiSewa, 0)
+			}
+
 			if err := txBookingRepo.Update(booking); err != nil {
 				return err
 			}
 
-			// 1 kamar = 1 penyewa: langsung tandai Penuh saat ada booking Confirmed
-			kamar, err := txKamarRepo.FindByID(booking.KamarID)
-			if err == nil {
-				kamar.Status = "Penuh"
-				if err := txKamarRepo.Update(kamar); err != nil {
+			// FIX #1: Atomic room status update - use pessimistic lock
+			// Only mark Room as "Penuh" if booking is truly Confirmed or securing it with DP
+			var lockedKamar models.Kamar
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&lockedKamar, booking.KamarID).Error; err == nil {
+				lockedKamar.Status = "Penuh"
+				if err := txKamarRepo.Update(&lockedKamar); err != nil {
 					return err
 				}
 			}
@@ -141,10 +170,20 @@ func (s *paymentService) RejectPayment(paymentID uint) error {
 }
 
 // CreatePaymentSession now only creates a Pending Manual payment
-func (s *paymentService) CreatePaymentSession(pemesananID uint, paymentType string) (*models.Pembayaran, error) {
+func (s *paymentService) CreatePaymentSession(pemesananID uint, paymentType string, userID uint) (*models.Pembayaran, error) {
 	booking, err := s.bookingRepo.FindByID(pemesananID)
 	if err != nil {
 		return nil, err
+	}
+
+	// SECURITY FIX: Verify ownership
+	penyewa, err := s.penyewaRepo.FindByUserID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("user profile not found")
+	}
+
+	if booking.PenyewaID != penyewa.ID {
+		return nil, fmt.Errorf("unauthorized: you can only pay for your own bookings")
 	}
 
 	kamar, err := s.kamarRepo.FindByID(booking.KamarID)
@@ -236,8 +275,7 @@ func (s *paymentService) UploadPaymentProof(paymentID uint, buktiTransfer string
 	return nil
 }
 
-func (s *paymentService) ConfirmCashPayment(paymentID uint, buktiTransfer string) error {
-	// Reusing ConfirmPayment logic but allowing to set proof if provided
+func (s *paymentService) ConfirmCashPayment(paymentID uint) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		txRepo := s.repo.WithTx(tx)
 
@@ -246,16 +284,14 @@ func (s *paymentService) ConfirmCashPayment(paymentID uint, buktiTransfer string
 			return err
 		}
 
-		if buktiTransfer != "" {
-			payment.BuktiTransfer = buktiTransfer
-		}
+		// Update status pembayaran menjadi Menunggu Konfirmasi Admin
+		payment.StatusPembayaran = "Menunggu Konfirmasi Admin"
 
 		if err := txRepo.Update(payment); err != nil {
 			return err
 		}
 
-		// Use the main confirmation logic
-		return s.ConfirmPayment(paymentID)
+		return nil
 	})
 }
 
@@ -280,6 +316,16 @@ func (s *paymentService) GetPaymentReminders(userID uint) ([]models.PaymentRemin
 }
 
 func (s *paymentService) CreatePaymentReminder(pembayaranID uint, jumlahBayar float64, daysUntilDue int) error {
+	// FIX #5: Deduplicate pending reminders to prevent multiple simultaneous bills
+	var count int64
+	s.db.Model(&models.PaymentReminder{}).
+		Where("pembayaran_id = ? AND status_reminder = ?", pembayaranID, "Pending").
+		Count(&count)
+	
+	if count > 0 {
+		return nil // Active reminder already exists, no need to recreate
+	}
+
 	// Hitung tanggal jatuh tempo
 	dueDate := time.Now().AddDate(0, 0, daysUntilDue)
 
@@ -309,13 +355,17 @@ func (s *paymentService) sendSuccessNotifications(paymentID uint) {
 
 	// Email
 	if tenant.Email != "" {
-		s.emailSender.SendPaymentSuccessEmail(tenant.Email, tenant.NamaLengkap, payment.JumlahBayar, time.Now())
+		if err := s.emailSender.SendPaymentSuccessEmail(tenant.Email, tenant.NamaLengkap, payment.JumlahBayar, time.Now()); err != nil {
+			fmt.Printf("[Warning] FIX #18: Failed to send Email notification for payment %d: %v\n", payment.ID, err)
+		}
 	}
 
 	// WhatsApp
 	if tenant.NomorHP != "" {
 		msg := fmt.Sprintf("Terima kasih %s! Pembayaran sebesar Rp %.0f untuk kamar %s telah kami terima.",
 			tenant.NamaLengkap, payment.JumlahBayar, payment.Pemesanan.Kamar.NomorKamar)
-		s.waSender.SendWhatsApp(tenant.NomorHP, msg)
+		if err := s.waSender.SendWhatsApp(tenant.NomorHP, msg); err != nil {
+			fmt.Printf("[Warning] FIX #18: Failed to send WA notification for payment %d: %v\n", payment.ID, err)
+		}
 	}
 }

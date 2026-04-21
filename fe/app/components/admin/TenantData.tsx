@@ -455,10 +455,7 @@ export function TenantData() {
                       <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Telepon</p>
                       <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.nomor_hp || viewingTenant.nomor_hp || '-'}</p>
                     </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                      <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Jenis Kelamin</p>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.jenis_kelamin || viewingTenant.jenis_kelamin || '-'}</p>
-                    </div>
+
                     <div className="col-span-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
                       <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1">Alamat Asal</p>
                       <p className="text-xs font-bold text-slate-900 dark:text-white">{tenantPaymentDetail?.alamat_asal || viewingTenant.alamat_asal || '-'}</p>

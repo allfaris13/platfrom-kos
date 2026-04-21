@@ -52,6 +52,20 @@ func (s *profileService) UpdateProfile(userID uint, input models.Penyewa) (*mode
 	if input.FotoProfil != "" {
 		penyewa.FotoProfil = input.FotoProfil
 	}
+	
+	// FIX #7: Sync Email between Penyewa and User if it changed
+	if input.Email != "" && input.Email != penyewa.Email {
+		oldEmail := penyewa.Email
+		penyewa.Email = input.Email
+		user, err := s.userRepo.FindByID(userID)
+		if err == nil {
+			// Only update Username if they use Email as their Username for login
+			if user.Username == oldEmail {
+				user.Username = input.Email
+				s.userRepo.Update(user)
+			}
+		}
+	}
 
 	if err := s.penyewaRepo.Update(penyewa); err != nil {
 		return nil, err

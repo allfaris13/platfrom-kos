@@ -6,6 +6,7 @@ interface HomeViewProps {
   onLogout?: () => void;
   userName: string;
   setActiveView: (view: string) => void;
+  userBookedKamarIds?: number[];
 }
 
 export function HomeView({
@@ -13,7 +14,8 @@ export function HomeView({
   isLoggedIn,
   onLogout,
   userName,
-  setActiveView
+  setActiveView,
+  userBookedKamarIds = []
 }: HomeViewProps) {
   return (
     <Homepage
@@ -22,6 +24,7 @@ export function HomeView({
       onLoginPrompt={onLogout}
       userName={userName}
       onViewHistory={() => setActiveView('history')}
+      userBookedKamarIds={userBookedKamarIds}
     />
   );
 }

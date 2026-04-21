@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Trash2, Plus, Download, Eye, Loader2 } from 'lucide-react';
-import Image from 'next/image';
+import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/app/components/ui/dialog';
@@ -128,11 +128,10 @@ export function GalleryData() {
                 <div className="flex flex-col gap-4">
                   {(imageFile) && (
                     <div className="relative w-full h-48 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
-                      <Image
+                      <ImageWithFallback
                         src={URL.createObjectURL(imageFile)}
                         alt="Preview"
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <p className="text-white font-medium text-sm">{t('currentPreview')}</p>
@@ -228,11 +227,9 @@ export function GalleryData() {
         ) : filteredImages.map((image) => (
           <div key={image.id} className="bg-white dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:border-amber-500/30 transition-all duration-300 group shadow-sm dark:shadow-none">
             <div className="aspect-[4/3] overflow-hidden relative">
-              <Image
+              <ImageWithFallback
                 src={getImageUrl(image.image_url)}
                 alt={image.title}
-                width={400}
-                height={300}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />

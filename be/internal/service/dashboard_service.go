@@ -166,6 +166,8 @@ func (s *dashboardService) GetRoomOccupancy() ([]RoomOccupancyInfo, error) {
 		JOIN penyewas p ON p.id = pm.penyewa_id
 		WHERE pm.status_pemesanan = 'Confirmed'
 		AND pm.deleted_at IS NULL AND k.deleted_at IS NULL AND p.deleted_at IS NULL
+		ORDER BY pm.created_at DESC
+		LIMIT 1000
 	`).Scan(&rows)
 
 	for _, row := range rows {
@@ -231,6 +233,8 @@ func (s *dashboardService) GetTenantRooms() ([]TenantRoomInfo, error) {
 		JOIN penyewas p ON p.id = pm.penyewa_id
 		WHERE pm.status_pemesanan = 'Confirmed'
 		AND pm.deleted_at IS NULL AND k.deleted_at IS NULL AND p.deleted_at IS NULL
+		ORDER BY pm.created_at DESC
+		LIMIT 1000
 	`).Scan(&rows)
 
 	for _, row := range rows {

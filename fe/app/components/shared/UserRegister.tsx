@@ -10,6 +10,7 @@ import { api } from "@/app/services/api";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
 
 interface UserRegisterProps {
   onRegisterSuccess: () => void;
@@ -38,6 +39,11 @@ export function UserRegister({
     e.preventDefault();
     setError("");
 
+    if (nik.length !== 16 || !/^\d+$/.test(nik)) {
+      setError(t('nikValidationError') || 'NIK harus terdiri dari 16 digit angka');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError(t('passwordMismatch'));
       return;
@@ -45,7 +51,17 @@ export function UserRegister({
 
     setIsLoading(true);
     try {
-      await api.register({ username, password, email, nomor_hp: phone, alamat_asal: address, tanggal_lahir: birthdate, nik, role: "tenant" });
+      await api.register({ 
+        username, 
+        password, 
+        email, 
+        nomor_hp: phone, 
+        alamat_asal: address, 
+        tanggal_lahir: birthdate, 
+        nik, 
+        jenis_kelamin: "Laki-laki",
+        role: "tenant" 
+      });
       toast.success(t('accountCreatedToast'), {
         description: t('accountCreatedToastDesc'),
         duration: 5000,
@@ -191,7 +207,13 @@ export function UserRegister({
             </div>
             <div>
               <Label htmlFor="nik">{t('nik')}</Label>
-              <Input id="nik" value={nik} onChange={(e) => setNik(e.target.value)} placeholder={t('nikPlaceholder')} className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
+              <Input id="nik" type="text" inputMode="numeric" value={nik} onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 16);
+                setNik(value);
+              }} maxLength={16} placeholder={t('nikPlaceholder')} className="mt-1.5 h-11 !bg-white !border-stone-900 border text-stone-900 placeholder:text-stone-400 focus-visible:!border-stone-900 focus-visible:ring-stone-900/20 rounded-xl [color-scheme:light]" required />
+              {nik.length > 0 && nik.length < 16 && (
+                <p className="text-xs text-amber-600 mt-1">{nik.length}/16 digit</p>
+              )}
             </div>
             <div>
               <Label htmlFor="phone">{t('phoneNumber')}</Label>

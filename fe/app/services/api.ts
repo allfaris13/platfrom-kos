@@ -240,6 +240,7 @@ const apiCall = async <T>(method: string, endpoint: string, body?: unknown): Pro
     method,
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include', // IMPORTANT: Send HttpOnly cookies with requests
+    cache: 'no-store', // FIX #16: Prevent Next.js from caching dynamic API data like stats/revenue
   };
 
   if (body) {
@@ -350,9 +351,12 @@ export const api = {
   },
 
   // --- KAMAR / ROOMS ---
-  getRooms: async () => {
-    // Backend returns raw array []Kamar
-    return apiCall<Room[]>('GET', '/kamar');
+  getRooms: async (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const endpoint = query.toString() ? `/kamar?${query.toString()}` : '/kamar';
+    return apiCall<Room[]>( 'GET', endpoint);
   },
 
   getRoomById: async (id: string) => {
@@ -366,6 +370,10 @@ export const api = {
 
   updateRoom: async (id: string, formData: FormData) => {
     return apiCall<Room>('PUT', `/kamar/${id}`, formData);
+  },
+
+  updateRoomStatus: async (id: string, status: 'Tersedia' | 'Penuh' | 'Maintenance') => {
+    return apiCall<Room>('PATCH', `/kamar/${id}/status`, { status });
   },
 
   deleteRoom: async (id: string) => {
@@ -448,8 +456,12 @@ export const api = {
     return apiCall<MessageResponse>('PUT', `/tenants/${id}/deactivate`);
   },
 
-  getAllPayments: async () => {
-    return apiCall<Payment[]>('GET', '/payments');
+  getAllPayments: async (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const endpoint = query.toString() ? `/payments?${query.toString()}` : '/payments';
+    return apiCall<Payment[]>('GET', endpoint);
   },
 
   confirmPayment: async (paymentId: string) => {

@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "res.cloudinary.com",
         port: "",
+      },
+      {
+        protocol: "https",
+        hostname: "rahmatzaw.elarisnoir.my.id",
+        port: "",
       }
     ],
     // Hanya unoptimized di development, di production akan dioptimasi

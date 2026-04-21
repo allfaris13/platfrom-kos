@@ -124,6 +124,35 @@ func ValidateEmail(email string) *ValidationError {
 	return nil
 }
 
+// ValidateNIK checks if NIK format is valid (must be exactly 16 digits)
+func ValidateNIK(nik string) *ValidationError {
+	if nik == "" {
+		return &ValidationError{
+			Field:   "nik",
+			Message: "NIK is required",
+		}
+	}
+	
+	// NIK must be exactly 16 digits
+	if len(nik) != 16 {
+		return &ValidationError{
+			Field:   "nik",
+			Message: "NIK must be exactly 16 digits",
+		}
+	}
+	
+	// Check if all characters are digits
+	nikRegex := regexp.MustCompile(`^\d{16}$`)
+	if !nikRegex.MatchString(nik) {
+		return &ValidationError{
+			Field:   "nik",
+			Message: "NIK must consist only of digits",
+		}
+	}
+	
+	return nil
+}
+
 // SanitizeString removes potentially harmful characters
 func SanitizeString(input string) string {
 	// Remove null bytes

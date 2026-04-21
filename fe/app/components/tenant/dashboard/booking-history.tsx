@@ -24,7 +24,8 @@ import {
   Wallet,
   Upload,
   Search,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs-component";
 import { UploadProofModal } from '../booking/upload-proof-modal';
@@ -81,9 +82,14 @@ const getReminderTypeBadge = (reminder: PaymentReminder) => {
 
 import { useTranslations } from 'next-intl';
 
-export function BookingHistory() {
+interface BookingHistoryProps {
+  onBrowseRooms?: () => void;
+  onNavigateToRoom?: (roomId: string, bookedKamarIds: number[]) => void;
+}
+
+export function BookingHistory({ onBrowseRooms, onNavigateToRoom }: BookingHistoryProps) {
   const t = useTranslations('history');
-  
+
   const {
     activeTab,
     setActiveTab,
@@ -116,6 +122,17 @@ export function BookingHistory() {
     handleViewDetails,
     refreshData
   } = useHistory();
+
+  // Hitung semua kamar ID yang user sudah punya confirmed booking (untuk gating review)
+  const allConfirmedKamarIds = bookings
+    .filter(b => b.status === 'Confirmed')
+    .map(b => b.kamarId)
+    .filter(id => !!id && id > 0);
+
+  const handleRoomCardClick = (booking: { kamarId?: string | number }) => {
+    if (!onNavigateToRoom || !booking.kamarId) return;
+    onNavigateToRoom(String(booking.kamarId), allConfirmedKamarIds);
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -421,14 +438,25 @@ export function BookingHistory() {
                   <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border-0 dark:border dark:border-slate-800 shadow-lg bg-white dark:bg-slate-900">
                     <div className="flex flex-col md:flex-row">
                       <motion.div
-                        className="md:w-80 h-56 md:h-auto flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900"
+                        className={`md:w-80 h-56 md:h-auto flex-shrink-0 relative overflow-hidden bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900 ${
+                          onNavigateToRoom && booking.kamarId ? 'cursor-pointer' : ''
+                        }`}
                         whileHover={{ scale: 1.05 }}
+                        onClick={() => onNavigateToRoom && booking.kamarId && handleRoomCardClick(booking)}
                       >
                         <ImageWithFallback
                           src={booking.roomImage}
                           alt={booking.roomName}
                           className="w-full h-full object-cover"
                         />
+                        {onNavigateToRoom && booking.kamarId && (
+                          <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 flex items-center gap-2 text-sm font-bold text-slate-900 shadow-lg translate-y-2 hover:translate-y-0 transition-all">
+                              <ExternalLink className="w-4 h-4" />
+                              Lihat Kamar
+                            </div>
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
                       </motion.div>
 
@@ -525,6 +553,20 @@ export function BookingHistory() {
                                 {t('viewDetails')}
                               </Button>
                             </motion.div>
+
+                            {/* Tombol Lihat Kamar & Review - muncul saat booking Confirmed */}
+                            {booking.status === 'Confirmed' && onNavigateToRoom && booking.kamarId && (
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                  onClick={() => handleRoomCardClick(booking)}
+                                  variant="outline"
+                                  className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 font-semibold shadow-md hover:shadow-lg transition-all"
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Lihat Kamar & Review
+                                </Button>
+                              </motion.div>
+                            )}
                             
                             {booking.status !== 'Cancelled' && booking.status !== 'Completed' && (
                                 <>
@@ -604,7 +646,10 @@ export function BookingHistory() {
                     {t('noBookingsDesc')}
                   </p>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 text-white font-semibold px-6 py-2 shadow-lg hover:shadow-xl transition-all">
+                    <Button 
+                      onClick={onBrowseRooms}
+                      className="bg-gradient-to-r from-stone-700 to-stone-900 dark:from-stone-600 dark:to-stone-800 text-white font-semibold px-6 py-2 shadow-lg hover:shadow-xl transition-all"
+                    >
                       <Search className="w-4 h-4 mr-2" />
                       {t('browseRooms')}
                     </Button>

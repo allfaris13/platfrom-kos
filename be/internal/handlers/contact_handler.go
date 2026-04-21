@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"koskosan-be/internal/service"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,11 +31,12 @@ func (h *ContactHandler) HandleContactForm(c *gin.Context) {
 		return
 	}
 
-	err := h.contactService.SendContactMessage(req.Name, req.Email, req.Message)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send message"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Message sent successfully"})
+	// Send message in a goroutine to prevent the client from waiting and Cloudflare timeouts (524)
+	go func() {
+		if err := h.contactService.SendContactMessage(req.Name, req.Email, req.Message); err != nil {
+			log.Printf("Contact Form Error: Failed to send message from %s (%s): %v", req.Name, req.Email, err)
+		}
+	}()
+	
+	c.JSON(http.StatusOK, gin.H{"message": "Pesan Anda telah diterima dan akan segera kami proses."})
 }

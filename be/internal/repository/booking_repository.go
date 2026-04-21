@@ -16,6 +16,7 @@ type BookingRepository interface {
 	GetPaymentsByBookingID(bookingID uint) ([]models.Pembayaran, error)
 	FindExpiredPendingBookings(expiryTime time.Time) ([]models.Pemesanan, error)
 	UpdateStatus(id uint, status string) error
+	FindActiveBookingByKamarID(kamarID uint) (*models.Pemesanan, error) // NEW: Check if room has active booking
 	WithTx(tx *gorm.DB) BookingRepository
 }
 
@@ -76,12 +77,27 @@ func (r *bookingRepository) GetPaymentsByBookingID(bookingID uint) ([]models.Pem
 func (r *bookingRepository) FindExpiredPendingBookings(expiryTime time.Time) ([]models.Pemesanan, error) {
 	var bookings []models.Pemesanan
 	// Find bookings that are 'Pending' and created before the expiryTime
-	err := r.db.Where("status_pemesanan = ? AND created_at < ?", "Pending", expiryTime).Find(&bookings).Error
+	err := r.db.Preload("Penyewa").Preload("Kamar").Where("status_pemesanan = ? AND created_at < ?", "Pending", expiryTime).Find(&bookings).Error
 	return bookings, err
 }
 
 func (r *bookingRepository) UpdateStatus(id uint, status string) error {
 	return r.db.Model(&models.Pemesanan{}).Where("id = ?", id).Update("status_pemesanan", status).Error
+}
+
+func (r *bookingRepository) FindActiveBookingByKamarID(kamarID uint) (*models.Pemesanan, error) {
+	var booking models.Pemesanan
+	// Find booking with status "Aktif" or "Confirmed" AND checkout date is still in the future
+	// Calculate checkout date as: tanggal_mulai + (durasi_sewa * INTERVAL '1 month')
+	err := r.db.Where(
+		"kamar_id = ? AND status_pemesanan IN (?) AND tanggal_keluar > NOW()",
+		kamarID,
+		[]string{"Aktif", "Confirmed", "Partially Paid"},
+	).First(&booking).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil // No active booking
+	}
+	return &booking, err
 }
 
 func (r *bookingRepository) WithTx(tx *gorm.DB) BookingRepository {

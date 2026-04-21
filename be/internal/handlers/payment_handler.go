@@ -81,7 +81,18 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.service.CreatePaymentSession(req.PemesananID, req.PaymentType)
+	userIDRaw, _ := c.Get("user_id")
+	userID := uint(0)
+	switch v := userIDRaw.(type) {
+	case float64:
+		userID = uint(v)
+	case int:
+		userID = uint(v)
+	case uint:
+		userID = v
+	}
+
+	payment, err := h.service.CreatePaymentSession(req.PemesananID, req.PaymentType, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -176,16 +187,7 @@ func (h *PaymentHandler) ConfirmCashPayment(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		BuktiTransfer string `json:"bukti_transfer"` // Deskripsi/bukti transfer
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
-		return
-	}
-
-	if err := h.service.ConfirmCashPayment(uint(id), req.BuktiTransfer); err != nil {
+	if err := h.service.ConfirmCashPayment(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -251,3 +251,44 @@ func (h *KamarHandler) DeleteKamar(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "kamar deleted successfully"})
 }
+
+func (h *KamarHandler) UpdateKamarStatus(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	var input struct {
+		Status string `json:"status" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Status is required"})
+		return
+	}
+
+	// Validate status value
+	validStatuses := map[string]bool{"Tersedia": true, "Penuh": true, "Maintenance": true}
+	if !validStatuses[input.Status] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status. Must be one of: Tersedia, Penuh, Maintenance"})
+		return
+	}
+
+	// Get current room to preserve other data
+	kamar, err := h.service.GetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Kamar not found"})
+		return
+	}
+
+	// Update only the status
+	kamar.Status = input.Status
+	if err := h.service.Update(kamar); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Kamar status updated successfully", "kamar": kamar})
+}

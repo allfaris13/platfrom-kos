@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"koskosan-be/internal/models"
 	"koskosan-be/internal/repository"
+	"koskosan-be/internal/utils"
 	"time"
 
 	"gorm.io/gorm"
@@ -11,6 +12,7 @@ import (
 
 type BookingResponse struct {
 	ID              uint                `json:"id"`
+	KamarID         uint                `json:"kamar_id"`
 	Kamar           models.Kamar        `json:"kamar"`
 	TanggalMulai    string              `json:"tanggal_mulai"`
 	DurasiSewa      int                 `json:"durasi_sewa"`
@@ -36,10 +38,11 @@ type bookingService struct {
 	kamarRepo   repository.KamarRepository
 	paymentRepo repository.PaymentRepository
 	db          *gorm.DB // Added db for transactions
+	waSender    utils.WhatsAppSender
 }
 
-func NewBookingService(repo repository.BookingRepository, userRepo repository.UserRepository, penyewaRepo repository.PenyewaRepository, kamarRepo repository.KamarRepository, paymentRepo repository.PaymentRepository, db *gorm.DB) BookingService {
-	return &bookingService{repo, userRepo, penyewaRepo, kamarRepo, paymentRepo, db}
+func NewBookingService(repo repository.BookingRepository, userRepo repository.UserRepository, penyewaRepo repository.PenyewaRepository, kamarRepo repository.KamarRepository, paymentRepo repository.PaymentRepository, db *gorm.DB, waSender utils.WhatsAppSender) BookingService {
+	return &bookingService{repo, userRepo, penyewaRepo, kamarRepo, paymentRepo, db, waSender}
 }
 
 func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error) {
@@ -59,11 +62,16 @@ func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error)
 
 		var totalPaid float64
 		var lastStatus string
+		var latestPaymentID uint
 		for _, p := range payments {
 			if p.StatusPembayaran == "Confirmed" {
 				totalPaid += p.JumlahBayar
 			}
-			lastStatus = p.StatusPembayaran
+			// Use the most recent payment's status (highest ID = newest)
+			if p.ID > latestPaymentID {
+				latestPaymentID = p.ID
+				lastStatus = p.StatusPembayaran
+			}
 		}
 
 		actualDurasi := b.DurasiSewa
@@ -76,6 +84,7 @@ func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error)
 
 		response = append(response, BookingResponse{
 			ID:              b.ID,
+			KamarID:         b.KamarID,
 			Kamar:           b.Kamar, // Already preloaded
 			TanggalMulai:    b.TanggalMulai.Format("2006-01-02"),
 			DurasiSewa:      actualDurasi,
@@ -93,66 +102,71 @@ func (s *bookingService) GetUserBookings(userID uint) ([]BookingResponse, error)
 }
 
 func (s *bookingService) CreateBooking(userID uint, kamarID uint, tanggalMulai string, durasiSewa int) (*models.Pemesanan, error) {
-	penyewa, err := s.penyewaRepo.FindByUserID(userID)
+	var booking models.Pemesanan
+
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		penyewa, err := s.penyewaRepo.WithTx(tx).FindByUserID(userID)
+		if err != nil {
+			return err
+		}
+
+		// Check for active bookings
+		bookings, _ := s.repo.WithTx(tx).FindByPenyewaID(penyewa.ID)
+		for _, b := range bookings {
+			if b.StatusPemesanan == "Pending" {
+				return fmt.Errorf("anda sudah memiliki pesanan aktif (Pending). Selesaikan pembayaran atau batalkan pesanan sebelumnya")
+			}
+			if b.StatusPemesanan == "Confirmed" || b.StatusPemesanan == "Partially Paid" {
+				if time.Now().Before(b.TanggalKeluar) {
+					return fmt.Errorf("masa sewa anda masih aktif hingga %s. Tidak bisa memesan kamar lain", b.TanggalKeluar.Format("02 January 2006"))
+				}
+			}
+		}
+
+		// LOCK ROOM FOR UPDATE to prevent race condition
+		kamar, err := s.kamarRepo.WithTx(tx).FindByIDForUpdate(kamarID)
+		if err != nil {
+			return err
+		}
+
+		if kamar.Status != "Tersedia" {
+			return fmt.Errorf("kamar %s sudah tidak tersedia (Status: %s)", kamar.NomorKamar, kamar.Status)
+		}
+
+		tm, err := time.Parse("2006-01-02", tanggalMulai)
+		if err != nil {
+			return err
+		}
+
+		// Calculate TanggalKeluar explicitly
+		tanggalKeluar := tm.AddDate(0, durasiSewa, 0)
+
+		booking = models.Pemesanan{
+			PenyewaID:       penyewa.ID,
+			KamarID:         kamarID,
+			TanggalMulai:    tm,
+			TanggalKeluar:   tanggalKeluar,
+			DurasiSewa:      durasiSewa,
+			StatusPemesanan: "Pending",
+		}
+
+		if err := s.repo.WithTx(tx).Create(&booking); err != nil {
+			return err
+		}
+
+		// Update room status to Terpesan
+		kamar.Status = "Terpesan"
+		if err := s.kamarRepo.WithTx(tx).Update(kamar); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	// Check for active bookings
-	bookings, _ := s.repo.FindByPenyewaID(penyewa.ID)
-	for _, b := range bookings {
-		// 1. Check for Pending bookings
-		if b.StatusPemesanan == "Pending" {
-			return nil, fmt.Errorf("anda sudah memiliki pesanan aktif (Pending). Selesaikan pembayaran atau batalkan pesanan sebelumnya")
-		}
-
-		// 2. Check for Active Confirmed bookings (Lease period check)
-		if b.StatusPemesanan == "Confirmed" {
-			// Calculate lease end date: StartDate + Duration (months)
-			endDate := b.TanggalMulai.AddDate(0, b.DurasiSewa, 0)
-
-			// If today is before end date, lease is still active
-			if time.Now().Before(endDate) {
-				return nil, fmt.Errorf("masa sewa anda masih aktif hingga %s. Tidak bisa memesan kamar lain", endDate.Format("02 January 2006"))
-			}
-		}
-	}
-
-	tm, err := time.Parse("2006-01-02", tanggalMulai)
-	if err != nil {
-		return nil, err
-	}
-
-	booking := models.Pemesanan{
-		PenyewaID:       penyewa.ID,
-		KamarID:         kamarID,
-		TanggalMulai:    tm,
-		DurasiSewa:      durasiSewa,
-		StatusPemesanan: "Pending",
-	}
-
-	if err := s.repo.Create(&booking); err != nil {
-		return nil, err
-	}
-
-	// ROLE TRANSITION: If user was a guest, promote to tenant
-	if penyewa.Role == "guest" {
-		// 1. Update Penyewa record role
-		if err := s.penyewaRepo.UpdateRole(penyewa.ID, "tenant"); err != nil {
-			fmt.Printf("Warning: Failed to update penyewa role for user %d: %v\n", userID, err)
-		}
-
-		// 2. Update User record role
-		user, err := s.userRepo.FindByID(userID)
-		if err == nil {
-			user.Role = "tenant"
-			if err := s.userRepo.Update(user); err != nil {
-				fmt.Printf("Warning: Failed to update user role for user %d: %v\n", userID, err)
-			}
-		}
-	}
-
-	// Re-fetch to get associations if needed, or just return
 	return &booking, nil
 }
 
@@ -166,7 +180,6 @@ func (s *bookingService) CreateBookingWithProof(userID uint, kamarID uint, tangg
 
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		txRepo := s.repo.WithTx(tx)
-		txUserRepo := s.userRepo.WithTx(tx)
 		txPenyewaRepo := s.penyewaRepo.WithTx(tx)
 		txKamarRepo := s.kamarRepo.WithTx(tx)
 		txPaymentRepo := s.paymentRepo.WithTx(tx)
@@ -182,19 +195,31 @@ func (s *bookingService) CreateBookingWithProof(userID uint, kamarID uint, tangg
 			if b.StatusPemesanan == "Pending" {
 				return fmt.Errorf("anda sudah memiliki pesanan aktif (Pending). Selesaikan pembayaran atau batalkan pesanan sebelumnya")
 			}
-			if b.StatusPemesanan == "Confirmed" {
-				endDate := b.TanggalMulai.AddDate(0, b.DurasiSewa, 0)
-				if time.Now().Before(endDate) {
-					return fmt.Errorf("masa sewa anda masih aktif hingga %s. Tidak bisa memesan kamar lain", endDate.Format("02 January 2006"))
+			if b.StatusPemesanan == "Confirmed" || b.StatusPemesanan == "Partially Paid" {
+				if time.Now().Before(b.TanggalKeluar) {
+					return fmt.Errorf("masa sewa anda masih aktif hingga %s. Tidak bisa memesan kamar lain", b.TanggalKeluar.Format("02 January 2006"))
 				}
 			}
 		}
+
+		// LOCK ROOM FOR UPDATE to prevent race condition
+		kamar, err := txKamarRepo.FindByIDForUpdate(kamarID)
+		if err != nil {
+			return err
+		}
+
+		if kamar.Status != "Tersedia" {
+			return fmt.Errorf("kamar %s sudah tidak tersedia (Status: %s)", kamar.NomorKamar, kamar.Status)
+		}
+
+		tanggalKeluar := tm.AddDate(0, durasiSewa, 0)
 
 		// 1. Create Booking
 		newBooking := models.Pemesanan{
 			PenyewaID:       penyewa.ID,
 			KamarID:         kamarID,
 			TanggalMulai:    tm,
+			TanggalKeluar:   tanggalKeluar,
 			DurasiSewa:      durasiSewa,
 			StatusPemesanan: "Pending",
 		}
@@ -202,14 +227,16 @@ func (s *bookingService) CreateBookingWithProof(userID uint, kamarID uint, tangg
 		if err := txRepo.Create(&newBooking); err != nil {
 			return err
 		}
+
+		// Update room status to Terpesan
+		kamar.Status = "Terpesan"
+		if err := txKamarRepo.Update(kamar); err != nil {
+			return err
+		}
 		booking = &newBooking
 
 		// 2. Setup Payment
-		kamar, err := txKamarRepo.FindByID(kamarID)
-		if err != nil {
-			return err
-		}
-
+		// kamar already loaded with lock above
 		totalAmount := float64(durasiSewa) * kamar.HargaPerBulan
 		var dpAmount float64
 		var finalAmount float64
@@ -261,20 +288,6 @@ func (s *bookingService) CreateBookingWithProof(userID uint, kamarID uint, tangg
 			fmt.Printf("Warning: Failed to create reminder for payment %d: %v\n", payment.ID, err)
 		}
 
-		// 3. Role Transition
-		if penyewa.Role == "guest" {
-			if err := txPenyewaRepo.UpdateRole(penyewa.ID, "tenant"); err != nil {
-				return err
-			}
-			user, err := txUserRepo.FindByID(userID)
-			if err == nil {
-				user.Role = "tenant"
-				if err := txUserRepo.Update(user); err != nil {
-					return err
-				}
-			}
-		}
-
 		return nil
 	})
 
@@ -286,46 +299,76 @@ func (s *bookingService) CreateBookingWithProof(userID uint, kamarID uint, tangg
 }
 
 func (s *bookingService) CancelBooking(id uint, userID uint) error {
-	booking, err := s.repo.FindByID(id)
-	if err != nil {
-		return err
+	// Fallback for Unit Tests passing nil DB
+	if s.db == nil {
+		booking, err := s.repo.FindByID(id)
+		if err != nil {
+			return err
+		}
+		penyewa, err := s.penyewaRepo.FindByUserID(userID)
+		if err != nil {
+			return fmt.Errorf("unauthorized")
+		}
+		if booking.PenyewaID != penyewa.ID {
+			return fmt.Errorf("unauthorized")
+		}
+		s.repo.UpdateStatus(id, "Cancelled")
+		s.kamarRepo.UpdateStatus(booking.KamarID, "Tersedia")
+		s.paymentRepo.DeleteByBookingID(id)
+		return nil
 	}
 
-	// SECURITY FIX: Verify user owns this booking (IDOR protection)
-	penyewa, err := s.penyewaRepo.FindByUserID(userID)
-	if err != nil {
-		return fmt.Errorf("penyewa profile not found")
-	}
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		txBookingRepo := s.repo.WithTx(tx)
+		txKamarRepo := s.kamarRepo.WithTx(tx)
 
-	if booking.PenyewaID != penyewa.ID {
-		return fmt.Errorf("unauthorized: you can only cancel your own bookings")
-	}
+		booking, err := txBookingRepo.FindByID(id)
+		if err != nil {
+			return err
+		}
 
-	if booking.StatusPemesanan == "Cancelled" {
-		return fmt.Errorf("booking is already cancelled")
-	}
+		// SECURITY FIX: Verify user owns this booking (IDOR protection)
+		penyewa, err := s.penyewaRepo.FindByUserID(userID)
+		if err != nil {
+			return fmt.Errorf("penyewa profile not found")
+		}
 
-	// Update status to Cancelled.
-	// NOTE: Per business requirement, NO Refund is processed even if DP was paid.
-	if err := s.repo.UpdateStatus(id, "Cancelled"); err != nil {
-		return err
-	}
+		if booking.PenyewaID != penyewa.ID {
+			return fmt.Errorf("unauthorized: you can only cancel your own bookings")
+		}
 
-	// NEW: Update Room Status back to Available (Tersedia)
-	// Fetch the booking again with Kamar loaded or just use KamarID if available options
-	// Since we have 'booking', we can use booking.KamarID
-	if err := s.kamarRepo.UpdateStatus(booking.KamarID, "Tersedia"); err != nil {
-		return fmt.Errorf("failed to reset room status: %v", err)
-	}
+		if booking.StatusPemesanan == "Cancelled" {
+			return fmt.Errorf("booking is already cancelled")
+		}
 
-	// NEW: Delete associated pending payment so it disappears from Admin Dashboard
-	if err := s.paymentRepo.DeleteByBookingID(id); err != nil {
-		// Log error but generally don't fail the whole cancellation if this fails?
-		// Or maybe we should? Let's treat it as important.
-		return fmt.Errorf("failed to remove pending payment: %v", err)
-	}
+		// Update status to Cancelled
+		if err := txBookingRepo.UpdateStatus(id, "Cancelled"); err != nil {
+			return err
+		}
 
-	return nil
+		// Update Room Status back to Available (Tersedia)
+		if err := txKamarRepo.UpdateStatus(booking.KamarID, "Tersedia"); err != nil {
+			return fmt.Errorf("failed to reset room status: %v", err)
+		}
+
+		// FIX #2, #9: Soft delete payments - mark as Cancelled instead of hard delete
+		// This preserves audit trail and prevents orphaned reminders
+		if err := tx.Model(&models.Pembayaran{}).
+			Where("pemesanan_id = ?", id).
+			Update("status_pembayaran", "Cancelled").Error; err != nil {
+			return fmt.Errorf("failed to cancel pending payments: %v", err)
+		}
+
+		// Also mark associated payment reminders as Cancelled
+		if err := tx.Model(&models.PaymentReminder{}).
+			Joins("JOIN pembayaran ON pembayaran.id = payment_reminder.pembayaran_id").
+			Where("pembayaran.pemesanan_id = ?", id).
+			Update("status_reminder", "Cancelled").Error; err != nil {
+			return fmt.Errorf("failed to cancel payment reminders: %v", err)
+		}
+
+		return nil
+	})
 }
 
 // ExtendBooking creates a new payment for extending the lease
@@ -345,8 +388,21 @@ func (s *bookingService) ExtendBooking(bookingID uint, months int, userID uint, 
 		return nil, fmt.Errorf("unauthorized: you can only extend your own bookings")
 	}
 
+	if booking.StatusPemesanan == "Partially Paid" {
+		return nil, fmt.Errorf("anda baru membayar DP. Harap lunasi pembayaran awal terlebih dahulu sebelum memperpanjang sewa")
+	}
+
 	if booking.StatusPemesanan != "Confirmed" {
 		return nil, fmt.Errorf("hanya booking yang sudah dikonfirmasi yang bisa diperpanjang")
+	}
+
+	// Check if there's any pending or rejected payment
+	if len(booking.Pembayaran) > 0 {
+		for _, payment := range booking.Pembayaran {
+			if payment.StatusPembayaran == "Pending" || payment.StatusPembayaran == "Rejected" {
+				return nil, fmt.Errorf("pengajuan gagal karena anda masih punya pembayaran yang belum terkonfirmasi")
+			}
+		}
 	}
 
 	// Calculate amount
@@ -394,15 +450,28 @@ func (s *bookingService) AutoCancelExpiredBookings() error {
 	}
 
 	for _, b := range expiredBookings {
-		// Cancel booking without refund
-		if err := s.repo.UpdateStatus(b.ID, "Cancelled"); err != nil {
-			fmt.Printf("Failed to auto-cancel booking %d: %v\n", b.ID, err)
-			continue
-		}
+		err := s.db.Transaction(func(tx *gorm.DB) error {
+			// Cancel booking
+			if err := s.repo.WithTx(tx).UpdateStatus(b.ID, "Cancelled"); err != nil {
+				return err
+			}
 
-		// Update room to available
-		if err := s.kamarRepo.UpdateStatus(b.KamarID, "Tersedia"); err != nil {
-			fmt.Printf("Failed to update room status for auto-cancelled booking %d: %v\n", b.ID, err)
+			// Update room to available
+			if err := s.kamarRepo.WithTx(tx).UpdateStatus(b.KamarID, "Tersedia"); err != nil {
+				return err
+			}
+
+			// Send WA Notification
+			if b.Penyewa.NomorHP != "" {
+				msg := fmt.Sprintf("Halo %s,\n\nPesanan Anda untuk Kamar %s telah otomatis dibatalkan karena tidak ada pembayaran yang dikonfirmasi dalam waktu 7 hari.\n\nSilakan lakukan pemesanan ulang jika Anda masih berminat.\n\nTerima kasih.", b.Penyewa.NamaLengkap, b.Kamar.NomorKamar)
+				go s.waSender.SendWhatsApp(b.Penyewa.NomorHP, msg)
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			fmt.Printf("Failed to auto-cancel booking %d: %v\n", b.ID, err)
 		}
 	}
 

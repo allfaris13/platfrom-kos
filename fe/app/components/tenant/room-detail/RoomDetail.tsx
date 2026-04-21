@@ -48,6 +48,8 @@ interface RoomDetailProps {
   onBack: () => void;
   isLoggedIn?: boolean;
   onLoginPrompt?: () => void;
+  // List of kamar IDs that the user has a confirmed booking for (from booking history)
+  userBookedKamarIds?: number[];
 }
 
 // UI-specific interface that extends or transforms the API Room data
@@ -90,11 +92,16 @@ export function RoomDetail({
   onBack,
   isLoggedIn,
   onLoginPrompt,
+  userBookedKamarIds = [],
 }: RoomDetailProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // Apakah user boleh mereview kamar ini?
+  // true jika user punya booking confirmed untuk kamar ini (dikirim dari booking history)
+  const canReview = isLoggedIn && userBookedKamarIds.includes(parseInt(roomId));
 
   // Booking State
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -513,41 +520,70 @@ export function RoomDetail({
                   </div>
                 </div>
 
-                {/* Review Form */}
+                {/* Review Form - hanya tampil jika user punya confirmed booking untuk kamar ini */}
                 <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl mb-8">
                   <h3 className="font-semibold mb-3">Write a Review</h3>
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          onClick={() =>
-                            setNewReview({ ...newReview, rating: star })
-                          }
-                          className="focus:outline-none"
-                        >
-                          <Star
-                            className={`w-6 h-6 ${star <= newReview.rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
-                          />
-                        </button>
-                      ))}
+                  {canReview ? (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() =>
+                              setNewReview({ ...newReview, rating: star })
+                            }
+                            className="focus:outline-none"
+                          >
+                            <Star
+                              className={`w-6 h-6 ${star <= newReview.rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <Textarea
+                        placeholder="Share your experience..."
+                        value={newReview.comment}
+                        onChange={(e) =>
+                          setNewReview({ ...newReview, comment: e.target.value })
+                        }
+                        className="bg-white dark:bg-slate-800"
+                      />
+                      <Button
+                        onClick={handleSubmitReview}
+                        disabled={isSubmittingReview || !newReview.comment}
+                        className="bg-stone-800 hover:bg-stone-900 text-white"
+                      >
+                        {isSubmittingReview ? "Submitting..." : "Post Review"}
+                      </Button>
                     </div>
-                    <Textarea
-                      placeholder="Share your experience..."
-                      value={newReview.comment}
-                      onChange={(e) =>
-                        setNewReview({ ...newReview, comment: e.target.value })
-                      }
-                      className="bg-white dark:bg-slate-800"
-                    />
-                    <Button
-                      onClick={handleSubmitReview}
-                      disabled={isSubmittingReview || !newReview.comment}
-                      className="bg-stone-800 hover:bg-stone-900 text-white"
-                    >
-                      {isSubmittingReview ? "Submitting..." : "Post Review"}
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-6 gap-3 text-center">
+                      <div className="w-14 h-14 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
+                        <Star className="w-7 h-7 text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                          {!isLoggedIn
+                            ? "Login untuk menulis review"
+                            : "Hanya penghuni kamar ini yang bisa mereview"}
+                        </p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                          {!isLoggedIn
+                            ? "Silakan login terlebih dahulu untuk berbagi pengalaman Anda."
+                            : "Review hanya bisa ditulis oleh penghuni aktif atau mantan penghuni kamar ini."}
+                        </p>
+                      </div>
+                      {!isLoggedIn && onLoginPrompt && (
+                        <Button
+                          onClick={onLoginPrompt}
+                          size="sm"
+                          className="bg-stone-800 hover:bg-stone-900 text-white"
+                        >
+                          Login Sekarang
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Reviews List */}

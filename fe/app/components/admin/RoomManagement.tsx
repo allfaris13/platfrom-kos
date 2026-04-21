@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { getImageUrl } from '@/app/utils/api-url';
 import { toast } from 'sonner';
-import Image from 'next/image';
+import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
 import { Search, Plus, Edit, Trash2, Eye, Loader2, X, ImageIcon } from 'lucide-react';
 import { api } from '@/app/services/api';
 import { Button } from '@/app/components/ui/button';
@@ -555,18 +555,17 @@ export function RoomManagement() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="relative w-full h-48">
-                  <Image
+                  <ImageWithFallback
                     src={viewingRoom.image}
                     alt={viewingRoom.name}
-                    fill
-                    className="object-cover rounded-lg"
+                    className="w-full h-full object-cover rounded-lg"
                   />
                 </div>
                 {viewingRoom.additionalImages && viewingRoom.additionalImages.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
                     {viewingRoom.additionalImages.map((src, idx) => (
                       <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border">
-                         <Image src={src} alt={`${viewingRoom.name} gallery ${idx}`} fill className="object-cover" />
+                         <ImageWithFallback src={src} alt={`${viewingRoom.name} gallery ${idx}`} className="w-full h-full object-cover" />
                       </div>
                     ))}
                   </div>

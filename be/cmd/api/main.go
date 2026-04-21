@@ -51,12 +51,12 @@ func main() {
 	// Removed Cloudinary Initialization
 
 	authService := service.NewAuthService(userRepo, penyewaRepo, cfg, emailSender, &utils.RealIDTokenVerifier{})
-	kamarService := service.NewKamarService(kamarRepo)
+	kamarService := service.NewKamarService(kamarRepo, bookingRepo)
 	galleryService := service.NewGalleryService(galleryRepo)
 	dashboardService := service.NewDashboardService(db)
 	reviewService := service.NewReviewService(reviewRepo, bookingRepo, penyewaRepo)
 	profileService := service.NewProfileService(userRepo, penyewaRepo)
-	bookingService := service.NewBookingService(bookingRepo, userRepo, penyewaRepo, kamarRepo, paymentRepo, db)
+	bookingService := service.NewBookingService(bookingRepo, userRepo, penyewaRepo, kamarRepo, paymentRepo, db, waSender)
 	paymentService := service.NewPaymentService(paymentRepo, bookingRepo, kamarRepo, penyewaRepo, db, emailSender, waSender)
 	tenantService := service.NewTenantService(penyewaRepo)
 	contactService := service.NewContactService()
@@ -103,6 +103,9 @@ func main() {
 
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
+	
+	// Socket.io mount
+	r.Any("/socket.io/*any", gin.WrapH(socketServer.Server))
 
 	// Global Middleware
 	r.Use(middleware.ErrorHandlingMiddleware())
@@ -118,11 +121,6 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
-
-	// Socket.io mount
-	r.GET("/socket.io/*any", gin.WrapH(socketServer.Server))
-	r.POST("/socket.io/*any", gin.WrapH(socketServer.Server))
-	r.Handle("ANY", "/socket.io/*any", gin.WrapH(socketServer.Server))
 
 	// Serve Static Files for local uploads
 	r.Static("/uploads", "./public/uploads")
