@@ -242,6 +242,14 @@ func (m *MockBookingRepository) WithTx(tx *gorm.DB) repository.BookingRepository
 	return args.Get(0).(repository.BookingRepository)
 }
 
+func (m *MockBookingRepository) FindPendingBookingByKamarID(kamarID uint) (*models.Pemesanan, error) {
+	args := m.Called(kamarID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Pemesanan), args.Error(1)
+}
+
 // MockKamarRepository implements repository.KamarRepository
 type MockKamarRepository struct {
 	mock.Mock
@@ -370,6 +378,11 @@ func (m *MockPaymentRepository) FindByOrderID(orderID string) (*models.Pembayara
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*models.Pembayaran), args.Error(1)
+}
+
+func (m *MockPaymentRepository) CancelPendingPaymentsByBookingID(bookingID uint) error {
+	args := m.Called(bookingID)
+	return args.Error(0)
 }
 
 // MockEmailSender implements utils.EmailSender
