@@ -1,17 +1,46 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getImageUrl } from '@/app/utils/api-url';
-import { Search, Plus, Edit, Trash2, Eye, Download, ChevronUp, ChevronDown, Loader2, DoorOpen, DoorClosed, Wrench, Building2, Layers, BadgeDollarSign, CalendarDays } from 'lucide-react';
-import { ImageWithFallback } from '@/app/components/shared/ImageWithFallback';
-import { Button } from '@/app/components/ui/button';
-import { Input } from '@/app/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/app/components/ui/dialog';
-import { Label } from '@/app/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
-import { api } from '@/app/services/api';
-import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { getImageUrl } from "@/app/utils/api-url";
+import {
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Download,
+  ChevronUp,
+  ChevronDown,
+  Loader2,
+  DoorOpen,
+  DoorClosed,
+  Wrench,
+  Building2,
+  Layers,
+  BadgeDollarSign,
+  CalendarDays,
+} from "lucide-react";
+import { ImageWithFallback } from "@/app/components/shared/ImageWithFallback";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/app/components/ui/dialog";
+import { Label } from "@/app/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/app/components/ui/select";
+import { api } from "@/app/services/api";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 
 interface Room {
@@ -49,37 +78,69 @@ interface BackendRoom {
 }
 
 export function LuxuryRoomManagement() {
-  const t = useTranslations('admin');
+  const t = useTranslations("admin");
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [typeFilter, setTypeFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [typeFilter, setTypeFilter] = useState("All");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [viewingRoom, setViewingRoom] = useState<Room | null>(null);
-  const [sortField, setSortField] = useState<'name' | 'price' | 'floor'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null]);
+  const [sortField, setSortField] = useState<"name" | "price" | "floor">(
+    "name",
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [imageFiles, setImageFiles] = useState<(File | null)[]>([
+    null,
+    null,
+    null,
+  ]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [totalRevenue, setTotalRevenue] = useState<number>(0);
-  const [occupancyMap, setOccupancyMap] = useState<Record<string, { tenant_name: string; payment_status: string; last_pay_amount: number; payment_month: string }>>({});
-  const [roomPaymentDetail, setRoomPaymentDetail] = useState<{ tenant_name: string; penyewa_id: number; email: string; nomor_hp: string; check_in: string; check_out: string; durasi_sewa: number; payments: { id: number; jumlah_bayar: number; status_pembayaran: string; metode_pembayaran: string; tanggal_bayar: string; payment_month: string }[] } | null>(null);
+  const [occupancyMap, setOccupancyMap] = useState<
+    Record<
+      string,
+      {
+        tenant_name: string;
+        payment_status: string;
+        last_pay_amount: number;
+        payment_month: string;
+      }
+    >
+  >({});
+  const [roomPaymentDetail, setRoomPaymentDetail] = useState<{
+    tenant_name: string;
+    penyewa_id: number;
+    email: string;
+    nomor_hp: string;
+    check_in: string;
+    check_out: string;
+    durasi_sewa: number;
+    payments: {
+      id: number;
+      jumlah_bayar: number;
+      status_pembayaran: string;
+      metode_pembayaran: string;
+      tanggal_bayar: string;
+      payment_month: string;
+    }[];
+  } | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Room>>({
-    name: '',
-    type: 'Standard',
+    name: "",
+    type: "Standard",
     price: 0,
-    status: 'Tersedia',
+    status: "Tersedia",
     capacity: 1,
     facilities: [],
     floor: 1,
-    size: '',
+    size: "",
     bedrooms: 1,
     bathrooms: 1,
-    description: ''
+    description: "",
   });
 
   const fetchRooms = async () => {
@@ -94,13 +155,17 @@ export function LuxuryRoomManagement() {
         status: r.status as "Tersedia" | "Penuh" | "Maintenance",
         capacity: r.capacity || 1,
         floor: r.floor || 1,
-        size: r.size || '3x4m',
+        size: r.size || "3x4m",
         bedrooms: r.bedrooms || 1,
         bathrooms: r.bathrooms || 1,
-        description: r.description || '',
-        image: getImageUrl(r.image_url) || 'https://via.placeholder.com/300',
-        additionalImages: r.Images ? r.Images.map(img => getImageUrl(img.image_url)) : [],
-        facilities: r.fasilitas ? r.fasilitas.split(',').map(f => f.trim()) : []
+        description: r.description || "",
+        image: getImageUrl(r.image_url) || "https://via.placeholder.com/300",
+        additionalImages: r.Images
+          ? r.Images.map((img) => getImageUrl(img.image_url))
+          : [],
+        facilities: r.fasilitas
+          ? r.fasilitas.split(",").map((f) => f.trim())
+          : [],
       }));
       setRooms(mapped);
     } catch (e) {
@@ -113,17 +178,36 @@ export function LuxuryRoomManagement() {
   useEffect(() => {
     fetchRooms();
     // Fetch total revenue from dashboard stats
-    api.getDashboardStats().then(stats => {
-      setTotalRevenue(stats.total_revenue || 0);
-    }).catch(() => {});
+    api
+      .getDashboardStats()
+      .then((stats) => {
+        setTotalRevenue(stats.total_revenue || 0);
+      })
+      .catch(() => {});
     // Fetch room occupancy data
-    api.getRoomOccupancy().then(data => {
-      const map: Record<string, { tenant_name: string; payment_status: string; last_pay_amount: number; payment_month: string }> = {};
-      for (const item of data) {
-        map[String(item.room_id)] = { tenant_name: item.tenant_name, payment_status: item.payment_status, last_pay_amount: item.last_pay_amount, payment_month: item.payment_month };
-      }
-      setOccupancyMap(map);
-    }).catch(() => {});
+    api
+      .getRoomOccupancy()
+      .then((data) => {
+        const map: Record<
+          string,
+          {
+            tenant_name: string;
+            payment_status: string;
+            last_pay_amount: number;
+            payment_month: string;
+          }
+        > = {};
+        for (const item of data) {
+          map[String(item.room_id)] = {
+            tenant_name: item.tenant_name,
+            payment_status: item.payment_status,
+            last_pay_amount: item.last_pay_amount,
+            payment_month: item.payment_month,
+          };
+        }
+        setOccupancyMap(map);
+      })
+      .catch(() => {});
   }, []);
 
   // Fetch payment detail when room detail modal opens
@@ -132,11 +216,17 @@ export function LuxuryRoomManagement() {
       setLoadingPayments(true);
       // Extract numeric room ID from the room.id string (e.g., "R001" -> need actual DB id)
       // The occupancyMap keys are the room.id strings mapped from the API's room_id
-      const numericId = Object.entries(occupancyMap).find(([key]) => key === viewingRoom.id);
+      const numericId = Object.entries(occupancyMap).find(
+        ([key]) => key === viewingRoom.id,
+      );
       if (numericId) {
-        api.getPaymentsByRoom(Number(numericId[0])).then(data => {
-          setRoomPaymentDetail(data);
-        }).catch(() => {}).finally(() => setLoadingPayments(false));
+        api
+          .getPaymentsByRoom(Number(numericId[0]))
+          .then((data) => {
+            setRoomPaymentDetail(data);
+          })
+          .catch(() => {})
+          .finally(() => setLoadingPayments(false));
       } else {
         setLoadingPayments(false);
       }
@@ -144,73 +234,82 @@ export function LuxuryRoomManagement() {
   }, [viewingRoom, occupancyMap]);
 
   const filteredRooms = rooms
-    .filter(room => {
-      const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    .filter((room: Room) => {
+      const matchesSearch =
+        room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         room.id.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'All' || room.status === statusFilter;
-      const matchesType = typeFilter === 'All' || room.type === typeFilter;
+      const matchesStatus =
+        statusFilter === "All" || room.status === statusFilter;
+      const matchesType = typeFilter === "All" || room.type === typeFilter;
       return matchesSearch && matchesStatus && matchesType;
     })
-    .sort((a, b) => {
+    .sort((a: Room, b: Room) => {
       const aVal = a[sortField];
       const bVal = b[sortField];
 
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortOrder === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
       }
-      const modifier = sortOrder === 'asc' ? 1 : -1;
+      const modifier = sortOrder === "asc" ? 1 : -1;
       return (aVal as number) > (bVal as number) ? modifier : -modifier;
     });
 
   const handleSubmit = async () => {
     // Validation
     if (!formData.name?.trim()) {
-      toast.error('Nama atau nomor kamar wajib diisi');
+      toast.error("Nama atau nomor kamar wajib diisi");
       return;
     }
     if (!formData.price || formData.price <= 0) {
-      toast.error('Harga per bulan wajib diisi dengan format yang benar');
+      toast.error("Harga per bulan wajib diisi dengan format yang benar");
       return;
     }
     if (!formData.size?.trim()) {
-      toast.error('Ukuran kamar wajib diisi (contoh: 3x4m)');
+      toast.error("Ukuran kamar wajib diisi (contoh: 3x4m)");
       return;
     }
     if (!formData.facilities || formData.facilities.length === 0) {
-      toast.error('Fasilitas wajib diisi minimal satu');
+      toast.error("Fasilitas wajib diisi minimal satu");
       return;
     }
     if (!formData.description?.trim()) {
-      toast.error('Deskripsi kamar wajib diisi');
+      toast.error("Deskripsi kamar wajib diisi");
       return;
     }
 
     const data = new FormData();
-    data.append('nomor_kamar', formData.name.trim());
-    data.append('tipe_kamar', formData.type || 'Standard');
-    data.append('harga_per_bulan', String(formData.price));
-    data.append('status', formData.status || 'Tersedia');
-    data.append('capacity', String(formData.capacity));
-    data.append('floor', String(formData.floor));
-    data.append('size', formData.size.trim());
-    data.append('bedrooms', String(formData.bedrooms));
-    data.append('bathrooms', String(formData.bathrooms));
-    data.append('description', formData.description.trim());
+    data.append("nomor_kamar", formData.name.trim());
+    data.append("tipe_kamar", formData.type || "Standard");
+    data.append("harga_per_bulan", String(formData.price));
+    data.append("status", formData.status || "Tersedia");
+    data.append("capacity", String(formData.capacity));
+    data.append("floor", String(formData.floor));
+    data.append("size", formData.size.trim());
+    data.append("bedrooms", String(formData.bedrooms));
+    data.append("bathrooms", String(formData.bathrooms));
+    data.append("description", formData.description.trim());
     // Handle facilities array to string
-    data.append('fasilitas', Array.isArray(formData.facilities) ? formData.facilities.join(', ') : formData.facilities || '');
+    data.append(
+      "fasilitas",
+      Array.isArray(formData.facilities)
+        ? formData.facilities.join(", ")
+        : formData.facilities || "",
+    );
 
-    const newImages = imageFiles.filter(f => f !== null);
+    const newImages = imageFiles.filter((f: File | null) => f !== null);
     if (newImages.length > 0 && newImages.length < 3) {
-      toast.error('Jika ingin mengubah foto, minimal upload 3 foto baru');
+      toast.error("Jika ingin mengubah foto, minimal upload 3 foto baru");
       return;
     }
     if (!editingRoom && newImages.length < 3) {
-      toast.error('Minimal 3 foto kamar diperlukan untuk kamar baru');
+      toast.error("Minimal 3 foto kamar diperlukan untuk kamar baru");
       return;
     }
 
-    newImages.forEach(file => {
-      data.append('images', file as File);
+    newImages.forEach((file: File) => {
+      data.append("images", file as File);
     });
 
     setIsSubmitting(true);
@@ -225,7 +324,7 @@ export function LuxuryRoomManagement() {
       resetForm();
     } catch (e) {
       console.error(e);
-      toast.error(editingRoom ? t('failedToUpdate') : t('failedToCreate'));
+      toast.error(editingRoom ? t("failedToUpdate") : t("failedToCreate"));
     } finally {
       setIsSubmitting(false);
     }
@@ -233,21 +332,28 @@ export function LuxuryRoomManagement() {
 
   const handleExportRooms = async () => {
     try {
-      const jsPDF = (await import('jspdf')).default;
-      const autoTable = (await import('jspdf-autotable')).default;
+      const jsPDF = (await import("jspdf")).default;
+      const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF();
-      
-      const tableColumn = [t('id'), t('roomName'), t('type'), t('price'), t('floor'), t('status')];
+
+      const tableColumn = [
+        t("id"),
+        t("roomName"),
+        t("type"),
+        t("price"),
+        t("floor"),
+        t("status"),
+      ];
       const tableRows: (string | number)[][] = [];
 
-      filteredRooms.forEach(room => {
+      filteredRooms.forEach((room: Room) => {
         const rowData = [
-          `R${String(room.id).padStart(3, '0')}`,
+          `R${String(room.id).padStart(3, "0")}`,
           room.name,
           room.type,
           formatPrice(room.price),
           room.floor,
-          t(('status_' + room.status.toLowerCase()) as "status_tersedia")
+          t(("status_" + room.status.toLowerCase()) as "status_tersedia"),
         ];
         tableRows.push(rowData);
       });
@@ -256,45 +362,96 @@ export function LuxuryRoomManagement() {
       doc.text("Laporan Data Kamar", 14, 15);
       doc.setFontSize(11);
       doc.setTextColor(100);
-      doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
+      doc.text(`Dicetak pada: ${new Date().toLocaleString("id-ID")}`, 14, 22);
 
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 30,
-        theme: 'grid',
+        theme: "grid",
         headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255] },
         styles: { fontSize: 9 },
       });
 
-      doc.save(`Data_Kamar_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success('Laporan berhasil diunduh');
+      doc.save(`Data_Kamar_${new Date().toISOString().split("T")[0]}.pdf`);
+      toast.success("Laporan berhasil diunduh");
     } catch (e) {
       console.error(e);
-      toast.error('Gagal mengunduh laporan');
+      toast.error("Gagal mengunduh laporan");
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm(t('deleteRoomConfirmation'))) {
-      setDeletingId(id);
-      try {
-        await api.deleteRoom(id);
-        await fetchRooms();
-        toast.success(t('roomDeletedSuccess') || 'Kamar berhasil dihapus');
-      } catch (e: unknown) {
-        console.error(e);
-        // Extract error message if available
-        if (e instanceof Error && e.message.includes('pemesanan aktif')) {
-          toast.error('Kamar tidak dapat dihapus karena masih ada pemesanan aktif. Ubah status kamar terlebih dahulu.');
-        } else {
-          toast.error(t('failedToDelete') || 'Gagal menghapus kamar');
-        }
-      } finally {
-        setDeletingId(null);
+  const handleDelete = async (id: string, roomName: string) => {
+    const room = rooms.find((r) => String(r.id) === id);
+    if (!room) return;
+
+    const occupancy = occupancyMap[id];
+    let confirmMessage = `⚠️ Hapus Kamar "${roomName}"?\n\n`;
+
+    if (occupancy) {
+      confirmMessage += `Kamar ini sedang TERPESAN oleh ${occupancy.tenant_name} (Booking Aktif/Sudah Dikonfirmasi).\nPenghapusan kemungkinan besar akan DITOLAK oleh sistem untuk menjaga data riwayat penyewa.\n\n`;
+    } else if (room.status === "Terpesan") {
+      confirmMessage += `Kamar ini memiliki pesanan/pembayaran yang BELUM DIKONFIRMASI (Pending).\nJika Anda melanjutkan, pesanan tersebut akan OTOMATIS DIBATALKAN dan notifikasi WA akan dikirim ke penyewa.\n\n`;
+    } else if (room.status === "Tersedia") {
+      confirmMessage += `Kamar ini berstatus TERSEDIA (kosong) dan aman untuk dihapus.\n\n`;
+    } else {
+      confirmMessage += `Status kamar saat ini: ${room.status.toUpperCase()}.\n\n`;
+    }
+
+    confirmMessage += `Apakah Anda yakin ingin menghapus kamar ini?`;
+
+    const confirmed = window.confirm(confirmMessage);
+    if (!confirmed) return;
+
+    setDeletingId(id);
+    try {
+      const result = await api.deleteRoom(id);
+      await fetchRooms();
+
+      // Cek apakah ada info tambahan dari backend (pending booking di-cancel)
+      const message = (result as { message?: string })?.message || "";
+      if (message.toLowerCase().includes("pending") || message.toLowerCase().includes("dibatalkan")) {
+        toast.success(
+          "✅ Kamar berhasil dihapus",
+          {
+            description: "Pemesanan yang masih pending telah otomatis dibatalkan. Notifikasi telah dikirim ke admin dan penyewa.",
+            duration: 7000,
+          }
+        );
+      } else {
+        toast.success(t("roomDeletedSuccess") || "Kamar berhasil dihapus");
       }
+    } catch (e: unknown) {
+      console.error(e);
+
+      // Ambil pesan error dari response
+      const errorMessage =
+        e instanceof Error ? e.message : "Gagal menghapus kamar";
+
+      // Skenario 1: Kamar masih berstatus Terpesan / ada booking aktif yang dikonfirmasi
+      if (
+        errorMessage.includes("tidak dapat dihapus") ||
+        errorMessage.includes("pemesanan aktif") ||
+        errorMessage.includes("ROOM_HAS_ACTIVE_BOOKING") ||
+        errorMessage.includes("409")
+      ) {
+        toast.error("❌ Kamar Tidak Dapat Dihapus", {
+          description:
+            "Kamar ini masih memiliki pemesanan aktif yang sudah dikonfirmasi. " +
+            "Pastikan penyewa sudah selesai masa sewanya atau batalkan booking terlebih dahulu sebelum menghapus kamar.",
+          duration: 8000,
+        });
+      } else {
+        // Skenario 2: Error lain
+        toast.error(t("failedToDelete") || "Gagal menghapus kamar", {
+          description: errorMessage,
+        });
+      }
+    } finally {
+      setDeletingId(null);
     }
   };
+
 
   const handleEdit = (room: Room) => {
     setEditingRoom(room);
@@ -304,17 +461,17 @@ export function LuxuryRoomManagement() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      type: 'Standard',
+      name: "",
+      type: "Standard",
       price: 0,
-      status: 'Tersedia',
+      status: "Tersedia",
       capacity: 1,
       facilities: [],
       floor: 1,
-      size: '',
+      size: "",
       bedrooms: 1,
       bathrooms: 1,
-      description: ''
+      description: "",
     });
     setEditingRoom(null);
     setIsDialogOpen(false);
@@ -322,32 +479,34 @@ export function LuxuryRoomManagement() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
     }).format(price);
   };
 
-  const toggleSort = (field: 'name' | 'price' | 'floor') => {
+  const toggleSort = (field: "name" | "price" | "floor") => {
     if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortOrder('asc');
+      setSortOrder("asc");
     }
   };
 
   const statusColors: Record<string, string> = {
-    'Tersedia': 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-    'Penuh': 'bg-red-500/10 text-red-600 dark:text-red-500 border-red-500/20',
-    'Maintenance': 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20'
+    Tersedia:
+      "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+    Penuh: "bg-red-500/10 text-red-600 dark:text-red-500 border-red-500/20",
+    Maintenance:
+      "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
   };
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-slate-950 min-h-screen">
       {/* Header Section */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -355,57 +514,95 @@ export function LuxuryRoomManagement() {
       >
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-amber-600 dark:text-amber-500 mb-1">
-            {t('roomsTitle')}
+            {t("roomsTitle")}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm">{t('roomsSubtitle')}</p>
+          <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm">
+            {t("roomsSubtitle")}
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleExportRooms}
             className="hidden sm:flex bg-white dark:bg-transparent border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 px-6"
           >
             <Download className="size-4 mr-2" />
-            {t('export')}
+            {t("export")}
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                onClick={() => { setEditingRoom(null); setFormData({ name: '', type: 'Standard', price: 0, status: 'Tersedia', capacity: 1, facilities: [], floor: 1, size: '', bedrooms: 1, bathrooms: 1, description: '' }); }}
-                className="flex-1 sm:flex-none bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 px-4 md:px-6 py-2 h-auto"
+                onClick={() => {
+                  setEditingRoom(null);
+                  setFormData({
+                    name: "",
+                    type: "Standard",
+                    price: 0,
+                    status: "Tersedia",
+                    capacity: 1,
+                    facilities: [],
+                    floor: 1,
+                    size: "",
+                    bedrooms: 1,
+                    bathrooms: 1,
+                    description: "",
+                  });
+                }}
+                className="flex-1 sm:flex-none bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 px-4 md:px-6 py-2 h-auto"
               >
                 <Plus className="size-4 mr-2" />
-                {t('addNewRoom')}
+                {t("addNewRoom")}
               </Button>
             </DialogTrigger>
             <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white p-4 md:p-6">
               <DialogHeader>
                 <DialogTitle className="text-xl md:text-2xl font-bold text-amber-600 dark:text-amber-500">
-                  {editingRoom ? t('editRoom') : t('addNewRoom')}
+                  {editingRoom ? t("editRoom") : t("addNewRoom")}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 md:space-y-6 mt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-slate-600 dark:text-slate-300">{t('roomName')}</Label>
+                    <Label
+                      htmlFor="name"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("roomName")}
+                    </Label>
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       placeholder="e.g., Room A1"
                       className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-amber-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="type" className="text-slate-600 dark:text-slate-300">{t('type')}</Label>
-                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                    <Label
+                      htmlFor="type"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("type")}
+                    </Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value: string) =>
+                        setFormData({ ...formData, type: value })
+                      }
+                    >
                       <SelectTrigger className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
-                        <SelectItem value="Standard">{t('type_standard')}</SelectItem>
-                        <SelectItem value="Premium">{t('type_premium')}</SelectItem>
+                        <SelectItem value="Standard">
+                          {t("type_standard")}
+                        </SelectItem>
+                        <SelectItem value="Premium">
+                          {t("type_premium")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -413,55 +610,107 @@ export function LuxuryRoomManagement() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price" className="text-slate-600 dark:text-slate-300">{t('price')}</Label>
+                    <Label
+                      htmlFor="price"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("price")}
+                    </Label>
                     <Input
                       id="price"
                       type="number"
                       value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFormData({
+                          ...formData,
+                          price: Number(e.target.value),
+                        })
+                      }
                       placeholder="1500000"
                       className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-amber-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="status" className="text-slate-600 dark:text-slate-300">{t('status')}</Label>
-                    <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value as 'Tersedia' | 'Penuh' | 'Maintenance' })}>
+                    <Label
+                      htmlFor="status"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("status")}
+                    </Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value: string) =>
+                        setFormData({
+                          ...formData,
+                          status: value as "Tersedia" | "Penuh" | "Maintenance",
+                        })
+                      }
+                    >
                       <SelectTrigger className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
-                        <SelectItem value="Tersedia">{t('status_tersedia')}</SelectItem>
-                        <SelectItem value="Penuh">{t('status_penuh')}</SelectItem>
-                        <SelectItem value="Maintenance">{t('status_maintenance')}</SelectItem>
+                        <SelectItem value="Tersedia">
+                          {t("status_tersedia")}
+                        </SelectItem>
+                        <SelectItem value="Penuh">
+                          {t("status_penuh")}
+                        </SelectItem>
+                        <SelectItem value="Maintenance">
+                          {t("status_maintenance")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {formData.status === 'Penuh' && '⚠️ Kamar dengan status "Penuh" tidak dapat dihapus. Gunakan status ini saat ada penyewa aktif.'}
-                      {formData.status === 'Maintenance' && '🔧 Kamar sedang dalam perbaikan dan tidak tersedia untuk disewa.'}
-                      {formData.status === 'Tersedia' && '✓ Kamar siap untuk disewa.'}
+                      {formData.status === "Penuh" &&
+                        '⚠️ Kamar dengan status "Penuh" tidak dapat dihapus. Gunakan status ini saat ada penyewa aktif.'}
+                      {formData.status === "Maintenance" &&
+                        "🔧 Kamar sedang dalam perbaikan dan tidak tersedia untuk disewa."}
+                      {formData.status === "Tersedia" &&
+                        "✓ Kamar siap untuk disewa."}
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="capacity" className="text-slate-600 dark:text-slate-300">{t('capacity')}</Label>
+                    <Label
+                      htmlFor="capacity"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("capacity")}
+                    </Label>
                     <Input
                       id="capacity"
                       type="number"
                       value={formData.capacity}
-                      onChange={(e) => setFormData({ ...formData, capacity: Number(e.target.value) })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFormData({
+                          ...formData,
+                          capacity: Number(e.target.value),
+                        })
+                      }
                       min="1"
                       className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-amber-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="floor" className="text-slate-600 dark:text-slate-300">{t('floor')}</Label>
+                    <Label
+                      htmlFor="floor"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("floor")}
+                    </Label>
                     <Input
                       id="floor"
                       type="number"
                       value={formData.floor}
-                      onChange={(e) => setFormData({ ...formData, floor: Number(e.target.value) })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFormData({
+                          ...formData,
+                          floor: Number(e.target.value),
+                        })
+                      }
                       min="1"
                       className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-amber-500"
                     />
@@ -470,33 +719,60 @@ export function LuxuryRoomManagement() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="size" className="text-slate-600 dark:text-slate-300">{t('size')}</Label>
+                    <Label
+                      htmlFor="size"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("size")}
+                    </Label>
                     <Input
                       id="size"
                       value={formData.size}
-                      onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFormData({ ...formData, size: e.target.value })
+                      }
                       placeholder="e.g. 4x5m"
                       className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-amber-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="bedrooms" className="text-slate-600 dark:text-slate-300">{t('bedrooms')}</Label>
+                    <Label
+                      htmlFor="bedrooms"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("bedrooms")}
+                    </Label>
                     <Input
                       id="bedrooms"
                       type="number"
                       value={formData.bedrooms}
-                      onChange={(e) => setFormData({ ...formData, bedrooms: Number(e.target.value) })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFormData({
+                          ...formData,
+                          bedrooms: Number(e.target.value),
+                        })
+                      }
                       min="1"
                       className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-amber-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="bathrooms" className="text-slate-600 dark:text-slate-300">{t('bathrooms')}</Label>
+                    <Label
+                      htmlFor="bathrooms"
+                      className="text-slate-600 dark:text-slate-300"
+                    >
+                      {t("bathrooms")}
+                    </Label>
                     <Input
                       id="bathrooms"
                       type="number"
                       value={formData.bathrooms}
-                      onChange={(e) => setFormData({ ...formData, bathrooms: Number(e.target.value) })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setFormData({
+                          ...formData,
+                          bathrooms: Number(e.target.value),
+                        })
+                      }
                       min="1"
                       className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-amber-500"
                     />
@@ -504,45 +780,76 @@ export function LuxuryRoomManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="facilities" className="text-slate-600 dark:text-slate-300">{t('facilities')}</Label>
+                  <Label
+                    htmlFor="facilities"
+                    className="text-slate-600 dark:text-slate-300"
+                  >
+                    {t("facilities")}
+                  </Label>
                   <Input
                     id="facilities"
-                    value={Array.isArray(formData.facilities) ? formData.facilities.join(', ') : formData.facilities}
-                    onChange={(e) => setFormData({ ...formData, facilities: e.target.value.split(',').map(s => s.trim()) })}
+                    value={
+                      Array.isArray(formData.facilities)
+                        ? formData.facilities.join(", ")
+                        : formData.facilities
+                    }
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormData({
+                        ...formData,
+                        facilities: e.target.value
+                          .split(",")
+                          .map((s) => s.trim()),
+                      })
+                    }
                     placeholder="TV, AC, WiFi, Bathroom"
                     className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-amber-500"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-slate-600 dark:text-slate-300">{t('description')}</Label>
+                  <Label
+                    htmlFor="description"
+                    className="text-slate-600 dark:text-slate-300"
+                  >
+                    {t("description")}
+                  </Label>
                   <textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
                     className="w-full h-24 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg p-3 focus:ring-amber-500 focus:outline-none text-sm"
                     placeholder="Describe the room..."
                   />
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-slate-600 dark:text-slate-300">{t('roomImage')} (Wajib 3 Gambar)</Label>
-                  
+                  <Label className="text-slate-600 dark:text-slate-300">
+                    {t("roomImage")} (Wajib 3 Gambar)
+                  </Label>
+
                   {/* Image Previews */}
-                  {(imageFiles.some(f => f !== null) || (editingRoom && formData.image)) && (
+                  {(imageFiles.some((f) => f !== null) ||
+                    (editingRoom && formData.image)) && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      {imageFiles.some(f => f !== null) ? (
+                      {imageFiles.some((f) => f !== null) ? (
                         imageFiles.map((file, idx) => {
                           if (!file) return null;
                           return (
-                            <div key={idx} className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
+                            <div
+                              key={idx}
+                              className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group"
+                            >
                               <ImageWithFallback
                                 src={URL.createObjectURL(file)}
                                 alt={`New Room Preview ${idx + 1}`}
                                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                               />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <p className="text-white font-medium text-xs">Gambar Baru</p>
+                                <p className="text-white font-medium text-xs">
+                                  Gambar Baru
+                                </p>
                               </div>
                               <button
                                 type="button"
@@ -561,16 +868,22 @@ export function LuxuryRoomManagement() {
                         })
                       ) : (
                         <>
-                          {formData.additionalImages && formData.additionalImages.length > 0 ? (
+                          {formData.additionalImages &&
+                          formData.additionalImages.length > 0 ? (
                             formData.additionalImages.map((src, idx) => (
-                              <div key={idx} className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group">
+                              <div
+                                key={idx}
+                                className="relative w-full h-24 md:h-32 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 group"
+                              >
                                 <ImageWithFallback
                                   src={src}
                                   alt={`Current Room Preview ${idx + 1}`}
                                   className="w-full h-full object-cover transition-transform group-hover:scale-105"
                                 />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <p className="text-white font-medium text-xs text-center px-1">Gambar {idx + 1}</p>
+                                  <p className="text-white font-medium text-xs text-center px-1">
+                                    Gambar {idx + 1}
+                                  </p>
                                 </div>
                               </div>
                             ))
@@ -589,10 +902,9 @@ export function LuxuryRoomManagement() {
                   )}
 
                   {/* Single Upload Area */}
-                  {imageFiles.filter(f => f !== null).length < 3 && (
+                  {imageFiles.filter((f) => f !== null).length < 3 && (
                     <div className="relative">
                       <input
-
                         type="file"
                         id="image-upload-multiple"
                         className="hidden"
@@ -603,21 +915,25 @@ export function LuxuryRoomManagement() {
                             const files = Array.from(e.target.files);
                             const currentFiles = [...imageFiles];
                             let added = 0;
-                            
+
                             for (const file of files) {
-                              const emptyIndex = currentFiles.findIndex(f => f === null);
+                              const emptyIndex = currentFiles.findIndex(
+                                (f) => f === null,
+                              );
                               if (emptyIndex !== -1) {
                                 currentFiles[emptyIndex] = file;
                                 added++;
                               }
                             }
-                            
+
                             if (added < files.length) {
-                              toast.warning(`Hanya dapat mengunggah maksimal 3 gambar. Gambar selebihnya diabaikan.`);
+                              toast.warning(
+                                `Hanya dapat mengunggah maksimal 3 gambar. Gambar selebihnya diabaikan.`,
+                              );
                             }
-                            
+
                             setImageFiles(currentFiles);
-                            e.target.value = '';
+                            e.target.value = "";
                           }
                         }}
                       />
@@ -631,40 +947,52 @@ export function LuxuryRoomManagement() {
                           <Download className="size-6 rotate-180" />
                         </div>
                         <p className="text-sm font-bold text-slate-600 dark:text-slate-300 mb-1">
-                          {imageFiles.some(f => f !== null) ? 'Tambah Gambar' : 'Pilih Gambar'}
+                          {imageFiles.some((f) => f !== null)
+                            ? "Tambah Gambar"
+                            : "Pilih Gambar"}
                         </p>
                         <p className="text-xs text-slate-400 dark:text-slate-500 text-center max-w-xs">
-                          {imageFiles.some(f => f !== null)
-                            ? `Telah memilih ${imageFiles.filter(f => f !== null).length} dari 3 gambar`
-                            : 'Klik untuk memilih gambar atau drag & drop'
-                          }
+                          {imageFiles.some((f) => f !== null)
+                            ? `Telah memilih ${imageFiles.filter((f) => f !== null).length} dari 3 gambar`
+                            : "Klik untuk memilih gambar atau drag & drop"}
                         </p>
                       </label>
                     </div>
                   )}
 
-                  {editingRoom && <p className="text-xs text-amber-600 italic mt-1">* Jika ingin mengubah gambar, Anda harus mengunggah 3 gambar baru sekaligus untuk menggantikan gambar sebelumnya.</p>}
-                  {imageFiles.some(f => f !== null) && (
+                  {editingRoom && (
+                    <p className="text-xs text-amber-600 italic mt-1">
+                      * Jika ingin mengubah gambar, Anda harus mengunggah 3
+                      gambar baru sekaligus untuk menggantikan gambar
+                      sebelumnya.
+                    </p>
+                  )}
+                  {imageFiles.some((f) => f !== null) && (
                     <div className="flex justify-start mt-2">
-                       <Button 
-                         type="button"
-                         variant="destructive" 
-                         size="sm" 
-                         onClick={(e) => {
-                           e.preventDefault();
-                           setImageFiles([null, null, null]);
-                         }}
-                         className="text-xs"
-                       >
-                         <Trash2 className="size-3 mr-1" /> Hapus Semua
-                       </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setImageFiles([null, null, null]);
+                        }}
+                        className="text-xs"
+                      >
+                        <Trash2 className="size-3 mr-1" /> Hapus Semua
+                      </Button>
                     </div>
                   )}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="outline" onClick={resetForm} disabled={isSubmitting} className="bg-transparent border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
-                    {t('cancel')}
+                  <Button
+                    variant="outline"
+                    onClick={resetForm}
+                    disabled={isSubmitting}
+                    className="bg-transparent border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    {t("cancel")}
                   </Button>
                   <Button
                     onClick={handleSubmit}
@@ -672,9 +1000,14 @@ export function LuxuryRoomManagement() {
                     className="bg-amber-500 hover:bg-amber-600 text-white"
                   >
                     {isSubmitting ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...</>
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                        Menyimpan...
+                      </>
+                    ) : editingRoom ? (
+                      t("update")
                     ) : (
-                      editingRoom ? t('update') : t('create')
+                      t("create")
                     )}
                   </Button>
                 </div>
@@ -685,54 +1018,113 @@ export function LuxuryRoomManagement() {
       </motion.div>
 
       {/* Room Stats Report Cards */}
-      {!isLoading && rooms.length > 0 && (() => {
-        const totalRooms = rooms.length;
-        const tersedia = rooms.filter(r => r.status === 'Tersedia').length;
-        const terisi = rooms.filter(r => r.status === 'Penuh').length;
-        const maintenance = rooms.filter(r => r.status === 'Maintenance').length;
-        const uniqueTypes = [...new Set(rooms.map(r => r.type))].length;
+      {!isLoading &&
+        rooms.length > 0 &&
+        (() => {
+          const totalRooms = rooms.length;
+          const tersedia = rooms.filter((r) => r.status === "Tersedia").length;
+          const terisi = rooms.filter((r) => r.status === "Penuh").length;
+          const maintenance = rooms.filter(
+            (r) => r.status === "Maintenance",
+          ).length;
+          const uniqueTypes = [...new Set(rooms.map((r) => r.type))].length;
 
-        const cards = [
-          { label: t('statTotalRooms'), value: totalRooms, icon: Building2, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
-          { label: t('statAvailable'), value: tersedia, icon: DoorOpen, color: 'from-green-500 to-emerald-600', bg: 'bg-green-500/10', text: 'text-green-600 dark:text-green-400', border: 'border-green-500/20' },
-          { label: t('statOccupied'), value: terisi, icon: DoorClosed, color: 'from-red-500 to-rose-600', bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/20' },
-          { label: t('statMaintenance'), value: maintenance, icon: Wrench, color: 'from-orange-500 to-orange-600', bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500/20' },
-          { label: t('statRoomTypes'), value: uniqueTypes, icon: Layers, color: 'from-blue-500 to-indigo-600', bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/20' },
-          { label: t('statTotalPaid'), value: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(totalRevenue), icon: BadgeDollarSign, color: 'from-purple-500 to-violet-600', bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/20' },
-        ];
+          const cards = [
+            {
+              label: t("statTotalRooms"),
+              value: totalRooms,
+              icon: Building2,
+              color: "from-amber-500 to-amber-600",
+              bg: "bg-amber-500/10",
+              text: "text-amber-600 dark:text-amber-400",
+              border: "border-amber-500/20",
+            },
+            {
+              label: t("statAvailable"),
+              value: tersedia,
+              icon: DoorOpen,
+              color: "from-green-500 to-emerald-600",
+              bg: "bg-green-500/10",
+              text: "text-green-600 dark:text-green-400",
+              border: "border-green-500/20",
+            },
+            {
+              label: t("statOccupied"),
+              value: terisi,
+              icon: DoorClosed,
+              color: "from-red-500 to-rose-600",
+              bg: "bg-red-500/10",
+              text: "text-red-600 dark:text-red-400",
+              border: "border-red-500/20",
+            },
+            {
+              label: t("statMaintenance"),
+              value: maintenance,
+              icon: Wrench,
+              color: "from-orange-500 to-orange-600",
+              bg: "bg-orange-500/10",
+              text: "text-orange-600 dark:text-orange-400",
+              border: "border-orange-500/20",
+            },
+            {
+              label: t("statRoomTypes"),
+              value: uniqueTypes,
+              icon: Layers,
+              color: "from-blue-500 to-indigo-600",
+              bg: "bg-blue-500/10",
+              text: "text-blue-600 dark:text-blue-400",
+              border: "border-blue-500/20",
+            },
+            {
+              label: t("statTotalPaid"),
+              value: new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(totalRevenue),
+              icon: BadgeDollarSign,
+              color: "from-purple-500 to-violet-600",
+              bg: "bg-purple-500/10",
+              text: "text-purple-600 dark:text-purple-400",
+              border: "border-purple-500/20",
+            },
+          ];
 
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05, duration: 0.4 }}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4"
-          >
-            {cards.map((card, idx) => (
-              <motion.div
-                key={card.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 + idx * 0.05, duration: 0.4 }}
-                className={`relative overflow-hidden p-4 md:p-5 rounded-2xl border ${card.border} ${card.bg} backdrop-blur-sm`}
-              >
-                <div className={`inline-flex items-center justify-center size-9 md:size-10 rounded-xl bg-gradient-to-br ${card.color} mb-3 shadow-lg`}>
-                  <card.icon className="size-4 md:size-5 text-white" />
-                </div>
-                <p className={`text-xl md:text-2xl font-black ${card.text}`}>
-                  {card.value}
-                </p>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mt-1">
-                  {card.label}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        );
-      })()}
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05, duration: 0.4 }}
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4"
+            >
+              {cards.map((card, idx) => (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 + idx * 0.05, duration: 0.4 }}
+                  className={`relative overflow-hidden p-4 md:p-5 rounded-2xl border ${card.border} ${card.bg} backdrop-blur-sm`}
+                >
+                  <div
+                    className={`inline-flex items-center justify-center size-9 md:size-10 rounded-xl bg-linear-to-br ${card.color} mb-3 shadow-lg`}
+                  >
+                    <card.icon className="size-4 md:size-5 text-white" />
+                  </div>
+                  <p className={`text-xl md:text-2xl font-black ${card.text}`}>
+                    {card.value}
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mt-1">
+                    {card.label}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.div>
+          );
+        })()}
 
       {/* Filter Bar */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.4 }}
@@ -741,7 +1133,7 @@ export function LuxuryRoomManagement() {
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 dark:text-slate-400" />
           <Input
-            placeholder={t('searchRooms')}
+            placeholder={t("searchRooms")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-12 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 h-11 md:h-12 rounded-xl"
@@ -750,21 +1142,23 @@ export function LuxuryRoomManagement() {
         <div className="grid grid-cols-2 gap-3 md:flex md:gap-4">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white h-11 md:h-12 rounded-xl">
-              <SelectValue placeholder={t('filterStatus')} />
+              <SelectValue placeholder={t("filterStatus")} />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
-              <SelectItem value="All">{t('allStatus')}</SelectItem>
-              <SelectItem value="Tersedia">{t('status_tersedia')}</SelectItem>
-              <SelectItem value="Penuh">{t('status_penuh')}</SelectItem>
-              <SelectItem value="Maintenance">{t('status_maintenance')}</SelectItem>
+              <SelectItem value="All">{t("allStatus")}</SelectItem>
+              <SelectItem value="Tersedia">{t("status_tersedia")}</SelectItem>
+              <SelectItem value="Penuh">{t("status_penuh")}</SelectItem>
+              <SelectItem value="Maintenance">
+                {t("status_maintenance")}
+              </SelectItem>
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white h-11 md:h-12 rounded-xl">
-              <SelectValue placeholder={t('filterType')} />
+              <SelectValue placeholder={t("filterType")} />
             </SelectTrigger>
             <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
-              <SelectItem value="All">{t('allTypes')}</SelectItem>
+              <SelectItem value="All">{t("allTypes")}</SelectItem>
               <SelectItem value="Standard">Standard</SelectItem>
               <SelectItem value="Premium">Premium</SelectItem>
             </SelectContent>
@@ -773,7 +1167,7 @@ export function LuxuryRoomManagement() {
       </motion.div>
 
       {/* Table Container */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.4 }}
@@ -781,17 +1175,23 @@ export function LuxuryRoomManagement() {
       >
         {/* Table Header Row - Desktop Only */}
         <div className="hidden md:grid grid-cols-[100px_1fr_1fr_1.2fr_0.6fr_1.2fr_100px] gap-4 px-6 mb-8 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest">
-          <div>{t('thumbnail')}</div>
-          <div className="flex items-center cursor-pointer hover:text-slate-900 dark:hover:text-white" onClick={() => toggleSort('name')}>
-            {t('room')} <ChevronUp className="size-3 ml-1" />
+          <div>{t("thumbnail")}</div>
+          <div
+            className="flex items-center cursor-pointer hover:text-slate-900 dark:hover:text-white"
+            onClick={() => toggleSort("name")}
+          >
+            {t("room")} <ChevronUp className="size-3 ml-1" />
           </div>
-          <div>{t('type')}</div>
-          <div className="flex items-center cursor-pointer hover:text-slate-900 dark:hover:text-white" onClick={() => toggleSort('price')}>
-            {t('price')} <ChevronDown className="size-3 ml-1" />
+          <div>{t("type")}</div>
+          <div
+            className="flex items-center cursor-pointer hover:text-slate-900 dark:hover:text-white"
+            onClick={() => toggleSort("price")}
+          >
+            {t("price")} <ChevronDown className="size-3 ml-1" />
           </div>
-          <div className="text-center">{t('floor')}</div>
-          <div>{t('status')}</div>
-          <div className="text-center">{t('actions')}</div>
+          <div className="text-center">{t("floor")}</div>
+          <div>{t("status")}</div>
+          <div className="text-center">{t("actions")}</div>
         </div>
 
         {/* Data Rows */}
@@ -799,13 +1199,17 @@ export function LuxuryRoomManagement() {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <div className="size-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-              <p className="text-slate-500 italic">{t('syncing')}</p>
+              <p className="text-slate-500 italic">{t("syncing")}</p>
             </div>
           ) : filteredRooms.length === 0 ? (
             <div className="text-center py-20 bg-slate-100 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800">
               <Search className="size-12 text-slate-400 dark:text-slate-700 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-slate-400 dark:text-slate-400">{t('noRoomsFound')}</h3>
-              <p className="text-slate-500 dark:text-slate-600 mt-2 text-sm italic">{t('tryAdjustingFilters')}</p>
+              <h3 className="text-xl font-semibold text-slate-400 dark:text-slate-400">
+                {t("noRoomsFound")}
+              </h3>
+              <p className="text-slate-500 dark:text-slate-600 mt-2 text-sm italic">
+                {t("tryAdjustingFilters")}
+              </p>
             </div>
           ) : (
             filteredRooms.map((room) => (
@@ -820,8 +1224,12 @@ export function LuxuryRoomManagement() {
                     />
                   </div>
                   <div>
-                    <h3 className="text-slate-900 dark:text-white font-bold">{room.name}</h3>
-                    <p className="text-slate-400 dark:text-slate-500 text-[10px] font-mono">ID: R{String(room.id).padStart(3, '0')}</p>
+                    <h3 className="text-slate-900 dark:text-white font-bold">
+                      {room.name}
+                    </h3>
+                    <p className="text-slate-400 dark:text-slate-500 text-[10px] font-mono">
+                      ID: R{String(room.id).padStart(3, "0")}
+                    </p>
                   </div>
                   <div>
                     <span className="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-lg border border-blue-500/20 uppercase">
@@ -829,26 +1237,58 @@ export function LuxuryRoomManagement() {
                     </span>
                   </div>
                   <div>
-                    <p className="text-slate-900 dark:text-white font-bold">{formatPrice(room.price)}</p>
-                    <p className="text-slate-400 dark:text-slate-500 text-[10px]">{t('perMonth')}</p>
+                    <p className="text-slate-900 dark:text-white font-bold">
+                      {formatPrice(room.price)}
+                    </p>
+                    <p className="text-slate-400 dark:text-slate-500 text-[10px]">
+                      {t("perMonth")}
+                    </p>
                   </div>
-                  <div className="text-center text-slate-900 dark:text-white font-medium">{room.floor}</div>
+                  <div className="text-center text-slate-900 dark:text-white font-medium">
+                    {room.floor}
+                  </div>
                   <div>
-                    <span className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusColors[room.status] || ''}`}>
-                      {t(('status_' + room.status.toLowerCase()) as "status_tersedia")}
+                    <span
+                      className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${statusColors[room.status] || ""}`}
+                    >
+                      {t(
+                        ("status_" +
+                          room.status.toLowerCase()) as "status_tersedia",
+                      )}
                     </span>
                   </div>
                   <div className="flex items-center justify-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => setViewingRoom(room)} className="size-8 text-slate-400 hover:text-slate-900 dark:hover:text-white"><Eye className="size-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(room)} className="size-8 text-slate-400 hover:text-amber-500"><Edit className="size-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(room.id)} className="size-8 text-slate-400 hover:text-red-500"><Trash2 className="size-4" /></Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setViewingRoom(room)}
+                      className="size-8 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                    >
+                      <Eye className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(room)}
+                      className="size-8 text-slate-400 hover:text-amber-500"
+                    >
+                      <Edit className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(room.id, room.name)}
+                      className="size-8 text-slate-400 hover:text-red-500"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
                   </div>
                 </div>
 
                 {/* Mobile Card */}
                 <div className="md:hidden flex flex-col p-4 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl gap-4 shadow-sm dark:shadow-none">
                   <div className="flex gap-4">
-                    <div className="relative size-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 flex-shrink-0">
+                    <div className="relative size-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0">
                       <ImageWithFallback
                         src={room.image}
                         alt={room.name}
@@ -857,30 +1297,58 @@ export function LuxuryRoomManagement() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
-                        <h3 className="text-slate-900 dark:text-white font-bold truncate">{room.name}</h3>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColors[room.status] || ''}`}>
-                          {t(('status_' + room.status.toLowerCase()) as "status_tersedia")}
+                        <h3 className="text-slate-900 dark:text-white font-bold truncate">
+                          {room.name}
+                        </h3>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColors[room.status] || ""}`}
+                        >
+                          {t(
+                            ("status_" +
+                              room.status.toLowerCase()) as "status_tersedia",
+                          )}
                         </span>
                       </div>
-                      <p className="text-amber-600 dark:text-amber-500 font-bold text-sm mb-1">{formatPrice(room.price)}</p>
+                      <p className="text-amber-600 dark:text-amber-500 font-bold text-sm mb-1">
+                        {formatPrice(room.price)}
+                      </p>
                       <div className="flex gap-2 items-center">
                         <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded border border-blue-500/20 uppercase">
                           {room.type}
                         </span>
-                        <span className="text-[10px] text-slate-500 font-medium">{t('floor')} {room.floor}</span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {t("floor")} {room.floor}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <Button variant="ghost" className="flex-1 text-slate-500 dark:text-slate-400 h-9" onClick={() => setViewingRoom(room)}>
-                      <Eye className="size-4 mr-2" /> {t('detail')}
+                    <Button
+                      variant="ghost"
+                      className="flex-1 text-slate-500 dark:text-slate-400 h-9"
+                      onClick={() => setViewingRoom(room)}
+                    >
+                      <Eye className="size-4 mr-2" /> {t("detail")}
                     </Button>
-                    <Button variant="ghost" className="flex-1 text-slate-500 dark:text-slate-400 h-9" onClick={() => handleEdit(room)}>
-                      <Edit className="size-4 mr-2" /> {t('edit')}
+                    <Button
+                      variant="ghost"
+                      className="flex-1 text-slate-500 dark:text-slate-400 h-9"
+                      onClick={() => handleEdit(room)}
+                    >
+                      <Edit className="size-4 mr-2" /> {t("edit")}
                     </Button>
-                    <Button variant="ghost" className="size-9 p-0 text-slate-500 hover:text-red-500" disabled={deletingId === room.id} onClick={() => handleDelete(room.id)}>
-                      {deletingId === room.id ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                    <Button
+                      variant="ghost"
+                      className="size-9 p-0 text-slate-500 hover:text-red-500"
+                      disabled={deletingId === room.id}
+                      onClick={() => handleDelete(room.id, room.name)}
+                    >
+                      {deletingId === room.id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -891,9 +1359,17 @@ export function LuxuryRoomManagement() {
       </motion.div>
 
       {/* View Dialog - Responsive */}
-      <Dialog open={!!viewingRoom} onOpenChange={() => { setViewingRoom(null); setRoomPaymentDetail(null); }}>
+      <Dialog
+        open={!!viewingRoom}
+        onOpenChange={() => {
+          setViewingRoom(null);
+          setRoomPaymentDetail(null);
+        }}
+      >
         <DialogContent className="w-[95vw] max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white p-0 overflow-hidden rounded-2xl md:rounded-[2rem] max-h-[90vh] overflow-y-auto">
-          <DialogTitle className="sr-only">Detail Kamar {viewingRoom?.name}</DialogTitle>
+          <DialogTitle className="sr-only">
+            Detail Kamar {viewingRoom?.name}
+          </DialogTitle>
           {viewingRoom && (
             <div className="space-y-0">
               <div className="aspect-video relative">
@@ -902,141 +1378,239 @@ export function LuxuryRoomManagement() {
                   alt={viewingRoom.name}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
                 <div className="absolute bottom-4 md:bottom-6 left-4 md:left-8">
-                  <h2 className="text-2xl md:text-3xl font-black text-white">{viewingRoom.name}</h2>
-                  <p className="text-amber-400 text-xs md:text-sm font-bold uppercase tracking-tight mt-1">{viewingRoom.type} • {t('floor')} {viewingRoom.floor}</p>
+                  <h2 className="text-2xl md:text-3xl font-black text-white">
+                    {viewingRoom.name}
+                  </h2>
+                  <p className="text-amber-400 text-xs md:text-sm font-bold uppercase tracking-tight mt-1">
+                    {viewingRoom.type} • {t("floor")} {viewingRoom.floor}
+                  </p>
                 </div>
               </div>
 
               {/* Additional Images Gallery */}
-              {viewingRoom.additionalImages && viewingRoom.additionalImages.length > 0 && (
-                <div className="p-4 md:px-8 md:pt-4 md:pb-0 grid grid-cols-3 gap-2 md:gap-4">
-                  {viewingRoom.additionalImages.map((src, idx) => (
-                    <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 group cursor-pointer">
-                      <ImageWithFallback
-                        src={src}
-                        alt={`${viewingRoom.name} gallery ${idx + 1}`}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                         <span className="text-white text-[10px] font-bold">Image {idx + 1}</span>
+              {viewingRoom.additionalImages &&
+                viewingRoom.additionalImages.length > 0 && (
+                  <div className="p-4 md:px-8 md:pt-4 md:pb-0 grid grid-cols-3 gap-2 md:gap-4">
+                    {viewingRoom.additionalImages.map((src, idx) => (
+                      <div
+                        key={idx}
+                        className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 group cursor-pointer"
+                      >
+                        <ImageWithFallback
+                          src={src}
+                          alt={`${viewingRoom.name} gallery ${idx + 1}`}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-[10px] font-bold">
+                            Image {idx + 1}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
               <div className="p-4 md:p-8 space-y-6 md:space-y-8">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                   <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 min-w-0">
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">{t('status')}</p>
-                    <p className={`font-black text-xs md:text-sm uppercase truncate ${viewingRoom.status === 'Tersedia' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                      {t(('status_' + viewingRoom.status.toLowerCase()) as "status_tersedia")}
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">
+                      {t("status")}
+                    </p>
+                    <p
+                      className={`font-black text-xs md:text-sm uppercase truncate ${viewingRoom.status === "Tersedia" ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}
+                    >
+                      {t(
+                        ("status_" +
+                          viewingRoom.status.toLowerCase()) as "status_tersedia",
+                      )}
                     </p>
                   </div>
                   <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 min-w-0">
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">{t('price')}</p>
-                    <p className="font-black text-xs md:text-sm text-amber-600 dark:text-amber-500 truncate" title={formatPrice(viewingRoom.price)}>{formatPrice(viewingRoom.price)}</p>
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">
+                      {t("price")}
+                    </p>
+                    <p
+                      className="font-black text-xs md:text-sm text-amber-600 dark:text-amber-500 truncate"
+                      title={formatPrice(viewingRoom.price)}
+                    >
+                      {formatPrice(viewingRoom.price)}
+                    </p>
                   </div>
                   <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 min-w-0">
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">{t('floor')}</p>
-                    <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white truncate">{viewingRoom.floor}</p>
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">
+                      {t("floor")}
+                    </p>
+                    <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white truncate">
+                      {viewingRoom.floor}
+                    </p>
                   </div>
                   <div className="p-3 md:p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 min-w-0">
-                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">{t('capacity')}</p>
-                    <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white truncate">{viewingRoom.capacity}</p>
+                    <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest mb-1 truncate">
+                      {t("capacity")}
+                    </p>
+                    <p className="font-black text-xs md:text-sm text-slate-900 dark:text-white truncate">
+                      {viewingRoom.capacity}
+                    </p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-3 md:mb-4">{t('facilities')}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-3 md:mb-4">
+                    {t("facilities")}
+                  </p>
                   <div className="flex flex-wrap gap-1.5 md:gap-2">
-                    {viewingRoom.facilities.length > 0 ? viewingRoom.facilities.map((f, i) => (
-                      <span key={i} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-medium">{f}</span>
-                    )) : <span className="text-slate-500 text-[10px] italic">{t('noFacilities')}</span>}
+                    {viewingRoom.facilities.length > 0 ? (
+                      viewingRoom.facilities.map((f, i) => (
+                        <span
+                          key={i}
+                          className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-medium"
+                        >
+                          {f}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-slate-500 text-[10px] italic">
+                        {t("noFacilities")}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1 md:mb-2">{t('description')}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1 md:mb-2">
+                    {t("description")}
+                  </p>
                   <p className="text-slate-600 dark:text-slate-300 text-xs md:text-sm leading-relaxed italic">
-                    &quot;{viewingRoom.description || t('noDescription')}&quot;
+                    &quot;{viewingRoom.description || t("noDescription")}&quot;
                   </p>
                 </div>
 
                 {/* Tenant & Payment History */}
                 {occupancyMap[viewingRoom.id] ? (
                   <div className="space-y-4">
-                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">Penghuni & Riwayat Pembayaran</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                      Penghuni & Riwayat Pembayaran
+                    </p>
                     <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-500/5 rounded-xl border border-amber-200 dark:border-amber-500/20">
-                      <div className="size-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center font-bold text-white uppercase flex-shrink-0">
+                      <div className="size-10 bg-linear-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center font-bold text-white uppercase shrink-0">
                         {occupancyMap[viewingRoom.id].tenant_name.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-bold text-sm text-slate-900 dark:text-white">{occupancyMap[viewingRoom.id].tenant_name}</p>
+                        <p className="font-bold text-sm text-slate-900 dark:text-white">
+                          {occupancyMap[viewingRoom.id].tenant_name}
+                        </p>
                         {roomPaymentDetail && (
-                          <p className="text-[10px] text-slate-500">{roomPaymentDetail.email} &bull; {roomPaymentDetail.nomor_hp}</p>
+                          <p className="text-[10px] text-slate-500">
+                            {roomPaymentDetail.email} &bull;{" "}
+                            {roomPaymentDetail.nomor_hp}
+                          </p>
                         )}
                       </div>
-                      <span className={`ml-auto flex-shrink-0 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${
-                        occupancyMap[viewingRoom.id].payment_status === 'Lunas' ? 'bg-green-500/10 text-green-600 border border-green-500/20' :
-                        occupancyMap[viewingRoom.id].payment_status === 'Pending' ? 'bg-yellow-500/10 text-yellow-600 border border-yellow-500/20' :
-                        'bg-red-500/10 text-red-600 border border-red-500/20'
-                      }`}>
+                      <span
+                        className={`ml-auto shrink-0 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                          occupancyMap[viewingRoom.id].payment_status ===
+                          "Lunas"
+                            ? "bg-green-500/10 text-green-600 border border-green-500/20"
+                            : occupancyMap[viewingRoom.id].payment_status ===
+                                "Pending"
+                              ? "bg-yellow-500/10 text-yellow-600 border border-yellow-500/20"
+                              : "bg-red-500/10 text-red-600 border border-red-500/20"
+                        }`}
+                      >
                         {occupancyMap[viewingRoom.id].payment_status}
                       </span>
                     </div>
                     {roomPaymentDetail && roomPaymentDetail.check_in && (
                       <div className="grid grid-cols-3 gap-2 mt-3">
                         <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
-                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Check In</p>
-                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{roomPaymentDetail.check_in}</p>
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">
+                            Check In
+                          </p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                            {roomPaymentDetail.check_in}
+                          </p>
                         </div>
                         <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
-                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Check Out</p>
-                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{roomPaymentDetail.check_out}</p>
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">
+                            Check Out
+                          </p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                            {roomPaymentDetail.check_out}
+                          </p>
                         </div>
                         <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
-                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">Durasi</p>
-                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{roomPaymentDetail.durasi_sewa} Bulan</p>
+                          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-1">
+                            Durasi
+                          </p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                            {roomPaymentDetail.durasi_sewa} Bulan
+                          </p>
                         </div>
                       </div>
                     )}
 
                     {loadingPayments ? (
-                      <div className="flex justify-center py-4"><Loader2 className="size-5 animate-spin text-amber-500" /></div>
-                    ) : roomPaymentDetail && roomPaymentDetail.payments.length > 0 ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="size-5 animate-spin text-amber-500" />
+                      </div>
+                    ) : roomPaymentDetail &&
+                      roomPaymentDetail.payments.length > 0 ? (
                       <div className="space-y-2">
                         {roomPaymentDetail.payments.map((pay) => (
-                          <div key={pay.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                          <div
+                            key={pay.id}
+                            className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50"
+                          >
                             <div className="flex items-center gap-3">
                               <CalendarDays className="size-4 text-slate-400" />
                               <div>
-                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{pay.payment_month || pay.tanggal_bayar}</p>
-                                <p className="text-[10px] text-slate-400">{pay.metode_pembayaran}</p>
+                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                  {pay.payment_month || pay.tanggal_bayar}
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  {pay.metode_pembayaran}
+                                </p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-xs font-bold text-slate-900 dark:text-white">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(pay.jumlah_bayar)}</p>
-                              <span className={`text-[9px] font-bold uppercase ${
-                                pay.status_pembayaran === 'Confirmed' ? 'text-green-600' :
-                                pay.status_pembayaran === 'Pending' ? 'text-yellow-600' :
-                                'text-red-600'
-                              }`}>
-                                {pay.status_pembayaran === 'Confirmed' ? 'Lunas' : pay.status_pembayaran}
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">
+                                {new Intl.NumberFormat("id-ID", {
+                                  style: "currency",
+                                  currency: "IDR",
+                                  minimumFractionDigits: 0,
+                                }).format(pay.jumlah_bayar)}
+                              </p>
+                              <span
+                                className={`text-[9px] font-bold uppercase ${
+                                  pay.status_pembayaran === "Confirmed"
+                                    ? "text-green-600"
+                                    : pay.status_pembayaran === "Pending"
+                                      ? "text-yellow-600"
+                                      : "text-red-600"
+                                }`}
+                              >
+                                {pay.status_pembayaran === "Confirmed"
+                                  ? "Lunas"
+                                  : pay.status_pembayaran}
                               </span>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-slate-400 text-xs italic text-center py-3">Belum ada riwayat pembayaran</p>
+                      <p className="text-slate-400 text-xs italic text-center py-3">
+                        Belum ada riwayat pembayaran
+                      </p>
                     )}
                   </div>
                 ) : (
                   <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/50 text-center">
-                    <p className="text-slate-400 text-xs italic">Kamar belum ditempati</p>
+                    <p className="text-slate-400 text-xs italic">
+                      Kamar belum ditempati
+                    </p>
                   </div>
                 )}
               </div>

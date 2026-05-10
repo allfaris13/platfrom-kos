@@ -214,6 +214,7 @@ func (s *paymentService) CreatePaymentSession(pemesananID uint, paymentType stri
 		MetodePembayaran: "manual", // Forced to manual
 		TipePembayaran:   paymentType,
 		JumlahDP:         dpAmount,
+		IdempotencyKey:   fmt.Sprintf("PAY-S%d-%d", pemesananID, time.Now().UnixNano()),
 	}
 
 	// Set jatuh tempo untuk pembayaran cicilan

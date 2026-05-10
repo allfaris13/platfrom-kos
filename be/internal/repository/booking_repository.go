@@ -16,7 +16,8 @@ type BookingRepository interface {
 	GetPaymentsByBookingID(bookingID uint) ([]models.Pembayaran, error)
 	FindExpiredPendingBookings(expiryTime time.Time) ([]models.Pemesanan, error)
 	UpdateStatus(id uint, status string) error
-	FindActiveBookingByKamarID(kamarID uint) (*models.Pemesanan, error) // NEW: Check if room has active booking
+	FindActiveBookingByKamarID(kamarID uint) (*models.Pemesanan, error)      // Check if room has active/confirmed booking
+	FindPendingBookingByKamarID(kamarID uint) (*models.Pemesanan, error)     // NEW: Check if room has pending unconfirmed payment
 	WithTx(tx *gorm.DB) BookingRepository
 }
 
@@ -96,6 +97,22 @@ func (r *bookingRepository) FindActiveBookingByKamarID(kamarID uint) (*models.Pe
 	).First(&booking).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil // No active booking
+	}
+	return &booking, err
+}
+
+// FindPendingBookingByKamarID mencari booking dengan status "Pending" pada kamar tertentu.
+// Digunakan saat admin menghapus kamar untuk mendeteksi pembayaran yang belum dikonfirmasi.
+// Preload Penyewa dan Pembayaran agar data lengkap tersedia untuk logika notifikasi.
+func (r *bookingRepository) FindPendingBookingByKamarID(kamarID uint) (*models.Pemesanan, error) {
+	var booking models.Pemesanan
+	err := r.db.
+		Preload("Penyewa").
+		Preload("Pembayaran").
+		Where("kamar_id = ? AND status_pemesanan = ?", kamarID, "Pending").
+		First(&booking).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil // No pending booking
 	}
 	return &booking, err
 }

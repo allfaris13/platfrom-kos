@@ -156,6 +156,18 @@ export function BookingHistory({ onBrowseRooms, onNavigateToRoom }: BookingHisto
     }
   };
 
+  const pendingActionCount = reminders.filter(r => {
+    if (r.status_reminder === 'Paid' || r.status_reminder === 'Cancelled' || r.pembayaran?.status_pembayaran === 'Cancelled') return false;
+    if (r.status_reminder === 'Rejected' || r.pembayaran?.status_pembayaran === 'Rejected') return true;
+    
+    const hasProof = !!r.pembayaran?.bukti_transfer;
+    const isCash = (r.pembayaran?.metode_pembayaran || '').toLowerCase() === 'cash';
+    
+    if (hasProof || isCash) return false;
+    
+    return true;
+  }).length;
+
   return (
     <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors overflow-x-hidden min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -247,11 +259,11 @@ export function BookingHistory({ onBrowseRooms, onNavigateToRoom }: BookingHisto
               <TabsTrigger value="bookings" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-stone-900 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-white">{t('activeBookings')}</TabsTrigger>
               <TabsTrigger value="bills" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-stone-900 dark:data-[state=active]:bg-stone-800 dark:data-[state=active]:text-white relative">
                 {t('myBills')}
-                {reminders.filter(r => r.status_reminder !== 'Paid').length > 0 && (
+                {pendingActionCount > 0 && (
                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                      <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500 text-[10px] text-white items-center justify-center font-bold">
-                       {reminders.filter(r => r.status_reminder !== 'Paid').length}
+                       {pendingActionCount}
                      </span>
                    </span>
                 )}
@@ -688,9 +700,11 @@ export function BookingHistory({ onBrowseRooms, onNavigateToRoom }: BookingHisto
                                <Badge variant={reminder.status_reminder === 'Paid' ? 'default' : 'secondary'} className={
                                  reminder.status_reminder === 'Paid' 
                                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' 
-                                   : 'bg-orange-100 text-orange-700 hover:bg-orange-100'
+                                   : reminder.status_reminder === 'Cancelled' || reminder.pembayaran?.status_pembayaran === 'Cancelled'
+                                      ? 'bg-slate-100 text-slate-700 hover:bg-slate-100'
+                                      : 'bg-orange-100 text-orange-700 hover:bg-orange-100'
                                }>
-                                 {reminder.status_reminder === 'Paid' ? t('paid') : t('pendingPayment')}
+                                 {reminder.status_reminder === 'Paid' ? t('paid') : reminder.status_reminder === 'Cancelled' || reminder.pembayaran?.status_pembayaran === 'Cancelled' ? 'Cancelled' : t('pendingPayment')}
                                </Badge>
                                {getReminderTypeBadge(reminder)}
                                <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">
@@ -715,6 +729,15 @@ export function BookingHistory({ onBrowseRooms, onNavigateToRoom }: BookingHisto
                                Rp {reminder.jumlah_bayar.toLocaleString()}
                              </p>
                              {(() => {
+                               if (reminder.status_reminder === 'Cancelled' || reminder.pembayaran?.status_pembayaran === 'Cancelled') {
+                                 return (
+                                   <div className="flex flex-col items-end gap-2 mt-1">
+                                     <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-3 py-1 font-semibold text-sm">
+                                       <XCircle className="w-4 h-4 mr-1.5" /> Batal Memesan
+                                     </Badge>
+                                   </div>
+                                 );
+                               }
                                if (reminder.status_reminder === 'Paid') {
                                  return (
                                    <div className="flex flex-col items-end gap-2 mt-1">

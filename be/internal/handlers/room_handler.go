@@ -240,16 +240,46 @@ func (h *KamarHandler) UpdateKamar(c *gin.Context) {
 
 func (h *KamarHandler) DeleteKamar(c *gin.Context) {
 	idStr := c.Param("id")
-	id, _ := strconv.ParseUint(idStr, 10, 32)
-
-	// Delete associated images first
-	_ = h.service.DeleteImagesByKamarID(uint(id))
-
-	if err := h.service.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "kamar deleted successfully"})
+
+	// Jalankan service Delete (sudah berisi validasi + auto-cancel + notifikasi)
+	if err := h.service.Delete(uint(id)); err != nil {
+		// Deteksi error "kamar tidak dapat dihapus" (booking aktif/confirmed) → 409 Conflict
+		errMsg := err.Error()
+		if contains(errMsg, "tidak dapat dihapus") || contains(errMsg, "pemesanan aktif") {
+			c.JSON(http.StatusConflict, gin.H{
+				"error": errMsg,
+				"code":  "ROOM_HAS_ACTIVE_BOOKING",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
+		return
+	}
+
+	// Hapus gambar SETELAH service Delete berhasil (agar gambar tidak dihapus jika kamar gagal dihapus)
+	_ = h.service.DeleteImagesByKamarID(uint(id))
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Kamar berhasil dihapus. Jika ada pemesanan yang masih pending, pesanan tersebut telah otomatis dibatalkan dan notifikasi telah dikirim.",
+	})
+}
+
+// contains adalah helper sederhana untuk cek substring pada error message.
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		func() bool {
+			for i := 0; i <= len(s)-len(substr); i++ {
+				if s[i:i+len(substr)] == substr {
+					return true
+				}
+			}
+			return false
+		}())
 }
 
 func (h *KamarHandler) UpdateKamarStatus(c *gin.Context) {

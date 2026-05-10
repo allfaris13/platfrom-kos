@@ -248,6 +248,7 @@
     "noFacilities": "Tidak ada fasilitas terdaftar",
     "noDescription": "Tidak ada deskripsi rinci untuk kamar ini.",
     "status_tersedia": "Tersedia",
+    "status_terpesan": "Terpesan",
     "status_penuh": "Penuh",
     "status_maintenance": "Perbaikan",
     "type_standard": "Standar (Kamar Mandi Luar)",

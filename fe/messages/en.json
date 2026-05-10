@@ -248,6 +248,7 @@
     "noFacilities": "No facilities listed",
     "noDescription": "No detailed description provided for this room.",
     "status_tersedia": "Available",
+    "status_terpesan": "Booked",
     "status_penuh": "Full",
     "status_maintenance": "Maintenance",
     "type_standard": "Standard (Shared Bathroom)",

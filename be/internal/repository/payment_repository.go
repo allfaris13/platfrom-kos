@@ -15,6 +15,7 @@ type PaymentRepository interface {
 	Update(payment *models.Pembayaran) error
 	DeleteByBookingID(bookingID uint) error
 	DeleteRemindersByBookingID(bookingID uint) error
+	CancelPendingPaymentsByBookingID(bookingID uint) error // NEW: Soft-cancel Pending payments when room is deleted
 	WithTx(tx *gorm.DB) PaymentRepository
 }
 
@@ -74,4 +75,14 @@ func (r *paymentRepository) DeleteRemindersByBookingID(bookingID uint) error {
 		"pembayaran_id IN (SELECT id FROM pembayarans WHERE pemesanan_id = ?)",
 		bookingID,
 	).Delete(&models.PaymentReminder{}).Error
+}
+
+// CancelPendingPaymentsByBookingID membatalkan (soft-cancel) semua pembayaran
+// dengan status "Pending" pada booking tertentu.
+// Digunakan ketika kamar dihapus dan ada booking pending yang belum dikonfirmasi.
+// Soft-cancel menjaga audit trail — pembayaran tidak dihapus permanen.
+func (r *paymentRepository) CancelPendingPaymentsByBookingID(bookingID uint) error {
+	return r.db.Model(&models.Pembayaran{}).
+		Where("pemesanan_id = ? AND status_pembayaran = ?", bookingID, "Pending").
+		Update("status_pembayaran", "Cancelled").Error
 }

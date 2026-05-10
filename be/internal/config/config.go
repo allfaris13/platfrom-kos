@@ -38,7 +38,8 @@ type Config struct {
 	CloudinaryURL string
 
 	// WhatsApp Config
-	FonnteToken string
+	FonnteToken      string
+	AdminPhoneNumber string // Nomor HP admin untuk notifikasi WA (format: 628xxx)
 }
 
 func LoadConfig() *Config {
@@ -76,7 +77,8 @@ func LoadConfig() *Config {
 		CloudinaryURL: getEnv("CLOUDINARY_URL", ""),
 
 		// WhatsApp Config
-		FonnteToken: getEnv("FONNTE_TOKEN", ""),
+		FonnteToken:      getEnv("FONNTE_TOKEN", ""),
+		AdminPhoneNumber: getEnv("ADMIN_PHONE_NUMBER", ""),
 	}
 
 	// Validate required environment variables

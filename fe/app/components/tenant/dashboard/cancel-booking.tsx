@@ -102,7 +102,7 @@ export function CancelBooking({ isOpen, onClose, bookingData, onSuccess }: Cance
               <div className="p-4 bg-slate-50 rounded-2xl">
                 <div className="flex gap-4">
                   <NextImage 
-                    src={bookingData.image} 
+                    src={bookingData?.image || "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=300&auto=format&fit=crop"} 
                     width={80}
                     height={80}
                     className="rounded-xl object-cover" 
