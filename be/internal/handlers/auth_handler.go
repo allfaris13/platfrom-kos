@@ -53,8 +53,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	utils.SetAuthCookies(c, accessToken, refreshToken, h.cfg.IsProduction)
 
 	c.JSON(http.StatusOK, gin.H{
-		"user": user,
-		// Token NOT returned in response for security
+		"user":         user,
+		"accessToken":  accessToken,
+		"refreshToken": refreshToken,
+		"expiresIn":    int(utils.AccessTokenExpiry.Seconds()),
+		"message":      "Login successful",
 	})
 }
 
@@ -152,7 +155,11 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	utils.SetAuthCookies(c, accessToken, refreshToken, h.cfg.IsProduction)
 
 	c.JSON(http.StatusOK, gin.H{
-		"user": user,
+		"user":         user,
+		"accessToken":  accessToken,
+		"refreshToken": refreshToken,
+		"expiresIn":    int(utils.AccessTokenExpiry.Seconds()),
+		"message":      "Login successful",
 	})
 }
 
@@ -198,11 +205,22 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Password has been reset successfully"})
 }
 
-// RefreshToken refreshes the access token using refresh token
+// RefreshToken refreshes the access token using refresh token (from Cookie or Header)
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	// Get refresh token from cookie
+	// Try to get refresh token from Cookie first, then fallback to Authorization header
 	refreshToken, err := c.Cookie("refresh_token")
-	if err != nil {
+	if err != nil || refreshToken == "" {
+		// Fallback for Desktop clients: Check Authorization Header
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				refreshToken = parts[1]
+			}
+		}
+	}
+
+	if refreshToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No refresh token found"})
 		return
 	}
@@ -221,7 +239,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// Set new access token cookie
+	// Set new access token cookie (for web browsers)
 	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie(
 		"access_token",
@@ -233,7 +251,11 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		true,
 	)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Token refreshed successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"accessToken": newAccessToken,
+		"expiresIn":   int(utils.AccessTokenExpiry.Seconds()),
+		"message":     "Token refreshed successfully",
+	})
 }
 
 // Logout clears authentication cookies
